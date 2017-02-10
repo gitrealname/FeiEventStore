@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDEventStore.Common", "PDEventStore.Common\PDEventStore.Common.csproj", "{A1FEF3F1-4A4E-4BA9-9C7A-879959BD9563}"
 EndProject
@@ -24,3 +23,14 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
+
+
+
+
+
+
+
+
+
+
+
