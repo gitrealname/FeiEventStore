@@ -1,0 +1,31 @@
+﻿Events
+=============================
+sequence (auto increment) PK
+tenantId, (string(40))
+commitId,  (guid)
+aggrigateTypeName, (string(40))
+aggrigateId, (guid)
+aggrigateTypeId, (guid)
+aggrigateVersion, (int)
+eventTypeName
+eventProcessId, (guid)
+eventTimestamp, (DateTimeOffset)
+eventVersion, (int)
+eventTypeId,  (guid)
+eventPayload (blob/bytea)
+timestamp, (DateTimeOffset)
+
+
+snapshots
+============================
+sequence (auto increment) PK
+tenantId, (guid)
+commitId, (guid)
+aggrigateTypeName, (string(40))
+aggrigateId, (guid)
+aggrigateTypeId, (guid)
+aggrigateVersion, (int)
+aggrigateTypeId
+aggrigateVersion, (int)
+aggrigatePayload (blob/bytea)
+timestamp
