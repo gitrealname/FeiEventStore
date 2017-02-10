@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{C6486FAD-4256-4F5C-8B39-B83B8CD2739C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>PDEventStore.Store</RootNamespace>
+    <AssemblyName>PDEventStore.Store</AssemblyName>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Domain\BaseAggregateRoot.cs" />
+    <Compile Include="Session\CommitBag.cs" />
+    <Compile Include="Domain\IAggregate.cs" />
+    <Compile Include="Domain\IRepository.cs" />
+    <Compile Include="Domain\Repository.cs" />
+    <Compile Include="Events\IAggregateFactory.cs" />
+    <Compile Include="Events\IEvent.cs" />
+    <Compile Include="Events\IEventNotifier.cs" />
+    <Compile Include="Events\IEventStore.cs" />
+    <Compile Include="Domain\PrivateReflectionDynamicObject.cs" />
+    <Compile Include="Domain\PrivateReflectionDynamicObjectExtensions.cs" />
+    <Compile Include="Persistence\IBucketBound.cs" />
+    <Compile Include="Logger\ILogger.cs" />
+    <Compile Include="Logger\NullLoger.cs" />
+    <Compile Include="Persistence\EventStoreSnapshotNotFoundException.cs" />
+    <Compile Include="Persistence\EventStoreAggregateNotFoundException.cs" />
+    <Compile Include="Persistence\EventRecord.cs" />
+    <Compile Include="Persistence\EventStoreCommitNotFoundException.cs" />
+    <Compile Include="Persistence\InMemoryPersistenceEngine.cs" />
+    <Compile Include="Persistence\IPersistenceEngine.cs" />
+    <Compile Include="Persistence\SnapshotRecord.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Persistence\ISerializableType.cs" />
+    <Compile Include="Session\ICommitBag.cs" />
+    <Compile Include="Session\ISession.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PDEventStore.Common\PDEventStore.Common.csproj">
+      <Project>{a1fef3f1-4a4e-4ba9-9c7a-879959bd9563}</Project>
+      <Name>PDEventStore.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Notes.txt" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
