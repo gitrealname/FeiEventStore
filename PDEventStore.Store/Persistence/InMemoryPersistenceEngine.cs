@@ -27,7 +27,7 @@
         private Dictionary<string, CommitRecord> _tenantToLastCommitMap;
         private int _internalCommitSequence;
 
-        private static readonly object _syncRoot = new object ();
+        private readonly object _locker = new object ();
 
         public InMemoryPersistenceEngine ()
         {
@@ -41,14 +41,27 @@
             Purge();
         }
 
-        public void Save( IReadOnlyList<EventRecord> events, IReadOnlyList<SnapshotRecord> snapshots = null)
+        public void Save ( IReadOnlyList<EventRecord> events, IReadOnlyList<SnapshotRecord> snapshots = null, IReadOnlyCollection<AggregateConstraint> constraints = null )
         {
-            lock ( _syncRoot )
+            lock ( _locker )
             {
                 if ( events.Count == 0 )
                 {
                     return;
                 }
+                //check for conflicts
+                if ( constraints != null )
+                {
+                    foreach ( var c in constraints )
+                    {
+                        var currentVersion = GetAggregateCurrentVersionNumber ( c.AggregateId );
+                        if ( currentVersion != c.ExpectedVersion )
+                        {
+                            throw new EventStoreConcurrencyViolationException(c.AggregateId, c.ExpectedVersion, currentVersion); 
+                        }
+                    }
+                }
+
                 var startPos = _events.Count;
                 var endPos = startPos;
 

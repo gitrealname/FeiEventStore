@@ -3,12 +3,13 @@
     using System;
     using PDEventStore.Store.Domain;
     using PDEventStore.Store.Events;
+    using PDEventStore.Store.Persistence;
 
     /// <summary>
     /// Event store data (e.g. Events, Snapshots, ProcessManager? states) commit chunk. 
     /// 
     /// </summary>
-    /// <seealso cref="EventStore.Session.ICommitChunk" />
+    /// <seealso cref="ICommitBag" />
     public interface ICommitBag
     {
         /// <summary>
@@ -29,9 +30,11 @@
         /// <param name="aggregateRoot">The aggregate root.</param>
         void AddSnapshot ( IAggregate aggregateRoot );
 
-        //TODO: AddProcessManager
-
-        //add constraint
+        /// <summary>
+        /// Adds the aggregate constraint.
+        /// </summary>
+        /// <param name="constraint">The constraint.</param>
+        void AddAggregateConstraint (AggregateConstraint constraint);
              
     }
 }

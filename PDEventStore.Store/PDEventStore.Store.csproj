@@ -40,6 +40,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Domain\BaseAggregateRoot.cs" />
+    <Compile Include="Persistence\AggregateConstraint.cs" />
+    <Compile Include="Persistence\EventStoreConcurrencyViolationException.cs" />
     <Compile Include="Session\CommitBag.cs" />
     <Compile Include="Domain\IAggregate.cs" />
     <Compile Include="Domain\IRepository.cs" />

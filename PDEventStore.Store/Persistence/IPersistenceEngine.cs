@@ -18,7 +18,8 @@
         /// </summary>
         /// <param name="events">The events.</param>
         /// <param name="snapshots">The snapshots.</param>
-        void Save ( IReadOnlyList<EventRecord> events, IReadOnlyList<SnapshotRecord> snapshots = null );
+        /// <param name="constraints">The constraints.</param>
+        void Save ( IReadOnlyList<EventRecord> events, IReadOnlyList<SnapshotRecord> snapshots = null, IReadOnlyCollection<AggregateConstraint> constraints = null );
 
         /// <summary>
         /// Serializes the payload.

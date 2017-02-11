@@ -24,6 +24,11 @@
             throw new System.NotImplementedException ();
         }
 
+        public void AddAggregateConstraint ( Persistence.AggregateConstraint constraint )
+        {
+            throw new NotImplementedException ();
+        }
+
         #endregion
     }
 }
