@@ -12,7 +12,6 @@
     /// <seealso cref="ICommitBag" />
     public interface ICommitBag
     {
-
         /// <summary>
         /// Gets the tracking identifier.
         /// </summary>
@@ -26,24 +25,5 @@
         /// </summary>
         /// <returns>Commit id</returns>
         Guid Commit ( ); 
-
-        /// <summary>
-        /// Adds the event.
-        /// </summary>
-        /// <param name="event">The event.</param>
-        void AddEvent ( IEvent @event );
-
-        /// <summary>
-        /// Adds the aggregate snapshot.
-        /// </summary>
-        /// <param name="aggregateRoot">The aggregate root.</param>
-        void AddSnapshot ( IAggregate aggregateRoot );
-
-        /// <summary>
-        /// Adds the aggregate constraint. Any aggregate that was touched or looked-at during the session must be added into constraint
-        /// </summary>
-        /// <param name="constraint">The constraint.</param>
-        void AddAggregateConstraint (AggregateConstraint constraint);
-             
     }
 }

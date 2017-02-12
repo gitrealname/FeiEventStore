@@ -117,6 +117,10 @@
 
         public object DeserializePayload ( object payload, Type type )
         {
+            if ( payload.GetType () != type )
+            {
+                throw new Exception(string .Format("Payload type mismatch: expected type {0}, actual type is {1}", payload.GetType().FullName, type.FullName));
+            }
             return payload;
         }
 
