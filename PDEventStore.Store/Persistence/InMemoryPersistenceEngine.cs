@@ -41,20 +41,21 @@
             Purge();
         }
 
-        public void Save ( IReadOnlyList<EventRecord> events, IReadOnlyList<SnapshotRecord> snapshots = null, IReadOnlyCollection<AggregateConstraint> constraints = null )
+        public Guid Commit ( IReadOnlyList<EventRecord> events, IReadOnlyList<SnapshotRecord> snapshots = null, IReadOnlyCollection<AggregateConstraint> constraints = null )
         {
+            var commitId = Guid.NewGuid ();
             lock ( _locker )
             {
                 if ( events.Count == 0 )
                 {
-                    return;
+                    throw new Exception("Commit without pending events.");
                 }
                 //check for conflicts
                 if ( constraints != null )
                 {
                     foreach ( var c in constraints )
                     {
-                        var currentVersion = GetAggregateCurrentVersionNumber ( c.AggregateId );
+                        var currentVersion = GetAggregateVersion ( c.AggregateId );
                         if ( currentVersion != c.ExpectedVersion )
                         {
                             throw new EventStoreConcurrencyViolationException(c.AggregateId, c.ExpectedVersion, currentVersion); 
@@ -66,7 +67,6 @@
                 var endPos = startPos;
 
                 var fe = events.First ();
-                var commitId = fe.CommitId;
                 var bucketId = fe.BucketId;
 
                 //manage commit info
@@ -77,6 +77,7 @@
                 //process events
                 foreach ( var e in events )
                 {
+                    e.CommitId = commitId;
                     _events.Add ( e );
                     if ( !_eventsByAggregateId.ContainsKey ( e.AggregateId ) )
                     {
@@ -106,6 +107,7 @@
                     }
                 }
             }
+            return commitId;
         }
 
         public object SerializePayload ( object payload )
@@ -113,7 +115,7 @@
             return payload;
         }
 
-        public object DeserializePayload ( object payload )
+        public object DeserializePayload ( object payload, Type type )
         {
             return payload;
         }
@@ -126,7 +128,7 @@
             return result;
         }
 
-        public IEnumerable<EventRecord> GetEventsByTimeRange (string bucketId, DateTimeOffset from, DateTimeOffset? to )
+        public IEnumerable<EventRecord> GetEventsByTimeRange ( string bucketId, DateTimeOffset from, DateTimeOffset? to )
         {
             var result = _events.Where( r => r.EventTimestamp >= from && (!to.HasValue || r.EventTimestamp <= to));
             if ( bucketId != null )
@@ -193,7 +195,7 @@
             return rec.Id;
         }
 
-        public int GetAggregateCurrentVersionNumber ( Guid aggregateId )
+        public int GetAggregateVersion ( Guid aggregateId )
         {
             List<Tuple<EventRecord, int>> aggregateEvents;
             if ( !_eventsByAggregateId.TryGetValue ( aggregateId, out aggregateEvents ) )
@@ -204,7 +206,7 @@
             return aggregateEvents.Last().Item1.AggregateVersion;
         }
 
-        public int GetSnapshotCurrentVersionNumber ( Guid aggregateId )
+        public int GetAggregateSnapshotVersion ( Guid aggregateId )
         {
             List<Tuple<SnapshotRecord, int>> aggregateSnapshots;
             if ( !_snapshotsByAggregateId.TryGetValue ( aggregateId, out aggregateSnapshots ) )
@@ -214,7 +216,7 @@
             return aggregateSnapshots.Last ().Item1.AggregateVersion;
         }
 
-        public SnapshotRecord GetLatestSnapshot ( Guid aggregateId )
+        public SnapshotRecord GetAggregateSnapshot ( Guid aggregateId )
         {
             List<Tuple<SnapshotRecord, int>> aggregateSnapshots;
             if ( !_snapshotsByAggregateId.TryGetValue ( aggregateId, out aggregateSnapshots ) )

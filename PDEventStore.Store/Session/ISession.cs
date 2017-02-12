@@ -14,8 +14,8 @@ namespace PDEventStore.Store.Session
         /// <summary>
         /// Registers commit data collection.
         /// </summary>
-        /// <param name="commitChunk">The commit chunk.</param>
-        void RegisterCommitBag (ICommitBag commitChunk );
+        /// <param name="commitBag">The commit chunk.</param>
+        void RegisterCommitBag (ICommitBag commitBag );
 
         /// <summary>
         /// Invalidates the session. Prevents session from ever committing

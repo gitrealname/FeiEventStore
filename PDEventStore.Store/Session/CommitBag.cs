@@ -4,13 +4,20 @@
 
     public class CommitBag : ICommitBag
     {
+        private readonly ISession _session;
 
-        public static Guid TrackingId { get { return new Guid("{5F58128B-62A5-428B-A0B2-A124D0627E5E}");} }
+        public Guid TrackingId { get { return new Guid("{5F58128B-62A5-428B-A0B2-A124D0627E5E}");} }
+
+        public CommitBag(ISession session)
+        {
+            _session = session;
+        }
 
         #region ICommitBag Members
 
-        public void Commit ( System.Guid commitId )
+        public Guid Commit ( )
         {
+            //remove constraints if aggregate has an event
             throw new System.NotImplementedException ();
         }
 
@@ -26,6 +33,7 @@
 
         public void AddAggregateConstraint ( Persistence.AggregateConstraint constraint )
         {
+            //don't add constraint if already tracked or throw if aggregate previous aggregate version changes
             throw new NotImplementedException ();
         }
 

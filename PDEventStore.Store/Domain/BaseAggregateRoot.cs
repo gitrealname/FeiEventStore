@@ -15,6 +15,10 @@ namespace PDEventStore.Store.Domain
         public Guid TypeId { get; protected set; }
         public string BucketId { get; set; }
 
+        protected AggregateRoot(Guid aggregateTypeId)
+        {
+            
+        }
         public IReadOnlyList<IEvent> FlushUncommitedEvents()
         {
             lock (_changes)

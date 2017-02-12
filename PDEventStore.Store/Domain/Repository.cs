@@ -1,3 +1,5 @@
+using PDEventStore.Store.Persistence;
+
 namespace PDEventStore.Store.Domain
 {
     using System;
@@ -26,11 +28,10 @@ namespace PDEventStore.Store.Domain
 
         private CommitBag GetCommitBag ()
         {
-            CommitBag bag;
-            if ( !_session.TryToGetObject ( CommitBag.TrackingId, out bag ) )
+            CommitBag bag = new CommitBag(_session);
+            if ( !_session.TryToGetObject ( bag.TrackingId, out bag ) )
             {
-                bag = new CommitBag();
-                _session.TrackObject(CommitBag.TrackingId, bag);
+                _session.TrackObject(bag.TrackingId, bag);
                 _session.RegisterCommitBag(bag);
             }
             return bag;
@@ -50,8 +51,6 @@ namespace PDEventStore.Store.Domain
             {
                 bag.AddSnapshot(aggregate);
             }
-
-            _session.RegisterCommitBag(bag);
 
             //publish pending event
             if ( _publisher != null )
@@ -76,17 +75,19 @@ namespace PDEventStore.Store.Domain
             //}
         }
 
-        public T Get<T>(Guid aggregateId, string BucketId) where T : IAggregate
+        public T Get<T>(Guid aggregateId) where T : IAggregate
         {
-            T root;
-            if ( _session.TryToGetObject( aggregateId, out root ) )
+            T aggregate;
+            if ( _session.TryToGetObject( aggregateId, out aggregate ) )
             {
-                return root;                
+                return aggregate;                
             }
 
             //root = LoadAggregate<T>(aggregateId, BucketId);
-            _session.TrackObject(aggregateId, root);
-            return root;
+            _session.TrackObject(aggregateId, aggregate);
+            var bag = GetCommitBag ();
+            bag.AddAggregateConstraint(new AggregateConstraint(aggregateId, aggregate.Version));
+            return aggregate;
         }
 
         //private T LoadAggregate<T>(Guid aggregateId, string BucketId) where T : IAggregate
