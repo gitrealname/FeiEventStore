@@ -17,6 +17,6 @@
         /// The timestamp.
         /// </value>
         public DateTimeOffset Timestamp { get; set; }
-        
+
     }
 }

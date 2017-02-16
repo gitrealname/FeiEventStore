@@ -44,7 +44,7 @@
         public Guid AggregateTypeId { get; set; }
 
         public long AggregateVersion { get; set; }
-        
+
         public string EventTypeName { get; set; }
 
         public Guid EventTypeId { get; set; }

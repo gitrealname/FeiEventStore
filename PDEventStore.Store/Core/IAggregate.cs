@@ -9,6 +9,6 @@ namespace PDEventStore.Store.Core
         Guid Id { get; }
         long Version { get; }
 
-        void LoadFromHistory ( IReadOnlyList<IEvent> history, Snapshot snapshot = null );
+        void LoadFromHistory(IReadOnlyList<IEvent> history, Snapshot snapshot = null);
     }
 }

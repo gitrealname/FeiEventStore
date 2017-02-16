@@ -9,10 +9,10 @@ namespace PDEventStore.Store.Persistence
     /// <seealso cref="System.Exception" />
     public class EventStoreConcurrencyViolationException : System.Exception
     {
-        public EventStoreConcurrencyViolationException ( Guid aggregateId )
-            : base ( string.Format ( "Event Store Version collision; Commit is expected to be re-try-ed.") )
+        public EventStoreConcurrencyViolationException(Guid aggregateId)
+            : base(string.Format("Event Store Version collision; Commit is expected to be re-try-ed."))
         {
-            
+
         }
     }
 }

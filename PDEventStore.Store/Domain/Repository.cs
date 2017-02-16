@@ -19,9 +19,9 @@ namespace PDEventStore.Store.Domain
         public T Get<T>(Guid aggregateId) where T : IAggregate
         {
             T aggregate;
-            if ( _session.TryToGetObject( aggregateId, out aggregate ) )
+            if(_session.TryToGetObject(aggregateId, out aggregate))
             {
-                return aggregate;                
+                return aggregate;
             }
 
             //root = LoadAggregate<T>(aggregateId, BucketId);

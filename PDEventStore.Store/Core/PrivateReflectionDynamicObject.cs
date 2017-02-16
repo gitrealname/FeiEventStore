@@ -13,7 +13,7 @@
         internal static object WrapObjectIfNeeded(object o)
         {
             // Don't wrap primitive types, which don't have many interesting internal APIs
-            if (o == null || o.GetType().GetTypeInfo().IsPrimitive || o is string)
+            if(o == null || o.GetType().GetTypeInfo().IsPrimitive || o is string)
             {
                 return o;
             }
@@ -35,21 +35,21 @@
         private static object InvokeMemberOnType(Type type, object target, string name, object[] args)
         {
             var argtypes = new Type[args.Length];
-            for (var i = 0; i < args.Length; i++)
+            for(var i = 0; i < args.Length; i++)
             {
                 argtypes[i] = args[i].GetType();
             }
-            while (true)
+            while(true)
             {
                 //TODO: change when .net core implements GetMethod correct to get access to private methods
                 var member = type.GetMethods(bindingFlags).FirstOrDefault(m => m.Name == name && m.GetParameters().Select(p => p.ParameterType).SequenceEqual(argtypes));
                 //var member = type.GetMethod(name, bindingFlags, argtypes);
 
-                if (member != null)
+                if(member != null)
                 {
                     return member.Invoke(target, args);
                 }
-                if (type.GetTypeInfo().BaseType == null)
+                if(type.GetTypeInfo().BaseType == null)
                 {
                     return null;
                 }

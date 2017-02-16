@@ -9,10 +9,10 @@ namespace PDEventStore.Store.Persistence
     /// <seealso cref="System.Exception" />
     public class SnapshotNotFoundException : System.Exception
     {
-        public SnapshotNotFoundException ( Guid aggregateId )
-            : base ( string.Format ( "Snapshot for aggregate with id {0} was not found.", aggregateId ) )
+        public SnapshotNotFoundException(Guid aggregateId)
+            : base(string.Format("Snapshot for aggregate with id {0} was not found.", aggregateId))
         {
-            
+
         }
     }
 }

@@ -11,5 +11,5 @@
         /// The type identifier.
         /// </value>
         Guid PermanentTypeId { get; }
- }
+    }
 }

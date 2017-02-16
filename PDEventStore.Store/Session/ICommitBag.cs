@@ -24,6 +24,6 @@
         /// Commits/persist pending changes.
         /// </summary>
         /// <returns>Commit id</returns>
-        Guid Commit ( ); 
+        Guid Commit();
     }
 }

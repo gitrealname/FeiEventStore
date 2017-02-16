@@ -4,6 +4,6 @@
 
     public interface IAggregateFactory
     {
-        IAggregate GetAggregate<T> ();
+        IAggregate GetAggregate<T>();
     }
 }

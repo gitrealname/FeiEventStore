@@ -8,15 +8,15 @@ namespace PDEventStore.Store.Tests
     {
 
         [Fact]
-        public void dummy ()
+        public void dummy()
         {
-            Assert.Equal ( true, true );
+            Assert.Equal(true, true);
         }
 
         [Fact]
-        public void dummy2 ()
+        public void dummy2()
         {
-            Assert.Equal ( true, true );
+            Assert.Equal(true, true);
         }
     }
 }

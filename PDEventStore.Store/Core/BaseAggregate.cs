@@ -20,7 +20,7 @@
 
         protected Aggregate(Guid aggregateTypeId)
         {
-            PermanentTypeId = aggregateTypeId;    
+            PermanentTypeId = aggregateTypeId;
         }
 
 
@@ -30,15 +30,15 @@
         /// <value>
         /// The next event version.
         /// </value>
-        protected long  NextEventVersion { get { return Version + _changes.Count + 1; } }
+        protected long NextEventVersion { get { return Version + _changes.Count + 1; } }
 
         public void SetPayload(object payload)
         {
-            if ( typeof ( T ) != payload.GetType ())
+            if(typeof(T) != payload.GetType())
             {
-                throw new ArgumentException ( string.Format("Aggregate Type: {0} doesn't match Payload Type: {1}", typeof(T).FullName, payload.GetType().FullName) );
+                throw new ArgumentException(string.Format("Aggregate Type: {0} doesn't match Payload Type: {1}", typeof(T).FullName, payload.GetType().FullName));
             }
-            this.Data = ( T ) payload;
+            this.Data = (T)payload;
         }
 
 
@@ -52,28 +52,28 @@
 
         public void LoadFromHistory(IReadOnlyList<IEvent> history, Snapshot snapshot = null)
         {
-            if ( snapshot != null )
+            if(snapshot != null)
             {
-                if ( typeof ( T ) != snapshot.Payload.GetType () )
+                if(typeof(T) != snapshot.Payload.GetType())
                 {
-                    throw new ArgumentException ( string.Format ( "Aggregate Type: {0} doesn't match Payload Type: {1}", typeof ( T ).FullName, snapshot.Payload.GetType ().FullName ) );
+                    throw new ArgumentException(string.Format("Aggregate Type: {0} doesn't match Payload Type: {1}", typeof(T).FullName, snapshot.Payload.GetType().FullName));
                 }
 
-                this.Data = ( T ) snapshot.Payload;
+                this.Data = (T)snapshot.Payload;
                 this.Id = snapshot.AggregateVersion.Id;
                 this.Version = snapshot.AggregateVersion.Version;
             }
 
-            foreach ( var e in history)
+            foreach(var e in history)
             {
-                if (e.SourceAggregateVersion.Version != Version + 1)
+                if(e.SourceAggregateVersion.Version != Version + 1)
                 {
-                    throw new Exception(string.Format("Events are out of order for aggregate id {0}; Previous version: {1}, Next version: {2}", 
+                    throw new Exception(string.Format("Events are out of order for aggregate id {0}; Previous version: {1}, Next version: {2}",
                         e.SourceAggregateVersion.Id, Version, e.SourceAggregateVersion.Version));
                 }
                 if(e.SourceAggregateVersion.Id != Id)
                 {
-                    throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Id, e.SourceAggregateVersion.Id ) );
+                    throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Id, e.SourceAggregateVersion.Id));
                 }
                 RaiseEvent(e);
             }
@@ -81,9 +81,9 @@
             _changes.Clear();
         }
 
-        protected void RaiseEvent(IEvent @event) 
+        protected void RaiseEvent(IEvent @event)
         {
-            this.AsDynamic ().Apply ( @event );
+            this.AsDynamic().Apply(@event);
             _changes.Add(@event);
         }
     }

@@ -4,7 +4,7 @@
 
     public interface IEventEmitter
     {
-        IReadOnlyList<IEvent> FlushUncommitedEvents ();
+        IReadOnlyList<IEvent> FlushUncommitedEvents();
     }
 
 

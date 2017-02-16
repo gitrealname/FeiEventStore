@@ -27,6 +27,6 @@
         public Guid AggregateTypeId { get; set; }
 
         public object Payload { get; set; }
-         
+
     }
 }

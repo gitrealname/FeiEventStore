@@ -15,12 +15,12 @@ namespace PDEventStore.Store.Session
         /// Registers commit data collection.
         /// </summary>
         /// <param name="commitBag">The commit chunk.</param>
-        void RegisterCommitBag (ICommitBag commitBag );
+        void RegisterCommitBag(ICommitBag commitBag);
 
         /// <summary>
         /// Invalidates the session. Prevents session from ever committing
         /// </summary>
-        void InvalidateSession ();
+        void InvalidateSession();
 
         /// <summary>
         /// Forces the commit. By default commit happens on Destroy.
@@ -28,14 +28,14 @@ namespace PDEventStore.Store.Session
         /// 1. All registered IEventStoreCommitBag should be processed in single transaction scope.
         /// 2. After transaction is committed session must be invalidated to prevent following commits.
         /// </summary>
-        void Commit ();
+        void Commit();
 
         /// <summary>
         /// Adds object to internal tracking dictionary
         /// </summary>
         /// <param name="objectId">The object identifier.</param>
         /// <param name="entity">The entity.</param>
-        void TrackObject ( Guid objectId, object entity );
+        void TrackObject(Guid objectId, object entity);
 
         /// <summary>
         /// Tries to get object from the tracking dictionary
@@ -46,6 +46,6 @@ namespace PDEventStore.Store.Session
         /// <returns>
         /// true if object found. false otherwise
         /// </returns>
-        bool TryToGetObject<T> ( Guid objectId, out T o );
+        bool TryToGetObject<T>(Guid objectId, out T o);
     }
 }

@@ -12,7 +12,7 @@
         {
             get
             {
-                throw new NotImplementedException ();
+                throw new NotImplementedException();
             }
         }
 
@@ -20,53 +20,53 @@
         {
             get
             {
-                throw new NotImplementedException ();
+                throw new NotImplementedException();
             }
         }
 
-        public void Commit ( IReadOnlyList<IEvent> events, IReadOnlyList<IAggregate> snapshots = null, IReadOnlyList<IProcess> processes = null, IReadOnlyCollection<AggregateConstraint> constraints = null )
+        public void Commit(IReadOnlyList<IEvent> events, IReadOnlyList<IAggregate> snapshots = null, IReadOnlyList<IProcess> processes = null, IReadOnlyCollection<AggregateConstraint> constraints = null)
         {
-            throw new NotImplementedException ();
+            throw new NotImplementedException();
         }
 
-        public int GetAggregateSnapshotVersion ( Guid aggregateId )
+        public int GetAggregateSnapshotVersion(Guid aggregateId)
         {
-            throw new NotImplementedException ();
+            throw new NotImplementedException();
         }
 
-        public int GetAggregateVersion ( Guid aggregateId )
+        public int GetAggregateVersion(Guid aggregateId)
         {
-            throw new NotImplementedException ();
+            throw new NotImplementedException();
         }
 
-        public IEnumerable<IEvent> GetEvents ( Guid aggregateId, long fromVersion, long? toVersion = null )
+        public IEnumerable<IEvent> GetEvents(Guid aggregateId, long fromVersion, long? toVersion = null)
         {
-            throw new NotImplementedException ();
+            throw new NotImplementedException();
         }
 
-        public IEnumerable<IEvent> GetEventsByTimeRange ( DateTimeOffset from, DateTimeOffset? to )
+        public IEnumerable<IEvent> GetEventsByTimeRange(DateTimeOffset from, DateTimeOffset? to)
         {
-            throw new NotImplementedException ();
+            throw new NotImplementedException();
         }
 
-        public IEnumerable<IEvent> GetEventsSinceStoreVersion ( long startingStoreVersion, long? takeEventsCount )
+        public IEnumerable<IEvent> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount)
         {
-            throw new NotImplementedException ();
+            throw new NotImplementedException();
         }
 
-        public T LoadAggregate<T> ( Guid aggregateId ) where T : IAggregate
+        public T LoadAggregate<T>(Guid aggregateId) where T : IAggregate
         {
-            throw new NotImplementedException ();
+            throw new NotImplementedException();
         }
 
-        IEnumerable<IEvent> IEventStore.GetEvents ( Guid aggregateId, long fromVersion, long? toVersion )
+        IEnumerable<IEvent> IEventStore.GetEvents(Guid aggregateId, long fromVersion, long? toVersion)
         {
-            throw new NotImplementedException ();
+            throw new NotImplementedException();
         }
 
-        IEnumerable<IEvent> IEventStore.GetEventsSinceStoreVersion ( long startingStoreVersion, long? takeEventsCount )
+        IEnumerable<IEvent> IEventStore.GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount)
         {
-            throw new NotImplementedException ();
+            throw new NotImplementedException();
         }
     }
 }
