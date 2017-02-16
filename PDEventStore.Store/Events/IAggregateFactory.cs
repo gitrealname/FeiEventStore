@@ -1,8 +1,7 @@
-﻿using System;
-using PDEventStore.Store.Domain;
-
-namespace PDEventStore.Store.Events
+﻿namespace PDEventStore.Store.Events
 {
+    using PDEventStore.Store.Core;
+
     public interface IAggregateFactory
     {
         IAggregate GetAggregate<T> ();

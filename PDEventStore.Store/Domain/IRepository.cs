@@ -1,10 +1,10 @@
-﻿using System;
-
-namespace PDEventStore.Store.Domain
+﻿namespace PDEventStore.Store.Domain
 {
+    using System;
+    using PDEventStore.Store.Core;
+
     public interface IRepository
     {
-        void Save<T> ( T aggregate, bool takeSnapshot ) where T : IAggregate;
         T Get<T>(Guid aggregateId) where T : IAggregate;
     }
 }

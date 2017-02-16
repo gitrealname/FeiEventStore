@@ -1,10 +1,10 @@
-﻿using System;
-using System.Dynamic;
-using System.Linq;
-using System.Reflection;
-
-namespace PDEventStore.Store.Domain
+﻿namespace PDEventStore.Store.Core
 {
+    using System;
+    using System.Dynamic;
+    using System.Linq;
+    using System.Reflection;
+
     internal class PrivateReflectionDynamicObject : DynamicObject
     {
         public object RealObject { get; set; }

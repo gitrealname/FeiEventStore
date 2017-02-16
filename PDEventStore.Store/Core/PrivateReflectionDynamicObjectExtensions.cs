@@ -1,4 +1,4 @@
-﻿namespace PDEventStore.Store.Domain
+﻿namespace PDEventStore.Store.Core
 {
     internal static class PrivateReflectionDynamicObjectExtensions
     {

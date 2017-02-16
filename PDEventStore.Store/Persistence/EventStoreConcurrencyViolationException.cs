@@ -2,10 +2,15 @@
 
 namespace PDEventStore.Store.Persistence
 {
+    /// <summary>
+    /// Thrown by persistence engine when event store version collides with persisted one. 
+    /// It is not a "fatal" exception. Event store is expected to re-try the commit.
+    /// </summary>
+    /// <seealso cref="System.Exception" />
     public class EventStoreConcurrencyViolationException : System.Exception
     {
-        public EventStoreConcurrencyViolationException ( Guid aggregateId, int expectedVersion, int currentVersion )
-            : base ( string.Format ( "Aggregate id {0} concurrency violation, expected version {1} while actual version is {2}.", aggregateId, expectedVersion, currentVersion ) )
+        public EventStoreConcurrencyViolationException ( Guid aggregateId )
+            : base ( string.Format ( "Event Store Version collision; Commit is expected to be re-try-ed.") )
         {
             
         }

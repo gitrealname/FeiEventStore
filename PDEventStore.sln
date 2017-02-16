@@ -1,8 +1,13 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDEventStore.Common", "PDEventStore.Common\PDEventStore.Common.csproj", "{A1FEF3F1-4A4E-4BA9-9C7A-879959BD9563}"
-EndProject
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDEventStore.Store", "PDEventStore.Store\PDEventStore.Store.csproj", "{C6486FAD-4256-4F5C-8B39-B83B8CD2739C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrototypeValidator", "PrototypeValidator\PrototypeValidator.csproj", "{AFAD85EA-5070-4872-A021-1F9228C03E86}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDEventStore.Store.Tests", "PDEventStore.Store.Tests\PDEventStore.Store.Tests.csproj", "{476CF0CB-A245-4F09-B8A6-FC9B0A2495C1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10,27 +15,20 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A1FEF3F1-4A4E-4BA9-9C7A-879959BD9563}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A1FEF3F1-4A4E-4BA9-9C7A-879959BD9563}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A1FEF3F1-4A4E-4BA9-9C7A-879959BD9563}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A1FEF3F1-4A4E-4BA9-9C7A-879959BD9563}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C6486FAD-4256-4F5C-8B39-B83B8CD2739C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C6486FAD-4256-4F5C-8B39-B83B8CD2739C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C6486FAD-4256-4F5C-8B39-B83B8CD2739C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C6486FAD-4256-4F5C-8B39-B83B8CD2739C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFAD85EA-5070-4872-A021-1F9228C03E86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFAD85EA-5070-4872-A021-1F9228C03E86}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFAD85EA-5070-4872-A021-1F9228C03E86}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFAD85EA-5070-4872-A021-1F9228C03E86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{476CF0CB-A245-4F09-B8A6-FC9B0A2495C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{476CF0CB-A245-4F09-B8A6-FC9B0A2495C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{476CF0CB-A245-4F09-B8A6-FC9B0A2495C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{476CF0CB-A245-4F09-B8A6-FC9B0A2495C1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
-
-
-
-
-
-
-
-
-
-
-

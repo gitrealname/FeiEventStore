@@ -5,22 +5,51 @@
 
     /// <summary>
     /// Storage type specific persistence 
+    /// TODO: 
+    ///     1) GetPendingDispatch() list of pending dispatch batches, (can  be also be cached in memory for optimization purposes)
+    ///     2) Dispatched(commitId) remove dispatch from pending dispatches
+    ///     3) GetProcessState(processId) throw Process is complete (non-fatal exception)
+    /// 
     /// </summary>
     public interface IPersistenceEngine
     {
         /// <summary>
-        /// Initializes the storage. Create if required.
+        /// Initializes the storage. It should create DB structure when needed.
         /// </summary>
         void InitializeStorage ();
 
         /// <summary>
-        /// Saves the specified events and snapshots
+        /// Current store version.
+        /// </summary>
+        long StoreVersion { get; }
+
+        /// <summary>
+        /// Version of the store for which all events were dispatched.
+        /// </summary>
+        /// <value>
+        /// The dispatched store version.
+        /// </value>
+        long DispatchedStoreVersion { get; }
+
+        /// <summary>
+        /// Called when set of event get dispatched.
+        /// </summary>
+        /// <param name="dispatchedVersion">The dispatched version.</param>
+        long OnDispatched ( long dispatchedVersion );
+
+        /// <summary>
+        /// Saves the specified events and snapshots.
+        /// NOTES:
+        ///     if DB commit fails due to concurrency violation, commit should re-try until success.
         /// </summary>
         /// <param name="events">The events.</param>
         /// <param name="snapshots">The snapshots.</param>
         /// <param name="constraints">The constraints.</param>
-        /// <returns>Commit id</returns>
-        Guid Commit ( IReadOnlyList<EventRecord> events, IReadOnlyList<SnapshotRecord> snapshots = null, IReadOnlyCollection<AggregateConstraint> constraints = null );
+        /// <returns>Commit Final Store Version</returns>
+        long Commit ( IReadOnlyList<EventRecord> events, 
+            IReadOnlyList<SnapshotRecord> snapshots = null, 
+            IReadOnlyList<ProcessRecord> processes = null,
+            IReadOnlyCollection<AggregateConstraint> constraints = null );
 
         /// <summary>
         /// Serializes the payload.
@@ -40,84 +69,64 @@
         /// <summary>
         /// Get the events for given aggregate
         /// </summary>
-        /// <param name="aggregateId">The aggregate identifier.</param>
-        /// <param name="fromVersion">Event From version. (inclusive)</param>
-        /// <param name="toVersion">Optional. Event To version. (inclusive)</param>
+        /// <param name="aggregateId">The aggregate (aggregate) identifier.</param>
+        /// <param name="fromAggregateVersion">Event From version. (inclusive)</param>
+        /// <param name="toAggregateVersion">Optional. Event To version. (inclusive)</param>
         /// <returns></returns>
-        IEnumerable<EventRecord> GetEvents ( Guid aggregateId, int fromVersion, int? toVersion );
+        IEnumerable<EventRecord> GetEvents ( Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion );
 
         /// <summary>
         /// Gets the events by time range.
         /// </summary>
-        /// <param name="bucketId">The bucket identifier. Can be null to load for all buckets</param>
         /// <param name="from">From.</param>
         /// <param name="to">To.</param>
         /// <returns></returns>
-        IEnumerable<EventRecord> GetEventsByTimeRange (string bucketId, DateTimeOffset from, DateTimeOffset? to );
-
-        /// <summary>
-        /// Gets the events associated with given commit id.
-        /// </summary>
-        /// <param name="commitId">The commit identifier.</param>
-        /// <returns></returns>
-        IEnumerable<EventRecord> GetEventsByCommitId ( Guid commitId );
+        IEnumerable<EventRecord> GetEventsByTimeRange (DateTimeOffset from, DateTimeOffset? to );
 
         /// <summary>
         /// Gets the events since commit.
         /// </summary>
-        /// <param name="commitId">The commit identifier.</param>
-        /// <param name="bucketId">The bucket identifier. Can be null to load for all buckets</param>
-        /// <param name="take">The take.</param>
+        /// <param name="startingStoreVersion">The commit identifier.</param>
+        /// <param name="takeEventsCount">The number of events to read. can be null to get up until end of the store</param>
+        /// <param name="latestStoreVersion">The tail event StoreVersion.</param>
         /// <returns></returns>
-        IEnumerable<EventRecord> GetEventsSinceCommit ( Guid commitId, string bucketId, int? take);
+        IEnumerable<EventRecord> GetEventsSinceStoreVersion ( long startingStoreVersion, long? takeEventsCount );
 
-        /// <summary>
-        /// Gets the latest commit identifier.
-        /// </summary>
-        /// <param name="bucketId">The bucket identifier. can be null to get overall latest commit</param>
-        /// <returns></returns>
-        Guid GetLatestCommitId ( string bucketId );
-        
         /// <summary>
         /// Gets the latest version number. This call may be required to fast check version of any aggregate for validation purposes.
         /// </summary>
-        /// <param name="aggregateId">The aggregate identifier.</param>
+        /// <param name="aggregateId">The aggregate (aggregate) identifier.</param>
         /// <returns>Current version of the given aggregate</returns>
-        int GetAggregateVersion ( Guid aggregateId );
+        long GetAggregateVersion ( Guid aggregateId );
 
         /// <summary>
-        /// Gets the latest snapshot version number.
+        /// Gets the even version of the aggregate that was snapshot-ed.
         /// </summary>
-        /// <param name="aggregateId">The aggregate identifier.</param>
+        /// <param name="aggregateId">The aggregate (aggregate) identifier.</param>
         /// <returns></returns>
-        int GetAggregateSnapshotVersion ( Guid aggregateId );
+        long GetSnapshotVersion ( Guid aggregateId );
 
         /// <summary>
         /// Loads the latest aggregate snapshot record.
         /// </summary>
-        /// <param name="aggregateId">The aggregate identifier.</param>
+        /// <param name="aggregateId">The aggregate(aggregate) identifier.</param>
         /// <returns></returns>
-        SnapshotRecord GetAggregateSnapshot ( Guid aggregateId );
+        SnapshotRecord GetSnapshot ( Guid aggregateId );
+
 
         /// <summary>
-        ///     Completely DESTROYS the contents of ANY and ALL streams that have been successfully persisted.  Use with caution.
+        ///     Completely DESTROYS the contents of ANY and ALL aggregates that have been successfully persisted.  Use with caution.
         /// </summary>
         void Purge ();
 
         /// <summary>
-        ///     Completely DESTROYS the contents of ANY and ALL streams that have been successfully persisted
-        ///     for the specified bucket.  Use with caution.
-        /// </summary>
-        void Purge ( string bucketId );
-
-        /// <summary>
-        ///     Completely DESTROYS the contents of ANY and ALL streams that have been successfully persisted
-        ///     for the specified aggregateId.  Use with caution.
+        ///     Completely DESTROYS the contents of ANY and ALL aggregates that have been successfully persisted
+        ///     for the specified aggregate (aggregate) Id.  Use with caution.
         /// </summary>
         void Purge ( Guid aggregateId );
 
         /// <summary>
-        ///     Completely DESTROYS the contents and schema (if applicable) containing ANY and ALL streams that have been
+        ///     Completely DESTROYS the contents and schema (if applicable) containing ANY and ALL aggregates that have been
         ///     successfully persisted.  Use with caution.
         /// </summary>
         void Drop ();

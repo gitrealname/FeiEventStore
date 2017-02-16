@@ -1,8 +1,8 @@
-﻿namespace PDEventStore.Store.Persistence 
+﻿namespace PDEventStore.Store.Core
 {
     using System;
 
-    public interface ISerializableType
+    public interface IPermanentlyTyped
     {
         /// <summary>
         /// strong/permanent/(re-factoring safe) type id
@@ -10,6 +10,6 @@
         /// <value>
         /// The type identifier.
         /// </value>
-        Guid TypeId { get; }
+        Guid PermanentTypeId { get; }
  }
 }

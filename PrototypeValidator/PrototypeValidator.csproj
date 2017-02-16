@@ -1,18 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\xunit.runner.visualstudio.2.2.0-rc2-build1249\build\net20\xunit.runner.visualstudio.props" Condition="Exists('..\packages\xunit.runner.visualstudio.2.2.0-rc2-build1249\build\net20\xunit.runner.visualstudio.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C6486FAD-4256-4F5C-8B39-B83B8CD2739C}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{AFAD85EA-5070-4872-A021-1F9228C03E86}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PDEventStore.Store</RootNamespace>
-    <AssemblyName>PDEventStore.Store</AssemblyName>
+    <RootNamespace>PrototypeValidator</RootNamespace>
+    <AssemblyName>PrototypeValidator</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,6 +26,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -30,6 +35,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LightInject, Version=5.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LightInject.5.0.1\lib\net46\LightInject.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.9.0.2-beta2\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="NLog, Version=5.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.5.0.0-beta05\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
@@ -43,54 +56,30 @@
     <Reference Include="System.Transactions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\AggregateVersion.cs" />
-    <Compile Include="Core\BaseAggregate.cs" />
-    <Compile Include="Core\Snapshot.cs" />
-    <Compile Include="Core\IAggregate.cs" />
-    <Compile Include="Core\ICommand.cs" />
-    <Compile Include="Core\IEvent.cs" />
-    <Compile Include="Core\IMessage.cs" />
-    <Compile Include="Core\MessageOrigin.cs" />
-    <Compile Include="Domain\IProcess.cs" />
-    <Compile Include="Events\EventStore.cs" />
-    <Compile Include="Persistence\AggregateConstraint.cs" />
-    <Compile Include="Persistence\AggregateVersionConcurrencyViolationException.cs" />
-    <Compile Include="Persistence\ProcessRecord.cs" />
-    <Compile Include="Domain\IRepository.cs" />
-    <Compile Include="Domain\Repository.cs" />
-    <Compile Include="Events\IAggregateFactory.cs" />
-    <Compile Include="Events\IEventStore.cs" />
-    <Compile Include="Core\PrivateReflectionDynamicObject.cs" />
-    <Compile Include="Core\PrivateReflectionDynamicObjectExtensions.cs" />
-    <Compile Include="Persistence\EventStoreConcurrencyViolationException.cs" />
-    <Compile Include="Persistence\SnapshotNotFoundException.cs" />
-    <Compile Include="Persistence\EventRecord.cs" />
-    <Compile Include="Persistence\InMemoryPersistenceEngine.cs" />
-    <Compile Include="Persistence\IPersistenceEngine.cs" />
-    <Compile Include="Persistence\SnapshotRecord.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Core\IPermanentlyTyped.cs" />
-    <Compile Include="Session\ICommitBag.cs" />
-    <Compile Include="Session\ISession.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Notes.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Core\IEventEmitter.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Core\IPayloadContainer.cs" />
-  </ItemGroup>
-  <ItemGroup>
+    <None Include="App.config" />
+    <Content Include="NLog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="NLog.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\xunit.runner.visualstudio.2.2.0-rc2-build1249\build\net20\xunit.runner.visualstudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\xunit.runner.visualstudio.2.2.0-rc2-build1249\build\net20\xunit.runner.visualstudio.props'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

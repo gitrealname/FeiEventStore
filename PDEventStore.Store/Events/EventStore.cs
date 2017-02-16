@@ -1,57 +1,72 @@
 ﻿namespace PDEventStore.Store.Events
 {
     using System;
+    using System.Collections.Generic;
+    using Domain;
+    using Core;
+    using Persistence;
 
     public class EventStore : IEventStore
     {
-
-        #region IEventStore Members
-
-        public Guid Commit ( System.Collections.Generic.IReadOnlyList<IEvent> events, System.Collections.Generic.IReadOnlyList<Domain.IAggregate> snapshots = null, System.Collections.Generic.IReadOnlyCollection<Persistence.AggregateConstraint> constraints = null )
+        public long DispatchedStoreVersion
         {
-            throw new System.NotImplementedException ();
+            get
+            {
+                throw new NotImplementedException ();
+            }
         }
 
-        public System.Collections.Generic.IEnumerable<IEvent> GetEvents ( System.Guid aggregateId, int fromVersion, int? toVersion )
+        public long StoreVersion
         {
-            throw new System.NotImplementedException ();
+            get
+            {
+                throw new NotImplementedException ();
+            }
         }
 
-        public System.Collections.Generic.IEnumerable<IEvent> GetEvents ( System.Guid aggregateId, int fromVersion, out System.Guid latestCommitId )
+        public void Commit ( IReadOnlyList<IEvent> events, IReadOnlyList<IAggregate> snapshots = null, IReadOnlyList<IProcess> processes = null, IReadOnlyCollection<AggregateConstraint> constraints = null )
         {
-            throw new System.NotImplementedException ();
+            throw new NotImplementedException ();
         }
 
-        public System.Collections.Generic.IEnumerable<IEvent> GetEventsByTimeRange ( string bucketId, System.DateTimeOffset from, System.DateTimeOffset? to )
+        public int GetAggregateSnapshotVersion ( Guid aggregateId )
         {
-            throw new System.NotImplementedException ();
+            throw new NotImplementedException ();
         }
 
-        public System.Collections.Generic.IEnumerable<IEvent> GetEventsSinceCommit ( string bucketId, System.Guid commitId, int? takeCommits, out System.Guid tailCommitId )
+        public int GetAggregateVersion ( Guid aggregateId )
         {
-            throw new System.NotImplementedException ();
+            throw new NotImplementedException ();
         }
 
-        public System.Collections.Generic.IEnumerable<IEvent> GetEventsByCommitId ( System.Guid commitId )
+        public IEnumerable<IEvent> GetEvents ( Guid aggregateId, long fromVersion, long? toVersion = null )
         {
-            throw new System.NotImplementedException ();
+            throw new NotImplementedException ();
         }
 
-        public int GetAggregateVersion ( System.Guid aggregateId )
+        public IEnumerable<IEvent> GetEventsByTimeRange ( DateTimeOffset from, DateTimeOffset? to )
         {
-            throw new System.NotImplementedException ();
+            throw new NotImplementedException ();
         }
 
-        public int GetAggregateSnapshotVersion ( System.Guid aggregateId )
+        public IEnumerable<IEvent> GetEventsSinceStoreVersion ( long startingStoreVersion, long? takeEventsCount )
         {
-            throw new System.NotImplementedException ();
+            throw new NotImplementedException ();
         }
 
-        public T LoadAggregate<T> ( System.Guid aggregateId ) where T : Domain.IAggregate
+        public T LoadAggregate<T> ( Guid aggregateId ) where T : IAggregate
         {
-            throw new System.NotImplementedException ();
+            throw new NotImplementedException ();
         }
 
-        #endregion
+        IEnumerable<IEvent> IEventStore.GetEvents ( Guid aggregateId, long fromVersion, long? toVersion )
+        {
+            throw new NotImplementedException ();
+        }
+
+        IEnumerable<IEvent> IEventStore.GetEventsSinceStoreVersion ( long startingStoreVersion, long? takeEventsCount )
+        {
+            throw new NotImplementedException ();
+        }
     }
 }

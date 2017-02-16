@@ -3,19 +3,13 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
+    using NLog;
 
     class InMemoryPersistenceEngine : IPersistenceEngine
     {
-        private class CommitRecord
-        {
-            public CommitRecord(Guid id, int sequence)
-            {
-                Id = id;
-                Sequence = sequence;
-            }
-            public Guid Id { get; private set; }
-            public int Sequence { get; private set; }
-        }
+
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger ();
 
         private Dictionary<Guid, List<Tuple<EventRecord, int>>> _eventsByAggregateId;
         private Dictionary<Guid, Tuple<int, int>> _eventsPositionByCommitId;
@@ -24,31 +18,73 @@
         private Dictionary<Guid, List<Tuple<SnapshotRecord, int>>> _snapshotsByAggregateId;
         private List<SnapshotRecord> _snapshots;
 
-        private Dictionary<string, CommitRecord> _tenantToLastCommitMap;
-        private int _internalCommitSequence;
+        private Dictionary<Guid, ProcessRecord> _processesByProcessId;
+
+        private long _dispatchedStoreVersion;
+        private long _storeVersion;
 
         private readonly object _locker = new object ();
 
-        public InMemoryPersistenceEngine ()
+        public long DispatchedStoreVersion
         {
-            Purge();
+            get
+            {
+                return _dispatchedStoreVersion;
+            }
         }
 
-        #region IPersistenceEngine Members
+        public long StoreVersion
+        {
+            get
+            {
+                return _storeVersion;
+            }
+        }
+
+        public InMemoryPersistenceEngine ()
+        {
+            InitializeStorage ();
+        }
 
         public void InitializeStorage ()
         {
-            Purge();
+            Purge ();
         }
 
-        public Guid Commit ( IReadOnlyList<EventRecord> events, IReadOnlyList<SnapshotRecord> snapshots = null, IReadOnlyCollection<AggregateConstraint> constraints = null )
+        public void Purge ()
+        {
+            _dispatchedStoreVersion = 0;
+            _storeVersion = 0;
+
+            _events = new List<EventRecord> ();
+            _eventsByAggregateId = new Dictionary<Guid, List<Tuple<EventRecord, int>>> ();
+            _eventsPositionByCommitId = new Dictionary<Guid, Tuple<int, int>> ();
+            _snapshots = new List<SnapshotRecord> ();
+            _snapshotsByAggregateId = new Dictionary<Guid, List<Tuple<SnapshotRecord, int>>> ();
+            _processesByProcessId = new Dictionary<Guid, ProcessRecord> ();
+        }
+
+        public long Commit ( IReadOnlyList<EventRecord> events,
+            IReadOnlyList<SnapshotRecord> snapshots = null,
+            IReadOnlyList<ProcessRecord> processes = null,
+            IReadOnlyCollection<AggregateConstraint> constraints = null )
         {
             var commitId = Guid.NewGuid ();
+            dynamic stats = new {
+                events = 0,
+                constraints = 0,
+                snapshots = 0,
+                processes = 0,
+            };
+
             lock ( _locker )
             {
+                var slidingVersion = StoreVersion;
                 if ( events.Count == 0 )
                 {
-                    throw new Exception("Commit without pending events.");
+                    var ex = new Exception ( "Commit without pending events." );
+                    Logger.Fatal ( ex );
+                    throw ex;
                 }
                 //check for conflicts
                 if ( constraints != null )
@@ -58,34 +94,38 @@
                         var currentVersion = GetAggregateVersion ( c.AggregateId );
                         if ( currentVersion != c.ExpectedVersion )
                         {
-                            throw new EventStoreConcurrencyViolationException(c.AggregateId, c.ExpectedVersion, currentVersion); 
+                            var ex = new AggregateVersionConcurrencyViolationException ( c.AggregateId, c.ExpectedVersion, currentVersion );
+                            Logger.Warn ( ex );
+                            throw ex;
                         }
                     }
+                    stats.constraints = constraints.Count;
                 }
 
                 var startPos = _events.Count;
                 var endPos = startPos;
 
                 var fe = events.First ();
-                var bucketId = fe.BucketId;
-
-                //manage commit info
-                _eventsPositionByCommitId.Add ( commitId, new Tuple<int, int> ( startPos, startPos + events.Count - 1 ) );
-                var commitRecord = new CommitRecord ( commitId, _internalCommitSequence++ );
-                _tenantToLastCommitMap [ bucketId ] = commitRecord;
 
                 //process events
                 foreach ( var e in events )
                 {
-                    e.CommitId = commitId;
+                    slidingVersion++;
+                    e.StoreVersion = slidingVersion;
+
+                    if ( Logger.IsDebugEnabled )
+                    {
+                        Logger.Debug ( "Preparing event for persistence: Store Version: {0}, Process Id: {1}, Aggregate Id: {2} Aggregate Version: {3}",
+                            e.StoreVersion, e.ProcessId.GetValueOrDefault ( Guid.Empty ), e.AggregateId, e.AggregateVersion );
+                    }
                     _events.Add ( e );
                     if ( !_eventsByAggregateId.ContainsKey ( e.AggregateId ) )
                     {
                         _eventsByAggregateId.Add ( e.AggregateId, new List<Tuple<EventRecord, int>> () );
                     }
                     _eventsByAggregateId [ e.AggregateId ].Add ( new Tuple<EventRecord, int> ( e, endPos ) );
-                    _events.Add ( e );
                     endPos++;
+                    stats.events = events.Count;
                 }
 
                 //process snapshots
@@ -95,6 +135,11 @@
                     endPos = startPos;
                     foreach ( var s in snapshots )
                     {
+                        if ( Logger.IsDebugEnabled )
+                        {
+                            Logger.Debug ( "Preparing snapshot for persistence: Aggregate Id: {0} Aggregate Version: {1}",
+                                s.AggregateId, s.AggregateVersion );
+                        }
                         _snapshots.Add ( s );
                         if ( !_snapshotsByAggregateId.ContainsKey ( s.AggregateId ) )
                         {
@@ -102,12 +147,134 @@
 
                         }
                         _snapshotsByAggregateId [ s.AggregateId ].Add ( new Tuple<SnapshotRecord, int> ( s, endPos ) );
-                        _snapshots.Add ( s );
                         endPos++;
                     }
+                    stats.snapshots = snapshots.Count;
                 }
+
+                //process processes (F
+                if ( processes != null )
+                {
+                    foreach ( var p in processes )
+                    {
+                        if ( Logger.IsDebugEnabled )
+                        {
+                            Logger.Debug ( "Preparing process for persistence: Process Id: {0}",
+                                p.ProcessId );
+                        }
+                        _processesByProcessId [ p.ProcessId ] = p;
+                    }
+                    stats.processes = processes.Count;
+                }
+
+                //update StoreVersion
+                _storeVersion = slidingVersion;
+
+                if(Logger.IsInfoEnabled)
+                {
+                    Logger.Info ( "Commit statistics. Events: {0}, Snapshots: {1}, Processes: {2}, Constraints validated: {3}. Final store version: {4}",
+                        stats.events, stats.napshots, stats.processes, stats.constraints, StoreVersion);
+                }
+
+                return StoreVersion;
             }
-            return commitId;
+        }
+
+        public long GetAggregateVersion ( Guid aggregateId )
+        {
+            List<Tuple<EventRecord, int>> aggregateEvents;
+            if ( !_eventsByAggregateId.TryGetValue ( aggregateId, out aggregateEvents ) )
+            {
+                if(Logger.IsDebugEnabled)
+                {
+                    Logger.Debug ( "Aggregate Id: {0} doesn't exists in the store. Assuming version 0.", aggregateId );
+                }
+                return 0;
+            }
+
+            return aggregateEvents.Last ().Item1.AggregateVersion;
+        }
+
+        public long GetSnapshotVersion ( Guid aggregateId )
+        {
+            List<Tuple<SnapshotRecord, int>> aggregateSnapshots;
+            if ( !_snapshotsByAggregateId.TryGetValue ( aggregateId, out aggregateSnapshots ) )
+            {
+                throw new SnapshotNotFoundException ( aggregateId );
+            }
+            return aggregateSnapshots.Last ().Item1.AggregateVersion;
+        }
+
+        public IEnumerable<EventRecord> GetEvents ( Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion )
+        {
+            var result = _eventsByAggregateId [ aggregateId ]
+                .Where ( r => r.Item1.AggregateVersion >= fromAggregateVersion && ( !toAggregateVersion.HasValue || r.Item1.AggregateVersion <= toAggregateVersion.Value ) )
+                .Select ( t => t.Item1 );
+            return result;
+        }
+
+        public IEnumerable<EventRecord> GetEventsByTimeRange ( DateTimeOffset from, DateTimeOffset? to )
+        {
+            var result = _events.Where ( r => r.EventTimestamp >= from && ( !to.HasValue || r.EventTimestamp <= to ) );
+            return result;
+        }
+
+        public IEnumerable<EventRecord> GetEventsSinceStoreVersion ( long startingStoreVersion, long? takeEventsCount )
+        {
+            IEnumerable<EventRecord> result;
+            if ( takeEventsCount.HasValue )
+            {
+                result = _events.Skip ( (int)startingStoreVersion ).Take ( (int)takeEventsCount.Value );
+            }
+            else
+            {
+                result = _events.Skip ( ( int ) startingStoreVersion );
+            }
+            return result;
+        }
+
+        public SnapshotRecord GetSnapshot ( Guid aggregateId )
+        {
+            List<Tuple<SnapshotRecord, int>> aggregateSnapshots;
+            if ( !_snapshotsByAggregateId.TryGetValue ( aggregateId, out aggregateSnapshots ) )
+            {
+                var ex = new SnapshotNotFoundException ( aggregateId );
+                Logger.Warn ( ex );
+                throw ex;
+            }
+            return aggregateSnapshots.Last ().Item1;
+
+        }
+
+        public long OnDispatched ( long dispatchedVersion )
+        {
+            lock(_locker)
+            {
+                if ( _dispatchedStoreVersion < dispatchedVersion )
+                {
+                    _dispatchedStoreVersion = dispatchedVersion;
+                }
+                else
+                {
+                    if ( Logger.IsInfoEnabled )
+                    {
+                        Logger.Info ( "Double Dispatch. Notified about dispatch for version {0} while current dispatch is for version {1}.",
+                            dispatchedVersion, _dispatchedStoreVersion );
+                    }
+                }
+                return _dispatchedStoreVersion;
+            }
+        }
+
+
+        public void Purge ( Guid aggregateId )
+        {
+            throw new NotImplementedException ();
+        }
+
+        public void Drop ()
+        {
+            Purge();
         }
 
         public object SerializePayload ( object payload )
@@ -117,144 +284,8 @@
 
         public object DeserializePayload ( object payload, Type type )
         {
-            if ( payload.GetType () != type )
-            {
-                throw new Exception(string .Format("Payload type mismatch: expected type {0}, actual type is {1}", payload.GetType().FullName, type.FullName));
-            }
             return payload;
         }
 
-        public IEnumerable<EventRecord> GetEvents (Guid aggregateId, int fromVersion, int? toVersion )
-        {
-            var result = _eventsByAggregateId [ aggregateId ]
-                .Where ( r => r.Item1.EventVersion >= fromVersion && ( !toVersion.HasValue || r.Item1.EventVersion <= toVersion.Value ) )
-                .Select(t => t.Item1);
-            return result;
-        }
-
-        public IEnumerable<EventRecord> GetEventsByTimeRange ( string bucketId, DateTimeOffset from, DateTimeOffset? to )
-        {
-            var result = _events.Where( r => r.EventTimestamp >= from && (!to.HasValue || r.EventTimestamp <= to));
-            if ( bucketId != null )
-            {
-                result = result.Where ( r => r.BucketId == bucketId );
-            }
-            return result;
-        }
-
-        public IEnumerable<EventRecord> GetEventsSinceCommit ( Guid commitId, string bucketId = null, int? take = null )
-        {
-            if ( !_eventsPositionByCommitId.ContainsKey ( commitId ) )
-            {
-                throw new EventStoreCommitNotFoundException(commitId);
-            }
-            var pos = _eventsPositionByCommitId[commitId].Item2;
-            IEnumerable<EventRecord> result;
-            if ( take.HasValue )
-            {
-                result = _events.Skip ( pos + 1 ).Take ( take.Value );
-            }
-            else
-            {
-                result = _events.Skip ( pos + 1 );
-            }
-            if ( bucketId != null )
-            {
-                result = result.Where ( r => r.BucketId == bucketId );
-            }
-            return result;
-        }
-
-        public IEnumerable<EventRecord> GetEventsByCommitId ( Guid commitId )
-        {
-            Tuple<int, int> pos;
-            if ( !_eventsPositionByCommitId.TryGetValue ( commitId, out pos ) )
-            {
-                throw new EventStoreCommitNotFoundException(commitId);
-            }
-            var result = _events.Skip ( pos.Item1 ).Take ( pos.Item2 );
-            return result;
-        }
-
-        public Guid GetLatestCommitId ( string bucketId )
-        {
-            CommitRecord rec = null;
-            if ( bucketId == null )
-            {
-                rec = _tenantToLastCommitMap.Values.OrderByDescending ( o => o.Sequence ).FirstOrDefault ();
-            }
-            else
-            {
-                _tenantToLastCommitMap.TryGetValue ( bucketId, out rec );
-            }
-
-            if ( rec == null )
-            {
-                if ( bucketId == null )
-                {
-                    throw new EventStoreCommitNotFoundException ();
-                }
-                throw new EventStoreCommitNotFoundException (bucketId);  
-            }
-            return rec.Id;
-        }
-
-        public int GetAggregateVersion ( Guid aggregateId )
-        {
-            List<Tuple<EventRecord, int>> aggregateEvents;
-            if ( !_eventsByAggregateId.TryGetValue ( aggregateId, out aggregateEvents ) )
-            {
-                throw new EventStoreAggregateNotFoundException ( aggregateId );
-            }
-
-            return aggregateEvents.Last().Item1.AggregateVersion;
-        }
-
-        public int GetAggregateSnapshotVersion ( Guid aggregateId )
-        {
-            List<Tuple<SnapshotRecord, int>> aggregateSnapshots;
-            if ( !_snapshotsByAggregateId.TryGetValue ( aggregateId, out aggregateSnapshots ) )
-            {
-                throw new EventStoreSnapshotNotFoundException ( aggregateId );
-            }
-            return aggregateSnapshots.Last ().Item1.AggregateVersion;
-        }
-
-        public SnapshotRecord GetAggregateSnapshot ( Guid aggregateId )
-        {
-            List<Tuple<SnapshotRecord, int>> aggregateSnapshots;
-            if ( !_snapshotsByAggregateId.TryGetValue ( aggregateId, out aggregateSnapshots ) )
-            {
-                throw new EventStoreSnapshotNotFoundException ( aggregateId );
-            }
-            return aggregateSnapshots.Last ().Item1;
-        }
-
-        public void Purge ()
-        {
-            _events = new List<EventRecord>();
-            _eventsByAggregateId = new Dictionary<Guid, List<Tuple<EventRecord, int>>>();
-            _eventsPositionByCommitId = new Dictionary<Guid, Tuple<int, int>>();
-            _snapshots = new List<SnapshotRecord>();
-            _snapshotsByAggregateId = new Dictionary<Guid, List<Tuple<SnapshotRecord, int>>>();
-            _tenantToLastCommitMap = new Dictionary<string, CommitRecord>();
-            _internalCommitSequence = 0;
-        }
-
-        public void Purge ( string bucketId )
-        {
-            throw new NotImplementedException ();
-        }
-
-        public void Purge (Guid aggregateId)
-        {
-            throw new NotImplementedException ();
-        }
-
-        public void Drop ()
-        {
-            Purge();
-        }
-        #endregion
     }
 }
