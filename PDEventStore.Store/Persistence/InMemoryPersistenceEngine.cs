@@ -15,10 +15,11 @@
         private Dictionary<Guid, Tuple<int, int>> _eventsPositionByCommitId;
         private List<EventRecord> _events;
 
-        private Dictionary<Guid, List<Tuple<SnapshotRecord, int>>> _snapshotsByAggregateId;
-        private List<SnapshotRecord> _snapshots;
+        private Dictionary<Guid, SnapshotRecord> _snapshotByAggregateId;
 
-        private Dictionary<Guid, ProcessRecord> _processesByProcessId;
+        private Dictionary<Guid, ProcessRecord> _processByProcessId;
+
+        private HashSet<string> _primaryKey;
 
         private long _dispatchedStoreVersion;
         private long _storeVersion;
@@ -59,15 +60,15 @@
             _events = new List<EventRecord>();
             _eventsByAggregateId = new Dictionary<Guid, List<Tuple<EventRecord, int>>>();
             _eventsPositionByCommitId = new Dictionary<Guid, Tuple<int, int>>();
-            _snapshots = new List<SnapshotRecord>();
-            _snapshotsByAggregateId = new Dictionary<Guid, List<Tuple<SnapshotRecord, int>>>();
-            _processesByProcessId = new Dictionary<Guid, ProcessRecord>();
+            _snapshotByAggregateId = new Dictionary<Guid, SnapshotRecord>();
+            _processByProcessId = new Dictionary<Guid, ProcessRecord>();
+            _primaryKey = new HashSet<string>();
         }
 
-        public long Commit(IReadOnlyList<EventRecord> events,
-            IReadOnlyList<SnapshotRecord> snapshots = null,
-            IReadOnlyList<ProcessRecord> processes = null,
-            IReadOnlyCollection<AggregateConstraint> constraints = null)
+        public long Commit(IList<EventRecord> events,
+            IList<SnapshotRecord> snapshots = null,
+            IList<ProcessRecord> processes = null,
+            IList<AggregateConstraint> constraints = null)
         {
             var commitId = Guid.NewGuid();
             dynamic stats = new {
@@ -94,12 +95,26 @@
                         var currentVersion = GetAggregateVersion(c.AggregateId);
                         if(currentVersion != c.ExpectedVersion)
                         {
-                            var ex = new AggregateVersionConcurrencyViolationException(c.AggregateId, c.ExpectedVersion, currentVersion);
+                            var ex = new AggregateConstraintViolationException(c.AggregateId, c.ExpectedVersion, currentVersion);
                             Logger.Warn(ex);
                             throw ex;
                         }
                     }
                     stats.constraints = constraints.Count;
+                }
+
+                //check primary key violation
+                foreach(var e in events)
+                {
+                    if ( !_primaryKey.Add ( e.Key ) )
+                    {
+                        var ex = new AggregatePrimaryKeyViolationException ( e.AggregateId, e.Key );
+                        if ( Logger.IsWarnEnabled )
+                        {
+                            Logger.Warn ( ex );
+                        }
+                        throw ex;
+                    }
                 }
 
                 var startPos = _events.Count;
@@ -131,8 +146,6 @@
                 //process snapshots
                 if(snapshots != null)
                 {
-                    startPos = _snapshots.Count;
-                    endPos = startPos;
                     foreach(var s in snapshots)
                     {
                         if(Logger.IsDebugEnabled)
@@ -140,14 +153,7 @@
                             Logger.Debug("Preparing snapshot for persistence: Aggregate Id: {0} Aggregate Version: {1}",
                                 s.AggregateId, s.AggregateVersion);
                         }
-                        _snapshots.Add(s);
-                        if(!_snapshotsByAggregateId.ContainsKey(s.AggregateId))
-                        {
-                            _snapshotsByAggregateId.Add(s.AggregateId, new List<Tuple<SnapshotRecord, int>>());
-
-                        }
-                        _snapshotsByAggregateId[s.AggregateId].Add(new Tuple<SnapshotRecord, int>(s, endPos));
-                        endPos++;
+                        _snapshotByAggregateId [ s.AggregateTypeId ] = s;
                     }
                     stats.snapshots = snapshots.Count;
                 }
@@ -162,7 +168,7 @@
                             Logger.Debug("Preparing process for persistence: Process Id: {0}",
                                 p.ProcessId);
                         }
-                        _processesByProcessId[p.ProcessId] = p;
+                        _processByProcessId[p.ProcessId] = p;
                     }
                     stats.processes = processes.Count;
                 }
@@ -195,16 +201,6 @@
             return aggregateEvents.Last().Item1.AggregateVersion;
         }
 
-        public long GetSnapshotVersion(Guid aggregateId)
-        {
-            List<Tuple<SnapshotRecord, int>> aggregateSnapshots;
-            if(!_snapshotsByAggregateId.TryGetValue(aggregateId, out aggregateSnapshots))
-            {
-                throw new SnapshotNotFoundException(aggregateId);
-            }
-            return aggregateSnapshots.Last().Item1.AggregateVersion;
-        }
-
         public IEnumerable<EventRecord> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion)
         {
             var result = _eventsByAggregateId[aggregateId]
@@ -235,14 +231,32 @@
 
         public SnapshotRecord GetSnapshot(Guid aggregateId)
         {
-            List<Tuple<SnapshotRecord, int>> aggregateSnapshots;
-            if(!_snapshotsByAggregateId.TryGetValue(aggregateId, out aggregateSnapshots))
+            SnapshotRecord snapshot;
+            if(!_snapshotByAggregateId.TryGetValue(aggregateId, out snapshot))
             {
                 var ex = new SnapshotNotFoundException(aggregateId);
                 Logger.Warn(ex);
                 throw ex;
             }
-            return aggregateSnapshots.Last().Item1;
+            return snapshot;
+
+        }
+
+        public long GetSnapshotVersion ( Guid aggregateId )
+        {
+            return this.GetSnapshot(aggregateId).AggregateVersion;
+        }
+
+        public ProcessRecord GetProcess(Guid processId)
+        {
+            ProcessRecord process;
+            if ( !_processByProcessId.TryGetValue ( processId, out process ) )
+            {
+                var ex = new ProcessNotFoundException( processId );
+                Logger.Warn ( ex );
+                throw ex;
+            }
+            return process;
 
         }
 

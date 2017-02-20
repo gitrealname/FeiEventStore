@@ -15,13 +15,15 @@
 
         public T Data { get; protected set; }
 
-        public object Payload { get { return Data; } }
+        public object Payload { get { return Data; } set { Data = (T)value; } }
 
 
         protected Aggregate(Guid aggregateTypeId)
         {
             PermanentTypeId = aggregateTypeId;
         }
+
+
 
 
         /// <summary>
@@ -50,7 +52,13 @@
             return changes;
         }
 
-        public void LoadFromHistory(IReadOnlyList<IEvent> history, Snapshot snapshot = null)
+        public void SetVersion(AggregateVersion version)
+        {
+            Id = version.Id;
+            Version = version.Version;
+        }
+
+        public void LoadFromHistory(IList<IEvent> history, Snapshot snapshot = null)
         {
             if(snapshot != null)
             {

@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using Core;
-    using Domain;
     using Persistence;
 
     public interface IEventStore
@@ -26,10 +25,10 @@
         /// <param name="snapshots">The snapshots.</param>
         /// <param name="constraints">The constraints.</param>
         /// <returns>latest store version.</returns>
-        void Commit(IReadOnlyList<IEvent> events,
-            IReadOnlyList<IAggregate> snapshots = null,
-            IReadOnlyList<IProcess> processes = null,
-            IReadOnlyCollection<AggregateConstraint> constraints = null);
+        void Commit(IList<IEvent> events,
+            IList<IAggregate> snapshots = null,
+            IList<IProcess> processes = null,
+            IList<AggregateConstraint> constraints = null);
 
         /// <summary>
         /// Get the events for given aggregate. 
@@ -38,30 +37,33 @@
         /// <param name="fromAggregateVersion">Event From version. (inclusive)</param>
         /// <param name="toAggregateVersion">Optional. To version. (inclusive)</param>
         /// <returns></returns>
-        IEnumerable<IEvent> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion = null);
+        /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
+        /// <exception cref="MultipleTypeInstancesException"></exception>
+        IList<IEvent> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion = null);
 
         /// <summary>
         /// Gets the events since commit.
         /// </summary>
         /// <param name="startingStoreVersion">The commit identifier.</param>
         /// <param name="takeEventsCount">The number of events to read. can be null to get up until end of the store</param>
-        /// <param name="latestStoreVersion">The tail event StoreVersion.</param>
         /// <returns></returns>
-        IEnumerable<IEvent> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount = null);
+        /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
+        /// <exception cref="MultipleTypeInstancesException"></exception>
+        IList<IEvent> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount = null);
 
         /// <summary>
         /// Gets the aggregate latest version number. This call may be required to fast check version of any aggregate for validation purposes.
         /// </summary>
         /// <param name="aggregateId">The aggregate identifier.</param>
         /// <returns>Current version of the given aggregate</returns>
-        int GetAggregateVersion(Guid aggregateId);
+        long GetAggregateVersion(Guid aggregateId);
 
         /// <summary>
         /// Gets the latest snapshot-ed version of the aggregate.
         /// </summary>
         /// <param name="aggregateId">The aggregate identifier.</param>
         /// <returns></returns>
-        int GetAggregateSnapshotVersion(Guid aggregateId);
+        long GetSnapshotVersion(Guid aggregateId);
 
         /// <summary>
         /// Loads the latest aggregate. Create new instance of aggregate if given Id doesn't exists
@@ -69,6 +71,10 @@
         /// <typeparam name="T"></typeparam>
         /// <param name="aggregateId">The aggregate identifier.</param>
         /// <returns></returns>
+        /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
+        /// <exception cref="MultipleTypeInstancesException"></exception>
         T LoadAggregate<T>(Guid aggregateId) where T : IAggregate;
+
+        T LoadProcess<T> ( Guid processId ) where T : IProcess;
     }
 }

@@ -4,6 +4,20 @@
     using System.Collections.Generic;
 
     /// <summary>
+    /// SQL based engine implementation requirements:
+    ///     1. <see cref="EventRecord.StoreVersion"/>Store Version should be a primary key.
+    ///         Violation of the this key should result in <see cref="EventStoreConcurrencyViolationException"/>,
+    ///         which can be used by event store to re-try the commit.
+    ///         
+    ///     2. It has to be an unique index on <see cref="EventRecord.AggregateId"/> and <see cref="EventRecord.AggregateVersion"/>,
+    ///         This is required to perform lookup and load an Aggregate. 
+    ///         Violation of this index is not expected as all collisions are handled using #1.
+    ///         
+    ///     3. It has to be an unique index on <see cref="EventRecord.Key"/>. 
+    ///        Violation of this index must produce <see cref="AggregatePrimaryKeyViolationException"/>
+    /// 
+    ///     4. It has to be a non-unique index on <see cref="EventRecord.EventTimestamp"/> to accommodate time related events lookup 
+    /// 
     /// Storage type specific persistence 
     /// TODO: 
     ///     1) GetPendingDispatch() list of pending dispatch batches, (can  be also be cached in memory for optimization purposes)
@@ -46,10 +60,10 @@
         /// <param name="snapshots">The snapshots.</param>
         /// <param name="constraints">The constraints.</param>
         /// <returns>Commit Final Store Version</returns>
-        long Commit(IReadOnlyList<EventRecord> events,
-            IReadOnlyList<SnapshotRecord> snapshots = null,
-            IReadOnlyList<ProcessRecord> processes = null,
-            IReadOnlyCollection<AggregateConstraint> constraints = null);
+        long Commit(IList<EventRecord> events,
+            IList<SnapshotRecord> snapshots = null,
+            IList<ProcessRecord> processes = null,
+            IList<AggregateConstraint> constraints = null);
 
         /// <summary>
         /// Serializes the payload.
@@ -88,7 +102,6 @@
         /// </summary>
         /// <param name="startingStoreVersion">The commit identifier.</param>
         /// <param name="takeEventsCount">The number of events to read. can be null to get up until end of the store</param>
-        /// <param name="latestStoreVersion">The tail event StoreVersion.</param>
         /// <returns></returns>
         IEnumerable<EventRecord> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount);
 
@@ -96,14 +109,14 @@
         /// Gets the latest version number. This call may be required to fast check version of any aggregate for validation purposes.
         /// </summary>
         /// <param name="aggregateId">The aggregate (aggregate) identifier.</param>
-        /// <returns>Current version of the given aggregate</returns>
+        /// <returns>Current version of the given aggregate or 0 - if aggregate doesn't exists</returns>
         long GetAggregateVersion(Guid aggregateId);
 
         /// <summary>
         /// Gets the even version of the aggregate that was snapshot-ed.
         /// </summary>
         /// <param name="aggregateId">The aggregate (aggregate) identifier.</param>
-        /// <returns></returns>
+        /// <returns>Most recent version of snapshot or 0 - if aggregate has never been snapshot-ed</returns>
         long GetSnapshotVersion(Guid aggregateId);
 
         /// <summary>
@@ -111,8 +124,16 @@
         /// </summary>
         /// <param name="aggregateId">The aggregate(aggregate) identifier.</param>
         /// <returns></returns>
+        /// <exception cref="SnapshotNotFoundException"></exception>
         SnapshotRecord GetSnapshot(Guid aggregateId);
 
+        /// <summary>
+        /// Gets the process.
+        /// </summary>
+        /// <param name="processId">The process identifier.</param>
+        /// <returns></returns>
+        /// <exception cref="ProcessNotFoundException"></exception>
+        ProcessRecord GetProcess ( Guid processId );
 
         /// <summary>
         ///     Completely DESTROYS the contents of ANY and ALL aggregates that have been successfully persisted.  Use with caution.

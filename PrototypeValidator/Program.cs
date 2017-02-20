@@ -1,37 +1,27 @@
-﻿namespace PrototypeValidator
+﻿using System.Linq;
+
+namespace PrototypeValidator
 {
     using System;
     using NLog;
 
-    public interface IEvent
-    {
 
+    public interface inter1<T>
+    {
+        
     }
 
-    public class EventX : IEvent
+    public interface inter2<T>
     {
-
+        
     }
 
-    public class EventY : IEvent { }
-
-    public class Aggregate
+    public class Entity : inter1<Entity>, inter2<Entity>
     {
-        public void Apply(EventX @event)
-        {
-            Console.WriteLine("EventX");
-        }
-
-        public void Apply(EventY @event)
-        {
-            Console.WriteLine("EventY");
-        }
-
-        public void Apply(object @event)
-        {
-            Console.WriteLine("Object");
-        }
+    
     }
+
+    
 
 
     class Program
@@ -42,19 +32,15 @@
         {
             Logger.Debug("Starting....");
 
-            var x = new EventX();
-            var y = new EventY();
-            var o = new { a = 1 };
+            var type = typeof(Entity);
+            var interfaces = type.GetInterfaces()
+                .Where(i => i.IsGenericType)
 
-            var aggr = new Aggregate();
+                .First();
+            //.Any(i => i.GetGenericTypeDefinition() == typeof(inter1<>));
+            var interfaceArg = interfaces.GenericTypeArguments.First();
+            var baseType = type.BaseType;
 
-            IEvent e = x;
-            aggr.Apply(e);
-
-            e = y;
-            aggr.Apply(e);
-
-            aggr.Apply(o);
             Logger.Error("Done.");
 
         }
