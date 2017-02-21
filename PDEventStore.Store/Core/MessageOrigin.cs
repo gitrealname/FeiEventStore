@@ -2,8 +2,11 @@
 {
     using System;
 
-    public sealed class MessageOrigin : IEquatable<MessageOrigin>
+    public sealed class MessageOrigin : BaseValueObject<MessageOrigin>
     {
+        public Guid? SystemId { get; private set; }
+        public Guid? UserId { get; private set; }
+
         public MessageOrigin(MessageOrigin other) : this(other.SystemId, other.UserId)
         {
         }
@@ -14,22 +17,14 @@
             UserId = userId;
         }
 
-        public Guid? SystemId { get; private set; }
-        public Guid? UserId { get; private set; }
-
-        public bool Equals(MessageOrigin other)
+        protected override bool EqualsCore(MessageOrigin other)
         {
-            return object.ReferenceEquals(this, other) || (this.SystemId == other.SystemId && this.UserId == other.SystemId);
+            return this.SystemId == other.SystemId && this.UserId == other.UserId;
         }
 
-        public override bool Equals(object obj)
+        protected override int GetHashCodeCore()
         {
-            return (obj != null && obj.GetType() == typeof(MessageOrigin) && this.Equals((MessageOrigin)obj));
-        }
-
-        public override int GetHashCode()
-        {
-            return SystemId.GetHashCode() ^ UserId.GetHashCode();
+            return (SystemId.GetHashCode() * 397) ^ UserId.GetHashCode();
         }
     }
 

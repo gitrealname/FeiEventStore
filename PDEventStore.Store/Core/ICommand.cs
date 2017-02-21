@@ -1,6 +1,6 @@
 ﻿namespace PDEventStore.Store.Core
 {
-    public interface ICommand : IMessage, IEventStoreSerializable
+    public interface ICommand : IMessage
     {
         AggregateVersion TargetAggregateVersion { get; set; }
 

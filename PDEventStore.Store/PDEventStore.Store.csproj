@@ -50,8 +50,8 @@
   <ItemGroup>
     <Compile Include="Core\AggregateVersion.cs" />
     <Compile Include="Core\BaseAggregate.cs" />
+    <Compile Include="Core\IEventStoreSerializable.cs" />
     <Compile Include="Core\IReplace.cs" />
-    <Compile Include="Core\IObjectFactory.cs" />
     <Compile Include="Core\PermanentTypeAttribute.cs" />
     <Compile Include="Core\IAggregate.cs" />
     <Compile Include="Core\ICommand.cs" />
@@ -59,8 +59,8 @@
     <Compile Include="Core\IMessage.cs" />
     <Compile Include="Core\MessageOrigin.cs" />
     <Compile Include="Core\IProcess.cs" />
+    <Compile Include="Core\BaseValueObject.cs" />
     <Compile Include="Events\IPermanentlyTypedObjectService.cs" />
-    <Compile Include="Events\MultipleTypeInstancesException.cs" />
     <Compile Include="Events\PermanentlyTypedObjectService.cs" />
     <Compile Include="Events\ReplacerMustBeOfTheSameBaseTypeException.cs" />
     <Compile Include="Events\RuntimeTypeInstancesNotFoundException.cs" />
@@ -90,9 +90,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\IEventEmitter.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Core\IEventStoreSerializable.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Events\IPermanentlyTypedRegistry.cs" />

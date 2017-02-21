@@ -2,7 +2,7 @@
 {
     using System;
 
-    public interface IEvent : IMessage, IEventStoreSerializable, IPermanentlyTyped
+    public interface IEvent : IMessage, IPermanentlyTyped, IEventStoreSerializable
     {
         AggregateVersion SourceAggregateVersion { get; set; }
 

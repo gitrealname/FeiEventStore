@@ -12,6 +12,7 @@
     /// Important notes: Aggregates, Event and Processes must have default constructor.
     /// Todo: event primary key handling!
     /// Todo: commit!
+    /// Todo: when loading from history, only upgrade object when FinalAggregateType or FinalEventType not null
     /// </summary>
     /// <seealso cref="PDEventStore.Store.Events.IEventStore" />
     public class EventStore : IEventStore
@@ -116,17 +117,17 @@
                 var snapshotRecord = _engine.GetSnapshot(aggregateId);
                 var type = _service.LookupTypeByPermanentTypeId(snapshotRecord.AggregateTypeId);
                 aggregate = (IAggregate)_engine.DeserializePayload(snapshotRecord.Payload, type);
-                aggregate.SetVersion(new AggregateVersion(aggregateId, snapshotRecord.AggregateVersion));
+                aggregate.Id = new AggregateVersion(aggregateId, snapshotRecord.AggregateVersion);
                 aggregate = _service.UpgradeObject<IAggregate>(aggregate);
-                startingVersion = aggregate.Version;
+                startingVersion = aggregate.Id.Version;
             }
             catch (SnapshotNotFoundException)
             {
                 aggregate = _service.CreateObject<T>(typeof(T));
-                aggregate.SetVersion(new AggregateVersion(aggregateId, 0));
+                aggregate.Id = new AggregateVersion(aggregateId, 0);
             }
             //load events
-            var events = GetEvents(aggregateId, aggregate.Version);
+            var events = GetEvents(aggregateId, aggregate.Id.Version);
             aggregate.LoadFromHistory(events);
             if(Logger.IsDebugEnabled)
             {
@@ -181,25 +182,25 @@
             var er = new EventRecord();
             er.AggregateId = @event.SourceAggregateVersion.Id;
             er.AggregateVersion = @event.SourceAggregateVersion.Version;
-            er.AggregateTypeId = @event.SourceAggregateTypeId;
 
             Type type = _service.LookupTypeByPermanentTypeId(@event.SourceAggregateTypeId);
             type = _service.LookupBaseTypeForPermanentType(type);
             Guid typeId = _service.GetPermanentTypeIdForType(type);
+            er.AggregateTypeId = typeId;
             if(typeId != er.AggregateTypeId)
             {
-                er.AggregateFinalTypeId = typeId;
+                er.AggregateFinalTypeId = @event.SourceAggregateTypeId;
             }
 
             er.OriginSystemId = @event.Origin.SystemId;
             er.OriginUserId = @event.Origin.UserId;
 
-            er.EventTypeId = _service.GetPermanentTypeIdForType(@event.GetType());
             type = _service.LookupBaseTypeForPermanentType(@event.GetType());
             typeId = _service.GetPermanentTypeIdForType(type);
+            er.EventTypeId = typeId;
             if(typeId != er.EventTypeId)
             {
-                er.EventFinalTypeIdGuid = typeId;
+                er.EventFinalTypeIdGuid = _service.GetPermanentTypeIdForType(@event.GetType()); ;
             }
             er.EventTimestamp = @event.Timestapm;
 
@@ -217,83 +218,83 @@
             @event.SourceAggregateVersion = new AggregateVersion(record.AggregateId, record.AggregateVersion);
             @event.StoreVersion = record.StoreVersion;
             @event.Timestapm = record.EventTimestamp;
-            @event.SourceAggregateTypeId = record.EventFinalTypeIdGuid ?? record.AggregateTypeId;
+            @event.SourceAggregateTypeId = record.AggregateFinalTypeId ?? record.AggregateTypeId;
             return @event;
         }
 
-        private T CreateObjectBase<T>(Guid permanentTypeId)
-        {
-            var type = _service.LookupTypeByPermanentTypeId(permanentTypeId);
-            var e = _factory.GetInstances(type).Cast<T>().ToList();
-            if(e.Count == 0)
-            {
-                var ex = new RuntimeTypeInstancesNotFoundException(type);
-                Logger.Fatal(ex);
-                throw ex;
-            }
-            if(e.Count > 1)
-            {
-                var ex = new MultipleTypeInstancesException(type, e.Count);
-                Logger.Fatal(ex);
-                throw ex;
-            }
-            return  e[0];
-        }
+    //    private T CreateObjectBase<T>(Guid permanentTypeId)
+    //    {
+    //        var type = _service.LookupTypeByPermanentTypeId(permanentTypeId);
+    //        var e = _factory.GetInstances(type).Cast<T>().ToList();
+    //        if(e.Count == 0)
+    //        {
+    //            var ex = new RuntimeTypeInstancesNotFoundException(type);
+    //            Logger.Fatal(ex);
+    //            throw ex;
+    //        }
+    //        if(e.Count > 1)
+    //        {
+    //            var ex = new MultipleTypeInstancesException(type, e.Count);
+    //            Logger.Fatal(ex);
+    //            throw ex;
+    //        }
+    //        return  e[0];
+    //    }
 
-        private T ReplaceObject<T>(T obj)
-        {
-            //upgrade object
-            var continueUpgrade = true;
-            while(continueUpgrade)
-            {
-                var replacerType = _factory.BuidGenericType(typeof(IReplace<>), obj.GetType());
-                var replacers = _factory.GetInstances(replacerType);
-                if(replacers.Count > 1)
-                {
-                    var ex = new MultipleTypeInstancesException(replacerType, replacers.Count);
-                    Logger.Fatal(ex);
-                    throw ex;
-                }
-                if(replacers.Count == 0)
-                {
-                    continueUpgrade = false;
-                }
-                else
-                {
-                    var replacer = replacers[0];
-                    if(Logger.IsDebugEnabled)
-                    {
-                        Logger.Debug("Replacer of type {0} is loading from type {1}", replacer.GetType(), obj.GetType());
-                    }
-                    if(!(replacer is T))
-                    {
-                        var ex = new ReplacerMustBeOfTheSameBaseTypeException(typeof(T), replacer.GetType());
-                        Logger.Fatal(ex);
-                        throw ex;
-                    }
-                    obj = (T)replacer.AsDynamic().InitFromObsolete(obj);
-                }
-            }
+    //    private T ReplaceObject<T>(T obj)
+    //    {
+    //        //upgrade object
+    //        var continueUpgrade = true;
+    //        while(continueUpgrade)
+    //        {
+    //            var replacerType = _factory.BuidGenericType(typeof(IReplace<>), obj.GetType());
+    //            var replacers = _factory.GetInstances(replacerType);
+    //            if(replacers.Count > 1)
+    //            {
+    //                var ex = new MultipleTypeInstancesException(replacerType, replacers.Count);
+    //                Logger.Fatal(ex);
+    //                throw ex;
+    //            }
+    //            if(replacers.Count == 0)
+    //            {
+    //                continueUpgrade = false;
+    //            }
+    //            else
+    //            {
+    //                var replacer = replacers[0];
+    //                if(Logger.IsDebugEnabled)
+    //                {
+    //                    Logger.Debug("Replacer of type {0} is loading from type {1}", replacer.GetType(), obj.GetType());
+    //                }
+    //                if(!(replacer is T))
+    //                {
+    //                    var ex = new ReplacerMustBeOfTheSameBaseTypeException(typeof(T), replacer.GetType());
+    //                    Logger.Fatal(ex);
+    //                    throw ex;
+    //                }
+    //                obj = (T)replacer.AsDynamic().InitFromObsolete(obj);
+    //            }
+    //        }
 
-            return obj;
-        }
+    //        return obj;
+    //    }
 
-        private T CreateObject<T>(Guid permanentTypeId, 
-            object payload = null, 
-            Func<T, Type> getPayloadType = null, 
-            Action<T, object> setPayloadAction = null)
-        {
-            var obj = CreateObjectBase<T>(permanentTypeId);
-            //set payload
-            if (payload != null)
-            {
-                var payloadType = getPayloadType(obj);
-                var decodedPayload = _engine.DeserializePayload(payload, payloadType);
-                setPayloadAction(obj, decodedPayload);
-            }
-            obj = ReplaceObject<T>(obj);
-            return obj;
-        }
+    //    private T CreateObject<T>(Guid permanentTypeId, 
+    //        object payload = null, 
+    //        Func<T, Type> getPayloadType = null, 
+    //        Action<T, object> setPayloadAction = null)
+    //    {
+    //        var obj = CreateObjectBase<T>(permanentTypeId);
+    //        //set payload
+    //        if (payload != null)
+    //        {
+    //            var payloadType = getPayloadType(obj);
+    //            var decodedPayload = _engine.DeserializePayload(payload, payloadType);
+    //            setPayloadAction(obj, decodedPayload);
+    //        }
+    //        obj = ReplaceObject<T>(obj);
+    //        return obj;
+    //    }
 
     }
 }

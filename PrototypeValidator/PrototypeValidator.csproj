@@ -73,6 +73,12 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PDEventStore.Store\PDEventStore.Store.csproj">
+      <Project>{c6486fad-4256-4f5c-8b39-b83b8cd2739c}</Project>
+      <Name>PDEventStore.Store</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

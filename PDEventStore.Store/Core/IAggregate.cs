@@ -4,13 +4,10 @@ namespace PDEventStore.Store.Core
     using System;
     using System.Collections.Generic;
 
-    public interface IAggregate : IEventStoreSerializable, IEventEmitter, IPermanentlyTyped
+    public interface IAggregate : IEventEmitter, IPermanentlyTyped, IEventStoreSerializable
     {
-        Guid Id { get; }
-        long Version { get; }
+        AggregateVersion Id { get; set; }
 
-        void LoadFromHistory(IList<IEvent> history, Snapshot snapshot = null);
-
-        void SetVersion(AggregateVersion version);
+        void LoadFromHistory(IList<IEvent> history);
     }
 }

@@ -2,7 +2,7 @@
 {
     using System;
 
-    public class AggregateVersion : IEquatable<AggregateVersion>
+    public class AggregateVersion : BaseValueObject<AggregateVersion>
     {
         public AggregateVersion(Guid aggrigateId, long version)
         {
@@ -12,20 +12,14 @@
         public Guid Id { get; private set; }
         public long Version { get; private set; }
 
-        public bool Equals(AggregateVersion other)
+        protected override bool EqualsCore(AggregateVersion other)
         {
-            return object.ReferenceEquals(this, other) || (this.Id == other.Id && this.Version == other.Version);
+            return this.Id == other.Id && this.Version == other.Version;
         }
 
-        public override bool Equals(object obj)
+        protected override int GetHashCodeCore()
         {
-            return (obj != null && obj.GetType() == typeof(AggregateVersion) && this.Equals((AggregateVersion)obj));
+            return (Id.GetHashCode() * 397) ^ Version.GetHashCode();
         }
-
-        public override int GetHashCode()
-        {
-            return Id.GetHashCode() ^ Version.GetHashCode();
-        }
-
     }
 }
