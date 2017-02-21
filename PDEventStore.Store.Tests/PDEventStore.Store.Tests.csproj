@@ -68,7 +68,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="InMemoryPersistenceEngine.cs" />
+    <Compile Include="InMemoryPersistenceEngineTest.cs" />
     <Compile Include="PermanentlyTypedObjectServiceTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

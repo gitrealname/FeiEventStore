@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NSubstitute;
 using PDEventStore.Store.Core;
 using PDEventStore.Store.Events;
 using PDEventStore.Store.Persistence;
@@ -52,8 +53,14 @@ namespace PDEventStore.Store.Tests
         public Guid ThirdTypeId = new Guid("{00000000-0000-0000-0000-000000000003}");
         public PermanentlyTypedObjectServiceTest()
         {
+            var factory = Substitute.For<IObjectFactory>();
+            factory.GetAllInstances(Arg.Is(typeof(IReplace<FirstEvent>))).Returns(new List<object>{ new SecondEvent() } );
+            factory.GetAllInstances(Arg.Is(typeof(IReplace<SecondEvent>))).Returns(new List<object> { new ThirdEvent() });
+            factory.GetAllInstances(Arg.Is(typeof(ThirdEvent))).Returns(new List<object> { });
+
+
             Registry = new PermanentlyTypedRegistry();
-            Service = new PermanentlyTypedObjectService(Registry);
+            Service = new PermanentlyTypedObjectService(Registry, factory);
 
             Registry.Map.Add(FirstTypeId, typeof(FirstEvent));
             Registry.Map.Add(SecondTypeId, typeof(SecondEvent));
@@ -97,7 +104,7 @@ namespace PDEventStore.Store.Tests
         public void can_upgrade_object_through_full_replacer_chain()
         {
             var original = new FirstEvent();
-            var final = Service.UpgradeObject(original);
+            var final = Service.UpgradeObject<ITestEvent>(original);
             Assert.Equal(typeof(ThirdEvent), final.GetType());
         }
     }

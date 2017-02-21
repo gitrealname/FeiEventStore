@@ -15,12 +15,13 @@ namespace PDEventStore.Store.Events
 
         /// <summary>
         /// Upgrades the object.
-        /// Iterates through Replacer chain and upgrades object to the most recent type. 
+        /// Iterates through Replacer chain and upgrades object to the most recent type.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="originalObject">The original object.</param>
+        /// <param name="finalTypeId">The final type identifier.</param>
         /// <returns></returns>
-        T UpgradeObject<T>(T originalObject) where T : IPermanentlyTyped;
+        T UpgradeObject<T>(T originalObject, Guid? finalTypeId = null) where T : IPermanentlyTyped;
 
         /// <summary>
         /// Lookups the <see cref="Type"/> by permanent type identifier.

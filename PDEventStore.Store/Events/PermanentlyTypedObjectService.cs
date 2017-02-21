@@ -12,25 +12,30 @@
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly IPermanentlyTypedRegistry _registry;
+        private readonly IObjectFactory _factory;
 
-        public PermanentlyTypedObjectService(IPermanentlyTypedRegistry registry)
+        public PermanentlyTypedObjectService(IPermanentlyTypedRegistry registry, IObjectFactory factory)
         {
             _registry = registry;
+            _factory = factory;
         }
         public T CreateObject<T>(Type type) where T : IPermanentlyTyped
         {
-            var o = Activator.CreateInstance(type);
-            GetTypePermanentTypeAttribute(o.GetType()); //used as guard
-            //if(!o.GetType().IsSubclassOf(typeof(T)))
-            //{
-            //    var ex = new TypeMismatchException(type, typeof(T));
-            //    if(Logger.IsFatalEnabled)
-            //    {
-            //        Logger.Fatal(ex);
-            //    }
-            //    throw ex;
-            //}
-            return (T)o; 
+            var e0 = _factory.GetAllInstances(type);
+            var e  = e0.Cast<T>().ToList();
+            if(e.Count == 0)
+            {
+                var ex = new RuntimeTypeInstancesNotFoundException(type);
+                Logger.Fatal(ex);
+                throw ex;
+            }
+            if(e.Count > 1)
+            {
+                var ex = new MultipleTypeInstancesException(type, e.Count);
+                Logger.Fatal(ex);
+                throw ex;
+            }
+            return (T)e[0];
         }
 
         public Guid GetPermanentTypeIdForType(Type type)
@@ -62,9 +67,14 @@
             return _registry.LookupTypeByPermanentTypeId(permanentTypeId);
         }
 
-        public T UpgradeObject<T>(T originalObject) where T : IPermanentlyTyped
+        public T UpgradeObject<T>(T originalObject, Guid? finalTypeId = null) where T : IPermanentlyTyped
         {
             //upgrade object
+            Type finalType = null;
+            if(finalTypeId.HasValue)
+            {
+                finalType = LookupTypeByPermanentTypeId(finalTypeId.Value);
+            }
             while(true)
             {
                 var replacerType = BuildGenericType(typeof(IReplace<>), originalObject.GetType());
@@ -73,7 +83,7 @@
                 {
                     replacer = CreateObject<T>(replacerType);
                 }
-                catch(Exception)
+                catch(RuntimeTypeInstancesNotFoundException)
                 {
                     return (T)originalObject;
                 }
@@ -82,13 +92,11 @@
                 {
                     Logger.Debug("Replacer of type {0} is loading from type {1}", replacer.GetType(), originalObject.GetType());
                 }
-                //if(!(replacer is T))
-                //{
-                //    var ex = new ReplacerMustBeOfTheSameBaseTypeException(typeof(T), replacer.GetType());
-                //    Logger.Fatal(ex);
-                //    throw ex;
-                //}
                 originalObject = (T)replacer.AsDynamic().InitFromObsolete(originalObject);
+                if(finalType == originalObject.GetType())
+                {
+                    return originalObject;
+                }
             }
         }
 
