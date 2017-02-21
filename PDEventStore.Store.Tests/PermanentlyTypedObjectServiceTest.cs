@@ -56,7 +56,7 @@ namespace PDEventStore.Store.Tests
             var factory = Substitute.For<IObjectFactory>();
             factory.GetAllInstances(Arg.Is(typeof(IReplace<FirstEvent>))).Returns(new List<object>{ new SecondEvent() } );
             factory.GetAllInstances(Arg.Is(typeof(IReplace<SecondEvent>))).Returns(new List<object> { new ThirdEvent() });
-            factory.GetAllInstances(Arg.Is(typeof(ThirdEvent))).Returns(new List<object> { });
+            factory.GetAllInstances(Arg.Is(typeof(ThirdEvent))).Returns(new List<object> { new ThirdEvent() });
 
 
             Registry = new PermanentlyTypedRegistry();
@@ -106,6 +106,13 @@ namespace PDEventStore.Store.Tests
             var original = new FirstEvent();
             var final = Service.UpgradeObject<ITestEvent>(original);
             Assert.Equal(typeof(ThirdEvent), final.GetType());
+        }
+        [Fact]
+        public void can_upgrade_object_to_specified_level()
+        {
+            var original = new FirstEvent();
+            var final = Service.UpgradeObject<ITestEvent>(original, SecondTypeId);
+            Assert.Equal(typeof(SecondEvent), final.GetType());
         }
     }
 }

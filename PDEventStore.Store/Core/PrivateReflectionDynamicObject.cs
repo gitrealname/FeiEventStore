@@ -24,10 +24,12 @@
         // Called when a method is called
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
+
             result = InvokeMemberOnType(RealObject.GetType(), RealObject, binder.Name, args);
 
             // Wrap the sub object if necessary. This allows nested anonymous objects to work.
-            result = WrapObjectIfNeeded(result);
+            //But prevents casting of the return value!!!
+            //result = WrapObjectIfNeeded(result);
 
             return true;
         }
