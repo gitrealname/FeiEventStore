@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace PDEventStore.Store.Core
 {
     /// <summary>
-    /// IOC specific object factory implementation
+    /// IOC specific dependency resolver
     /// </summary>
-    public interface IObjectFactory
+    public interface IDependencyResolver
     {
         /// <summary>
         /// Gets all instances.

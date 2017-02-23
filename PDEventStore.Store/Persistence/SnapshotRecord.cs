@@ -20,13 +20,11 @@
         /// </value>
         public Guid AggregateId { get; set; }
 
-        public int AggregateVersion { get; set; }
-
-        public string AggregateTypeName { get; set; }
+        public long AggregateVersion { get; set; }
 
         public Guid AggregateTypeId { get; set; }
 
-        public object Payload { get; set; }
+        public object State { get; set; }
 
     }
 }

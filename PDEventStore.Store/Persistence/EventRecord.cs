@@ -40,10 +40,9 @@
         public Guid AggregateId { get; set; }
 
         /// <summary>
-        /// Gets or sets the GLOBALY UNIQUE Key. 
-        /// It is compiled out of SHA-1 hash of the Aggregate Primary Key and AggregateTypeId
-        /// If aggregate doesn't have a primary key, then hash portion of the key is set to AggregateId + AggregateVersion + AggregateTypeId
-        /// NOTE: SHA-1 hashing algorithm will be used to create a primary key. SHA-1 produces string of 40 characters in length.
+        /// Gets or sets the Aggregate Key. 
+        /// It can be any string that in combination with <paramref name="AggregateTypeId"/> create 
+        /// globally unique Key.
         /// </summary>
         /// <value>
         /// The aggregate key.
@@ -72,7 +71,7 @@
         /// </value>
         public Guid EventTypeId { get; set; }
 
-        public Guid? EventFinalTypeIdGuid { get; set; }
+        public Guid? EventFinalTypeId { get; set; }
 
         /// <summary>
         /// Gets or sets the event Creation Timestamp.

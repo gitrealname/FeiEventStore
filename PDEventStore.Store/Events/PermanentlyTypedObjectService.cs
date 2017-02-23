@@ -12,9 +12,9 @@
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly IPermanentlyTypedRegistry _registry;
-        private readonly IObjectFactory _factory;
+        private readonly IDependencyResolver _factory;
 
-        public PermanentlyTypedObjectService(IPermanentlyTypedRegistry registry, IObjectFactory factory)
+        public PermanentlyTypedObjectService(IPermanentlyTypedRegistry registry, IDependencyResolver factory)
         {
             _registry = registry;
             _factory = factory;

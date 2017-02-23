@@ -53,7 +53,7 @@ namespace PDEventStore.Store.Tests
         public Guid ThirdTypeId = new Guid("{00000000-0000-0000-0000-000000000003}");
         public PermanentlyTypedObjectServiceTest()
         {
-            var factory = Substitute.For<IObjectFactory>();
+            var factory = Substitute.For<IDependencyResolver>();
             factory.GetAllInstances(Arg.Is(typeof(IReplace<FirstEvent>))).Returns(new List<object>{ new SecondEvent() } );
             factory.GetAllInstances(Arg.Is(typeof(IReplace<SecondEvent>))).Returns(new List<object> { new ThirdEvent() });
             factory.GetAllInstances(Arg.Is(typeof(ThirdEvent))).Returns(new List<object> { new ThirdEvent() });

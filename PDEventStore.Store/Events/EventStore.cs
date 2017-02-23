@@ -46,9 +46,105 @@
         public void Commit(IList<IEvent> events, 
             IList<IAggregate> snapshots = null, 
             IList<IProcess> processes = null, 
-            IList<AggregateConstraint> constraints = null)
+            IList<AggregateVersion> constraints = null)
         {
-            //_engine.Commit()
+            //prepare events
+            var eventRecords = new List<EventRecord>();
+            foreach(var @event in events)
+            {
+                var er = CreateEventRecordFromEvent(@event);
+                var backup = @event.BackupAndClearTransientState();
+                var payload = _engine.SerializePayload(@event);
+                @event.RestoreTransientInfoFromBackup(backup);
+                er.Payload = payload;
+                eventRecords.Add(er);
+            }
+
+            //snapshots
+            var snapshotRecords = new List<SnapshotRecord>();
+            if(snapshots != null)
+            {
+                foreach(var s in snapshots)
+                {
+                    var sr = new SnapshotRecord();
+                    sr.AggregateVersion = s.Version.Version;
+                    sr.AggregateId = s.Version.Id;
+                    sr.AggregateTypeId = _service.GetPermanentTypeIdForType(s.GetType());
+                    var backup = s.BackupAndClearTransientState();
+                    var payload = _engine.SerializePayload(s);
+                    s.RestoreTransientInfoFromBackup(backup);
+                    sr.State = payload;
+                    snapshotRecords.Add(sr);
+
+                }
+            }
+
+            //processes
+            var processRecords = new List<ProcessRecord>();
+            if(processes != null)
+            {
+                foreach(var p in processes)
+                {
+                    var pr = new ProcessRecord();
+
+                    pr.ProcessId = p.Id;
+                    pr.ProcessTypeId = _service.GetPermanentTypeIdForType(p.GetType());
+                    var backup = p.BackupAndClearTransientState();
+                    var payload = _engine.SerializePayload(p);
+                    p.RestoreTransientInfoFromBackup(backup);
+                    pr.State = payload;
+                    processRecords.Add(pr);
+                }
+            }
+
+            //attempt commit
+            while(true)
+            {
+                //setup event store version for event records
+                var initialStoreVersion = StoreVersion;
+                var ver = initialStoreVersion;
+                foreach(var er in eventRecords)
+                {
+                    ver++;
+                    er.StoreVersion = ver;
+                }
+                //call persistence layer
+                try
+                {
+                    _engine.Commit(eventRecords, snapshotRecords, processRecords, constraints);
+                }
+                catch(EventStoreConcurrencyViolationException ex)
+                {
+                    //warn and re-try attempt
+                    if(Logger.IsWarnEnabled)
+                    {
+                        Logger.Warn(ex);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    if(Logger.IsFatalEnabled)
+                    {
+                        Logger.Fatal(ex);
+                    }
+                    throw;
+                }
+                //update Store Version on the Events
+                foreach(var @event in events)
+                {
+                    initialStoreVersion++;
+                    @event.StoreVersion = initialStoreVersion;
+                }
+                if(Logger.IsDebugEnabled)
+                {
+                    if(Logger.IsInfoEnabled)
+                    {
+                        Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes: {2}, Constraints validated: {3}. Final store version: {4}",
+                            eventRecords.Count, snapshotRecords.Count, processRecords.Count, constraints?.Count ?? 0, initialStoreVersion);
+                    }
+                }
+            }
+
         }
 
         public long GetSnapshotVersion(Guid aggregateId)
@@ -116,18 +212,18 @@
             {
                 var snapshotRecord = _engine.GetSnapshot(aggregateId);
                 var type = _service.LookupTypeByPermanentTypeId(snapshotRecord.AggregateTypeId);
-                aggregate = (IAggregate)_engine.DeserializePayload(snapshotRecord.Payload, type);
-                aggregate.Id = new AggregateVersion(aggregateId, snapshotRecord.AggregateVersion);
+                aggregate = (IAggregate)_engine.DeserializePayload(snapshotRecord.State, type);
+                aggregate.Version = new AggregateVersion(aggregateId, snapshotRecord.AggregateVersion);
                 aggregate = _service.UpgradeObject<IAggregate>(aggregate);
-                startingVersion = aggregate.Id.Version;
+                startingVersion = aggregate.Version.Version + 1;
             }
             catch (SnapshotNotFoundException)
             {
                 aggregate = _service.CreateObject<T>(typeof(T));
-                aggregate.Id = new AggregateVersion(aggregateId, 0);
+                aggregate.Version = new AggregateVersion(aggregateId, 0);
             }
             //load events
-            var events = GetEvents(aggregateId, aggregate.Id.Version);
+            var events = GetEvents(aggregateId, aggregate.Version.Version);
             aggregate.LoadFromHistory(events);
             if(Logger.IsDebugEnabled)
             {
@@ -167,7 +263,7 @@
             var result = new List<IEvent>();
             foreach(var er in eventRecords)
             {
-                var type = _service.LookupTypeByPermanentTypeId(er.EventFinalTypeIdGuid ?? er.EventTypeId);
+                var type = _service.LookupTypeByPermanentTypeId(er.EventFinalTypeId ?? er.EventTypeId);
                 var e = (IEvent)_engine.DeserializePayload(er.Payload, type);
                 InitEventFromEventRecord(e, er);
                 e = _service.UpgradeObject<IEvent>(e);
@@ -176,36 +272,50 @@
             return result;
         }
 
-        private EventRecord CreateEventRecordFromEvent ( IEvent @event, long storeVersion )
+        private EventRecord CreateEventRecordFromEvent ( IEvent @event )
         {
-
             var er = new EventRecord();
             er.AggregateId = @event.SourceAggregateVersion.Id;
             er.AggregateVersion = @event.SourceAggregateVersion.Version;
 
-            Type type = _service.LookupTypeByPermanentTypeId(@event.SourceAggregateTypeId);
-            type = _service.LookupBaseTypeForPermanentType(type);
-            Guid typeId = _service.GetPermanentTypeIdForType(type);
-            er.AggregateTypeId = typeId;
-            if(typeId != er.AggregateTypeId)
+            var finalType = _service.LookupTypeByPermanentTypeId(@event.SourceAggregateTypeId);
+            var baseType = _service.LookupBaseTypeForPermanentType(finalType);
+            var baseTypeId = _service.GetPermanentTypeIdForType(baseType);
+            var finalTypeId = @event.SourceAggregateTypeId;
+            er.AggregateTypeId = baseTypeId;
+            if(baseTypeId != finalTypeId)
             {
-                er.AggregateFinalTypeId = @event.SourceAggregateTypeId;
+                er.AggregateFinalTypeId = finalTypeId;
             }
 
             er.OriginSystemId = @event.Origin.SystemId;
             er.OriginUserId = @event.Origin.UserId;
 
-            type = _service.LookupBaseTypeForPermanentType(@event.GetType());
-            typeId = _service.GetPermanentTypeIdForType(type);
-            er.EventTypeId = typeId;
-            if(typeId != er.EventTypeId)
+            baseType = _service.LookupBaseTypeForPermanentType(@event.GetType());
+            baseTypeId = _service.GetPermanentTypeIdForType(baseType);
+            finalTypeId = _service.GetPermanentTypeIdForType(@event.GetType());
+            er.EventTypeId = baseTypeId;
+            if(baseTypeId != finalTypeId)
             {
-                er.EventFinalTypeIdGuid = _service.GetPermanentTypeIdForType(@event.GetType()); ;
+                er.EventFinalTypeId = finalTypeId;
             }
             er.EventTimestamp = @event.Timestapm;
 
-            er.StoreVersion = storeVersion;
             er.ProcessId = @event.ProcessId;
+
+            //store version will be later
+            er.StoreVersion = 0;
+
+            //setup key
+            if(string.IsNullOrWhiteSpace(@event.AggregateKey))
+            {
+                er.Key = er.AggregateId.ToString() + '.' + er.AggregateVersion.ToString();
+            }
+            else
+            {
+                er.Key = @event.AggregateKey + ':' + er.AggregateTypeId.ToString();
+            }
+
 
 
             return er;
@@ -219,82 +329,12 @@
             @event.StoreVersion = record.StoreVersion;
             @event.Timestapm = record.EventTimestamp;
             @event.SourceAggregateTypeId = record.AggregateFinalTypeId ?? record.AggregateTypeId;
+
+            //restore aggregate key
+            var pos = record.Key.LastIndexOf(":");
+            @event.AggregateKey = pos < 0 ? null : record.Key.Substring(0, pos);
+
             return @event;
         }
-
-    //    private T CreateObjectBase<T>(Guid permanentTypeId)
-    //    {
-    //        var type = _service.LookupTypeByPermanentTypeId(permanentTypeId);
-    //        var e = _factory.GetInstances(type).Cast<T>().ToList();
-    //        if(e.Count == 0)
-    //        {
-    //            var ex = new RuntimeTypeInstancesNotFoundException(type);
-    //            Logger.Fatal(ex);
-    //            throw ex;
-    //        }
-    //        if(e.Count > 1)
-    //        {
-    //            var ex = new MultipleTypeInstancesException(type, e.Count);
-    //            Logger.Fatal(ex);
-    //            throw ex;
-    //        }
-    //        return  e[0];
-    //    }
-
-    //    private T ReplaceObject<T>(T obj)
-    //    {
-    //        //upgrade object
-    //        var continueUpgrade = true;
-    //        while(continueUpgrade)
-    //        {
-    //            var replacerType = _factory.BuidGenericType(typeof(IReplace<>), obj.GetType());
-    //            var replacers = _factory.GetInstances(replacerType);
-    //            if(replacers.Count > 1)
-    //            {
-    //                var ex = new MultipleTypeInstancesException(replacerType, replacers.Count);
-    //                Logger.Fatal(ex);
-    //                throw ex;
-    //            }
-    //            if(replacers.Count == 0)
-    //            {
-    //                continueUpgrade = false;
-    //            }
-    //            else
-    //            {
-    //                var replacer = replacers[0];
-    //                if(Logger.IsDebugEnabled)
-    //                {
-    //                    Logger.Debug("Replacer of type {0} is loading from type {1}", replacer.GetType(), obj.GetType());
-    //                }
-    //                if(!(replacer is T))
-    //                {
-    //                    var ex = new ReplacerMustBeOfTheSameBaseTypeException(typeof(T), replacer.GetType());
-    //                    Logger.Fatal(ex);
-    //                    throw ex;
-    //                }
-    //                obj = (T)replacer.AsDynamic().InitFromObsolete(obj);
-    //            }
-    //        }
-
-    //        return obj;
-    //    }
-
-    //    private T CreateObject<T>(Guid permanentTypeId, 
-    //        object payload = null, 
-    //        Func<T, Type> getPayloadType = null, 
-    //        Action<T, object> setPayloadAction = null)
-    //    {
-    //        var obj = CreateObjectBase<T>(permanentTypeId);
-    //        //set payload
-    //        if (payload != null)
-    //        {
-    //            var payloadType = getPayloadType(obj);
-    //            var decodedPayload = _engine.DeserializePayload(payload, payloadType);
-    //            setPayloadAction(obj, decodedPayload);
-    //        }
-    //        obj = ReplaceObject<T>(obj);
-    //        return obj;
-    //    }
-
     }
 }

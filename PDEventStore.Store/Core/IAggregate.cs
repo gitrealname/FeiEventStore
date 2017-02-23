@@ -6,7 +6,7 @@ namespace PDEventStore.Store.Core
 
     public interface IAggregate : IEventEmitter, IPermanentlyTyped, IEventStoreSerializable
     {
-        AggregateVersion Id { get; set; }
+        AggregateVersion Version { get; set; }
 
         void LoadFromHistory(IList<IEvent> history);
     }

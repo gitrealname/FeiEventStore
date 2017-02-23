@@ -18,21 +18,17 @@ namespace PrototypeValidator
         public object InitFromObsolete(Event1 obsoleteObject) { return this; }
     }
 
-    public interface IMyObjectFactory
-    {
-        IEnumerable<T> GetInstances<T>(Type type);
-    }
-
-    public class LightinjectObjectFactory : IMyObjectFactory
+    public class LightinjectObjectFactory : IDependencyResolver
     {
         private readonly IServiceFactory _factory;
         public LightinjectObjectFactory(IServiceFactory factory)
         {
             _factory = factory;
         }
-        public IEnumerable<T> GetInstances<T>(Type type)
+
+        public IEnumerable<object> GetAllInstances(Type type)
         {
-            var result = _factory.GetAllInstances(type).Cast<T>();
+            var result = _factory.GetAllInstances(type);
             return result;
         }
     }
@@ -72,10 +68,14 @@ namespace PrototypeValidator
 
             //although it does all the job, it is very sensitive to EnableVariance flag.
             //when it is true we will be getting multiple instances when only one is expected! 
-            //container.RegisterAssembly(typeof(Event1).Assembly);
+            container.RegisterAssembly(typeof(IMyType).Assembly, (serviceType, ImplementingType) =>
+            {
+                Logger.Debug("Registering: service type {0}; implementing type {1}", serviceType.Name, ImplementingType.Name);
+                return true;
+            });
             container.Register<IPermanentlyTypedObjectService, PermanentlyTypedObjectService>();
             container.Register<IPermanentlyTypedRegistry, Registry>();
-            container.Register<IMyObjectFactory>((factory) => new LightinjectObjectFactory(factory));
+            container.Register<IDependencyResolver>((factory) => new LightinjectObjectFactory(factory));
 
             foreach(var type in typeof(Event1).Assembly.GetTypes())
             {
@@ -95,8 +95,8 @@ namespace PrototypeValidator
             var event2Replacers = container.GetAllInstances(event2ReplacerType);
             var svc = container.GetAllInstances<IPermanentlyTypedObjectService>();
 
-            var myFactory = container.GetInstance<IMyObjectFactory>();
-            var event1Replacers2 = myFactory.GetInstances<IMyType>(event1ReplacerType);
+            var myFactory = container.GetInstance<IDependencyResolver>();
+            var event1Replacers2 = myFactory.GetAllInstances(event1ReplacerType).Cast<IMyType> ();
 
             Logger.Error("Done.");
 

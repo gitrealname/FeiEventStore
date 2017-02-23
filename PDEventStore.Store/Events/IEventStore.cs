@@ -28,7 +28,7 @@
         void Commit(IList<IEvent> events,
             IList<IAggregate> snapshots = null,
             IList<IProcess> processes = null,
-            IList<AggregateConstraint> constraints = null);
+            IList<AggregateVersion> constraints = null);
 
         /// <summary>
         /// Get the events for given aggregate. 

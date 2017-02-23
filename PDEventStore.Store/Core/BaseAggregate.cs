@@ -17,7 +17,7 @@
 
         protected TransientInfo TransientState;
 
-        public AggregateVersion Id
+        public AggregateVersion Version
         {
             get
             {
@@ -35,12 +35,12 @@
         /// <value>
         /// The next event version.
         /// </value>
-        protected long NextEventVersion => Id.Version + TransientState.Changes.Count + 1;
+        protected long NextEventVersion => Version.Version + TransientState.Changes.Count + 1;
 
         public IReadOnlyList<IEvent> FlushUncommitedEvents()
         {
             var changes = TransientState.Changes.ToArray();
-            Id = new AggregateVersion(Id.Id, Id.Version + changes.Length);
+            Version = new AggregateVersion(Version.Id, Version.Version + changes.Length);
             TransientState.Changes.Clear();
             return changes;
         }
@@ -64,22 +64,22 @@
             //    this.Version = snapshot.AggregateVersion.Version;
             //}
 
-            long ver = Id.Version;
+            long ver = Version.Version;
             foreach(var e in history)
             {
                 if(e.SourceAggregateVersion.Version != ver + 1)
                 {
                     throw new Exception(string.Format("Events are out of order for aggregate id {0}; Previous version: {1}, Next version: {2}",
-                        e.SourceAggregateVersion.Id, Id, e.SourceAggregateVersion.Version));
+                        e.SourceAggregateVersion.Id, Version, e.SourceAggregateVersion.Version));
                 }
-                if(e.SourceAggregateVersion.Id != Id.Id)
+                if(e.SourceAggregateVersion.Id != Version.Id)
                 {
-                    throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Id.Id, e.SourceAggregateVersion.Id));
+                    throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Version.Id, e.SourceAggregateVersion.Id));
                 }
                 RaiseEvent(e, false);
                 ver++;
             }
-            Id = new AggregateVersion(Id.Id, Id.Version + TransientState.Changes.Count);
+            Version = new AggregateVersion(Version.Id, Version.Version + TransientState.Changes.Count);
             TransientState.Changes.Clear();
         }
 
@@ -87,9 +87,9 @@
         {
             if(isNew)
             {
-                var id = new AggregateVersion(Id.Id, NextEventVersion);
+                var id = new AggregateVersion(Version.Id, NextEventVersion);
                 @event.SourceAggregateVersion = id;
-                Id = id;
+                Version = id;
             }
             if(TransientState.EventMapper != null)
             {

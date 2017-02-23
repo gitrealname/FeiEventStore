@@ -50,8 +50,9 @@
   <ItemGroup>
     <Compile Include="Core\AggregateVersion.cs" />
     <Compile Include="Core\BaseAggregate.cs" />
+    <Compile Include="Core\BaseEvent.cs" />
     <Compile Include="Core\IEventStoreSerializable.cs" />
-    <Compile Include="Core\IObjectFactory.cs" />
+    <Compile Include="Core\IDependencyResolver.cs" />
     <Compile Include="Core\IReplace.cs" />
     <Compile Include="Core\PermanentTypeAttribute.cs" />
     <Compile Include="Core\IAggregate.cs" />
@@ -69,7 +70,6 @@
     <Compile Include="Events\MustHavePermanentTypeAttributeException.cs" />
     <Compile Include="Events\PermanentTypeImplementationNotFoundException.cs" />
     <Compile Include="Events\EventStore.cs" />
-    <Compile Include="Persistence\AggregateConstraint.cs" />
     <Compile Include="Persistence\AggregateConstraintViolationException.cs" />
     <Compile Include="Persistence\AggregatePrimaryKeyViolationException.cs" />
     <Compile Include="Persistence\ProcessRecord.cs" />

@@ -1,4 +1,6 @@
-﻿namespace PDEventStore.Store.Persistence
+﻿using PDEventStore.Store.Core;
+
+namespace PDEventStore.Store.Persistence
 {
     using System;
     using System.Collections.Generic;
@@ -12,7 +14,6 @@
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private Dictionary<Guid, List<Tuple<EventRecord, int>>> _eventsByAggregateId;
-        private Dictionary<Guid, Tuple<int, int>> _eventsPositionByCommitId;
         private List<EventRecord> _events;
 
         private Dictionary<Guid, SnapshotRecord> _snapshotByAggregateId;
@@ -59,7 +60,6 @@
 
             _events = new List<EventRecord>();
             _eventsByAggregateId = new Dictionary<Guid, List<Tuple<EventRecord, int>>>();
-            _eventsPositionByCommitId = new Dictionary<Guid, Tuple<int, int>>();
             _snapshotByAggregateId = new Dictionary<Guid, SnapshotRecord>();
             _processByProcessId = new Dictionary<Guid, ProcessRecord>();
             _primaryKey = new HashSet<string>();
@@ -68,7 +68,7 @@
         public long Commit(IList<EventRecord> events,
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
-            IList<AggregateConstraint> constraints = null)
+            IList<AggregateVersion> constraints = null)
         {
             var commitId = Guid.NewGuid();
             dynamic stats = new {
@@ -92,10 +92,10 @@
                 {
                     foreach(var c in constraints)
                     {
-                        var currentVersion = GetAggregateVersion(c.AggregateId);
-                        if(currentVersion != c.ExpectedVersion)
+                        var currentVersion = GetAggregateVersion(c.Id);
+                        if(currentVersion != c.Version)
                         {
-                            var ex = new AggregateConstraintViolationException(c.AggregateId, c.ExpectedVersion, currentVersion);
+                            var ex = new AggregateConstraintViolationException(c.Id, c.Version, currentVersion);
                             Logger.Warn(ex);
                             throw ex;
                         }
@@ -106,9 +106,10 @@
                 //check primary key violation
                 foreach(var e in events)
                 {
-                    if ( !_primaryKey.Add ( e.Key ) )
+                    var key = e.Key;
+                    if ( !_primaryKey.Add ( key ) )
                     {
-                        var ex = new AggregatePrimaryKeyViolationException ( e.AggregateId, e.Key );
+                        var ex = new AggregatePrimaryKeyViolationException ( e.AggregateId, e.AggregateTypeId, e.Key);
                         if ( Logger.IsWarnEnabled )
                         {
                             Logger.Warn ( ex );

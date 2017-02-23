@@ -1,4 +1,6 @@
-﻿namespace PDEventStore.Store.Persistence
+﻿using PDEventStore.Store.Core;
+
+namespace PDEventStore.Store.Persistence
 {
     using System;
     using System.Collections.Generic;
@@ -13,8 +15,8 @@
     ///         This is required to perform lookup and load an Aggregate. 
     ///         Violation of this index is not expected as all collisions are handled using #1.
     ///         
-    ///     3. It has to be an unique index on <see cref="EventRecord.Key"/>. 
-    ///        Violation of this index must produce <see cref="AggregatePrimaryKeyViolationException"/>
+    ///     3. It has to be an unique index on <see cref="EventRecord.Key"/>.
+    ///        Violation of this index must produce <see cref="AggregatePrimaryKeyViolationException"/>.
     /// 
     ///     4. It has to be a non-unique index on <see cref="EventRecord.EventTimestamp"/> to accommodate time related events lookup 
     /// 
@@ -63,7 +65,7 @@
         long Commit(IList<EventRecord> events,
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
-            IList<AggregateConstraint> constraints = null);
+            IList<AggregateVersion> constraints = null);
 
         /// <summary>
         /// Serializes the payload.
