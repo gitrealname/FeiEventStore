@@ -2,7 +2,7 @@
 {
     using System;
 
-    public class BaseEvent : IEvent
+    public abstract class BaseEvent : IEvent
     {
         protected class HeaderInfo
         {
@@ -36,7 +36,7 @@
         public string AggregateKey { get { return Header.AggregateKey; } set { Header.AggregateKey = value; } }
         public DateTimeOffset Timestapm { get { return Header.Timestapm; } set { Header.Timestapm = value; } }
 
-        public BaseEvent()
+        protected BaseEvent()
         {
             Header.Timestapm = DateTimeOffset.UtcNow;
         }

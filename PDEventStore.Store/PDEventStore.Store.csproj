@@ -51,6 +51,7 @@
     <Compile Include="Core\AggregateVersion.cs" />
     <Compile Include="Core\BaseAggregate.cs" />
     <Compile Include="Core\BaseEvent.cs" />
+    <Compile Include="Core\IEventRepeater.cs" />
     <Compile Include="Core\IEventStoreSerializable.cs" />
     <Compile Include="Core\IDependencyResolver.cs" />
     <Compile Include="Core\IReplace.cs" />
