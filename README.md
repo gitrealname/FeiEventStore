@@ -1,4 +1,4 @@
-# PDEventStore
+# FeiEventStore
 
 ## Desing Notes and ideas
 
