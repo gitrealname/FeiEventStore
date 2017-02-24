@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using LightInject;
-using FeiEventStore.Store.Core;
-using FeiEventStore.Store.Events;
-using FeiEventStore.Store.Ioc.LightInject;
+using FeiEventStore.Core;
+using FeiEventStore.Events;
+using FeiEventStore.Ioc.LightInject;
 
 namespace PrototypeValidator
 {
