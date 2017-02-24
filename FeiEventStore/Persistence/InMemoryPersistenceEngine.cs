@@ -1,6 +1,6 @@
-﻿using FeiEventStore.Store.Core;
+﻿using FeiEventStore.Core;
 
-namespace FeiEventStore.Store.Persistence
+namespace FeiEventStore.Persistence
 {
     using System;
     using System.Collections.Generic;
