@@ -4,7 +4,7 @@ using NSubstituteAutoMocker;
 
 namespace PDEventStore.Store.Tests
 {
-    public class InMemoryPersistenceEngineTest
+    public class EventStoreTest
     {
 
         [Fact]

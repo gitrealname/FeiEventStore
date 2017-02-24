@@ -4,21 +4,23 @@ namespace PDEventStore.Store.Core
 {
     using System.Collections.Generic;
 
-    public interface IEventEmitter
+    public interface IMessageEmitter<TMessage> where TMessage : IMessage
     {
         /// <summary>
-        /// Flushes the uncommited events.
+        /// Flushes the uncommitted events.
         /// </summary>
         /// <returns></returns>
-        IReadOnlyList<IEvent> FlushUncommitedEvents();
+        IList<TMessage> FlushUncommitedMessages();
 
         /// <summary>
         /// Whenever event emitter raises an event, it should be passed into mapper, (unless it is not set or null).
         /// so that external coordinator may adjust an event using information that otherwise is not available to the event emitter.
         /// For example: mapper will be responsible to set Origin, ProcessId etc
         /// </summary>
-        /// <param name="mapper">The mapper.</param>
-        void SetEventMapper(Func<IEvent, IEvent> mapper);
+        /// <value>
+        /// The event mapper.
+        /// </value>
+        Func<TMessage, TMessage> MessageMapper { get; set; }
     }
 
 

@@ -10,8 +10,6 @@
     /// <summary>
     /// Event store implementation.
     /// Important notes: Aggregates, Event and Processes must have default constructor.
-    /// Todo: event primary key handling!
-    /// Todo: commit!
     /// Todo: when loading from history, only upgrade object when FinalAggregateType or FinalEventType not null
     /// </summary>
     /// <seealso cref="PDEventStore.Store.Events.IEventStore" />
@@ -27,21 +25,9 @@
             _engine = engine;
             _service = service;
         }
-        public long DispatchedStoreVersion
-        {
-            get
-            {
-                return _engine.DispatchedStoreVersion;
-            }
-        }
+        public long DispatchedStoreVersion => _engine.DispatchedStoreVersion;
 
-        public long StoreVersion
-        {
-            get
-            {
-                return _engine.StoreVersion;
-            }
-        }
+        public long StoreVersion => _engine.StoreVersion;
 
         public void Commit(IList<IEvent> events, 
             IList<IAggregate> snapshots = null, 
@@ -53,9 +39,7 @@
             foreach(var @event in events)
             {
                 var er = CreateEventRecordFromEvent(@event);
-                var backup = @event.BackupAndClearTransientState();
-                var payload = _engine.SerializePayload(@event);
-                @event.RestoreTransientInfoFromBackup(backup);
+                var payload = _engine.SerializePayload(@event.Payload);
                 er.Payload = payload;
                 eventRecords.Add(er);
             }
@@ -69,10 +53,8 @@
                     var sr = new SnapshotRecord();
                     sr.AggregateVersion = s.Version.Version;
                     sr.AggregateId = s.Version.Id;
-                    sr.AggregateTypeId = _service.GetPermanentTypeIdForType(s.GetType());
-                    var backup = s.BackupAndClearTransientState();
-                    var payload = _engine.SerializePayload(s);
-                    s.RestoreTransientInfoFromBackup(backup);
+                    sr.StateFinalTypeId = _service.GetPermanentTypeIdForType(s.GetType());
+                    var payload = _engine.SerializePayload(s.State);
                     sr.State = payload;
                     snapshotRecords.Add(sr);
 
@@ -88,10 +70,8 @@
                     var pr = new ProcessRecord();
 
                     pr.ProcessId = p.Id;
-                    pr.ProcessTypeId = _service.GetPermanentTypeIdForType(p.GetType());
-                    var backup = p.BackupAndClearTransientState();
-                    var payload = _engine.SerializePayload(p);
-                    p.RestoreTransientInfoFromBackup(backup);
+                    pr.StateFinalTypeId = _service.GetPermanentTypeIdForType(p.GetType());
+                    var payload = _engine.SerializePayload(p.State);
                     pr.State = payload;
                     processRecords.Add(pr);
                 }
@@ -211,19 +191,23 @@
             try
             {
                 var snapshotRecord = _engine.GetSnapshot(aggregateId);
-                var type = _service.LookupTypeByPermanentTypeId(snapshotRecord.AggregateTypeId);
-                aggregate = (IAggregate)_engine.DeserializePayload(snapshotRecord.State, type);
-                aggregate.Version = new AggregateVersion(aggregateId, snapshotRecord.AggregateVersion);
-                aggregate = _service.UpgradeObject<IAggregate>(aggregate);
+                var type = _service.LookupTypeByPermanentTypeId(snapshotRecord.StateFinalTypeId);
+                var state = (IState)_engine.DeserializePayload(snapshotRecord.State, type);
+                state = _service.UpgradeObject<IState>(state);
+
+                var aggregateType = typeof(IAggregate<>).MakeGenericType(state.GetType());
+                aggregate = _service.CreateObject<IAggregate>(aggregateType);
+                aggregate.State = state;
                 startingVersion = aggregate.Version.Version + 1;
+                aggregate.Version = new AggregateVersion(aggregateId, snapshotRecord.AggregateVersion);
             }
             catch (SnapshotNotFoundException)
             {
-                aggregate = _service.CreateObject<T>(typeof(T));
+                aggregate = _service.CreateObject<IAggregate>(typeof(T));
                 aggregate.Version = new AggregateVersion(aggregateId, 0);
             }
             //load events
-            var events = GetEvents(aggregateId, aggregate.Version.Version);
+            var events = GetEvents(aggregateId, startingVersion);
             aggregate.LoadFromHistory(events);
             if(Logger.IsDebugEnabled)
             {
@@ -241,14 +225,20 @@
             try
             {
                 var processRecord = _engine.GetProcess(processId);
-                var type = _service.LookupTypeByPermanentTypeId(processRecord.ProcessTypeId);
-                process = (IProcess)_engine.DeserializePayload(processRecord.State, type);
-                process = _service.UpgradeObject<IProcess>(process);
+                var type = _service.LookupTypeByPermanentTypeId(processRecord.StateFinalTypeId);
+                var state = (IState)_engine.DeserializePayload(processRecord.State, type);
+                state = _service.UpgradeObject<IState>(state);
+
+                var processType = typeof(IProcess<>).MakeGenericType(state.GetType());
+                process = _service.CreateObject<IProcess>(processType);
+                process.State = state;
             }
             catch(ProcessNotFoundException)
             {
                 process = _service.CreateObject<T>(typeof(T));
+                throw;
             }
+            process.Id = processId;
             if(Logger.IsDebugEnabled)
             {
                 Logger.Debug("Loaded process id {0} runtime type {1}", processId, process.GetType().FullName);
@@ -263,10 +253,13 @@
             var result = new List<IEvent>();
             foreach(var er in eventRecords)
             {
-                var type = _service.LookupTypeByPermanentTypeId(er.EventFinalTypeId ?? er.EventTypeId);
-                var e = (IEvent)_engine.DeserializePayload(er.Payload, type);
+                var type = _service.LookupTypeByPermanentTypeId(er.PayloadFinalTypeId ?? er.PayloadBaseTypeId);
+                var payload = (IState)_engine.DeserializePayload(er.Payload, type);
+                payload = _service.UpgradeObject<IState>(payload);
+                var eventType = typeof(IEvent<>).MakeGenericType(payload.GetType());
+                var e = _service.CreateObject<IEvent>(eventType);
+                e.Payload = payload;
                 InitEventFromEventRecord(e, er);
-                e = _service.UpgradeObject<IEvent>(e);
                 result.Add(e);
             }
             return result;
@@ -282,10 +275,10 @@
             var baseType = _service.LookupBaseTypeForPermanentType(finalType);
             var baseTypeId = _service.GetPermanentTypeIdForType(baseType);
             var finalTypeId = @event.SourceAggregateTypeId;
-            er.AggregateTypeId = baseTypeId;
+            er.StateBaseTypeId = baseTypeId;
             if(baseTypeId != finalTypeId)
             {
-                er.AggregateFinalTypeId = finalTypeId;
+                er.StateFinalTypeId = finalTypeId;
             }
 
             er.OriginSystemId = @event.Origin.SystemId;
@@ -294,10 +287,10 @@
             baseType = _service.LookupBaseTypeForPermanentType(@event.GetType());
             baseTypeId = _service.GetPermanentTypeIdForType(baseType);
             finalTypeId = _service.GetPermanentTypeIdForType(@event.GetType());
-            er.EventTypeId = baseTypeId;
+            er.PayloadBaseTypeId = baseTypeId;
             if(baseTypeId != finalTypeId)
             {
-                er.EventFinalTypeId = finalTypeId;
+                er.PayloadFinalTypeId = finalTypeId;
             }
             er.EventTimestamp = @event.Timestapm;
 
@@ -313,10 +306,8 @@
             }
             else
             {
-                er.Key = @event.AggregateKey + ':' + er.AggregateTypeId.ToString();
+                er.Key = @event.AggregateKey + ':' + er.StateBaseTypeId.ToString();
             }
-
-
 
             return er;
         }
@@ -328,7 +319,7 @@
             @event.SourceAggregateVersion = new AggregateVersion(record.AggregateId, record.AggregateVersion);
             @event.StoreVersion = record.StoreVersion;
             @event.Timestapm = record.EventTimestamp;
-            @event.SourceAggregateTypeId = record.AggregateFinalTypeId ?? record.AggregateTypeId;
+            @event.SourceAggregateTypeId = record.StateFinalTypeId ?? record.StateBaseTypeId;
 
             //restore aggregate key
             var pos = record.Key.LastIndexOf(":");

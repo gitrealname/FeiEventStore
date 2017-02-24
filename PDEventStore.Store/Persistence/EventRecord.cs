@@ -41,7 +41,7 @@
 
         /// <summary>
         /// Gets or sets the Aggregate Key. 
-        /// It can be any string that in combination with <paramref name="AggregateTypeId"/> create 
+        /// It can be any string that in combination with <paramref name="StateBaseTypeId"/> create 
         /// globally unique Key.
         /// </summary>
         /// <value>
@@ -56,9 +56,9 @@
         /// <value>
         /// The aggregate type identifier.
         /// </value>
-        public Guid AggregateTypeId { get; set; }
+        public Guid StateBaseTypeId { get; set; }
 
-        public Guid? AggregateFinalTypeId { get; set; }
+        public Guid? StateFinalTypeId { get; set; }
 
         public long AggregateVersion { get; set; }
 
@@ -69,9 +69,9 @@
         /// <value>
         /// The event type identifier.
         /// </value>
-        public Guid EventTypeId { get; set; }
+        public Guid PayloadBaseTypeId { get; set; }
 
-        public Guid? EventFinalTypeId { get; set; }
+        public Guid? PayloadFinalTypeId { get; set; }
 
         /// <summary>
         /// Gets or sets the event Creation Timestamp.

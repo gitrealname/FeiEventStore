@@ -12,30 +12,25 @@
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly IPermanentlyTypedRegistry _registry;
-        private readonly IDependencyResolver _factory;
+        private readonly IObjectFactory _factory;
 
-        public PermanentlyTypedObjectService(IPermanentlyTypedRegistry registry, IDependencyResolver factory)
+        public PermanentlyTypedObjectService(IPermanentlyTypedRegistry registry, IObjectFactory factory)
         {
             _registry = registry;
             _factory = factory;
         }
-        public T CreateObject<T>(Type type) where T : IPermanentlyTyped
+        public T CreateObject<T>(Type type)
         {
-            var e0 = _factory.GetAllInstances(type);
-            var e  = e0.Cast<T>().ToList();
-            if(e.Count == 0)
+            var obj = _factory.CreateInstance(type); //can throw InvalidOperationException or any other that is Ioc container specific.
+            //cast if instance found
+            var result = (T)obj;
+            if(result == null)
             {
                 var ex = new RuntimeTypeInstancesNotFoundException(type);
                 Logger.Fatal(ex);
                 throw ex;
             }
-            if(e.Count > 1)
-            {
-                var ex = new MultipleTypeInstancesException(type, e.Count);
-                Logger.Fatal(ex);
-                throw ex;
-            }
-            return (T)e[0];
+            return (T)result;
         }
 
         public Guid GetPermanentTypeIdForType(Type type)
@@ -77,13 +72,13 @@
             }
             while(true)
             {
-                var replacerType = BuildGenericType(typeof(IReplace<>), originalObject.GetType());
+                var replacerType = typeof(IReplace<>).MakeGenericType(originalObject.GetType());
                 T replacer;
                 try
                 {
                     replacer = CreateObject<T>(replacerType);
                 }
-                catch(RuntimeTypeInstancesNotFoundException)
+                catch(Exception)
                 {
                     return (T)originalObject;
                 }
@@ -92,11 +87,12 @@
                 {
                     Logger.Debug("Replacer of type {0} is loading from type {1}", replacer.GetType(), originalObject.GetType());
                 }
-                originalObject = (T)replacer.AsDynamic().InitFromObsolete(originalObject);
-                if(finalType == originalObject.GetType())
+                replacer.AsDynamic().InitFromObsolete(originalObject);
+                if(finalType == replacer.GetType())
                 {
-                    return originalObject;
+                    return replacer;
                 }
+                originalObject = replacer;
             }
         }
 
@@ -113,12 +109,6 @@
                 throw ex;
             }
             return permanentTypeAttribute;
-        }
-
-        private Type BuildGenericType(Type generic, params Type[] subTypes)
-        {
-            var type = generic.MakeGenericType(subTypes);
-            return type;
         }
     }
 }

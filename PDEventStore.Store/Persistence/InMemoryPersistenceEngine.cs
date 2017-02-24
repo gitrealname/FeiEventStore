@@ -109,7 +109,7 @@ namespace PDEventStore.Store.Persistence
                     var key = e.Key;
                     if ( !_primaryKey.Add ( key ) )
                     {
-                        var ex = new AggregatePrimaryKeyViolationException ( e.AggregateId, e.AggregateTypeId, e.Key);
+                        var ex = new AggregatePrimaryKeyViolationException ( e.AggregateId, e.StateBaseTypeId, e.Key);
                         if ( Logger.IsWarnEnabled )
                         {
                             Logger.Warn ( ex );
@@ -154,7 +154,7 @@ namespace PDEventStore.Store.Persistence
                             Logger.Debug("Preparing snapshot for persistence: Aggregate Id: {0} Aggregate Version: {1}",
                                 s.AggregateId, s.AggregateVersion);
                         }
-                        _snapshotByAggregateId [ s.AggregateTypeId ] = s;
+                        _snapshotByAggregateId [ s.StateFinalTypeId ] = s;
                     }
                     stats.snapshots = snapshots.Count;
                 }

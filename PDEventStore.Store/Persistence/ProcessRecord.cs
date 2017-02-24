@@ -6,7 +6,7 @@
     {
         public Guid ProcessId { get; set; }
 
-        public Guid ProcessTypeId { get; set; }
+        public Guid StateFinalTypeId { get; set; }
 
         public object State { get; set; }
 

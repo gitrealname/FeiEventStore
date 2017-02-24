@@ -3,6 +3,7 @@ using System.Linq;
 using LightInject;
 using PDEventStore.Store.Core;
 using PDEventStore.Store.Events;
+using PDEventStore.Store.Ioc.LightInject;
 
 namespace PrototypeValidator
 {
@@ -15,29 +16,14 @@ namespace PrototypeValidator
 
     public class Event2 : IMyType, IReplace<Event1>
     {
-        public object InitFromObsolete(Event1 obsoleteObject) { return this; }
-    }
-
-    public class LightinjectObjectFactory : IDependencyResolver
-    {
-        private readonly IServiceFactory _factory;
-        public LightinjectObjectFactory(IServiceFactory factory)
-        {
-            _factory = factory;
-        }
-
-        public IEnumerable<object> GetAllInstances(Type type)
-        {
-            var result = _factory.GetAllInstances(type);
-            return result;
-        }
+        public void InitFromObsolete(Event1 obsoleteObject) { return; }
     }
 
 
     public class Event3 : IMyType, IReplace<Event1>, IReplace<Event2>
     {
-        public object InitFromObsolete(Event1 obsoleteObject) { return this; }
-        public object InitFromObsolete(Event2 obsoleteObject) { return this; }
+        public void InitFromObsolete(Event1 obsoleteObject) { return; }
+        public void InitFromObsolete(Event2 obsoleteObject) { return; }
     }
 
     class Program
@@ -56,6 +42,49 @@ namespace PrototypeValidator
         {
             Logger.Debug("Starting....");
 
+            //Prog1();
+            //Prog2();
+            Prog3();
+
+            Logger.Error("Done.");
+        }
+
+        public interface ISomething { }
+        public interface ISomething<T> : ISomething where T : class { }
+
+        public class Something1 : ISomething<Event1> { }
+
+        public class Something2 : ISomething<Event2> { }
+
+        private static void Prog2()
+        {
+            var containerOptions = new ContainerOptions();
+            var container = new LightInject.ServiceContainer(containerOptions);
+
+            container.Register<ISomething<Event1>, Something1>();
+            container.Register<ISomething<Event2>, Something2>();
+
+            var eventHandlerType = typeof(ISomething<>).MakeGenericType(typeof(Event3));
+            var factoryType = typeof(Func<>).MakeGenericType(eventHandlerType);
+            var factory = (Func<ISomething>)container.GetInstance(factoryType);
+            var eventHandler1 = factory();
+            var eventHandler2 = factory();
+            var theSame = object.ReferenceEquals(eventHandler2, eventHandler1);
+
+        }
+
+        private static object Prog3()
+        {
+            var containerOptions = new ContainerOptions();
+            var container = new LightInject.ServiceContainer(containerOptions);
+            container.Register<IObjectFactory, LightInjectObjectFactory>();
+
+
+            var factory = container.GetAllInstances<IObjectFactory>();
+            return factory;
+        }
+        private static void Prog1()
+        {
             var containerOptions = new ContainerOptions();
             containerOptions.LogFactory = (type) => {
                 return logEntry => {
@@ -63,19 +92,18 @@ namespace PrototypeValidator
                 };
             };
             containerOptions.EnableVariance = false;
-            
+
             var container = new LightInject.ServiceContainer(containerOptions);
 
             //although it does all the job, it is very sensitive to EnableVariance flag.
             //when it is true we will be getting multiple instances when only one is expected! 
-            container.RegisterAssembly(typeof(IMyType).Assembly, (serviceType, ImplementingType) =>
-            {
+            container.RegisterAssembly(typeof(IMyType).Assembly, (serviceType, ImplementingType) => {
                 Logger.Debug("Registering: service type {0}; implementing type {1}", serviceType.Name, ImplementingType.Name);
                 return true;
             });
-            container.Register<IPermanentlyTypedObjectService, PermanentlyTypedObjectService>();
             container.Register<IPermanentlyTypedRegistry, Registry>();
-            container.Register<IDependencyResolver>((factory) => new LightinjectObjectFactory(factory));
+            container.Register<IObjectFactory, LightInjectObjectFactory>();
+            container.Register<IPermanentlyTypedObjectService, PermanentlyTypedObjectService>();
 
             foreach(var type in typeof(Event1).Assembly.GetTypes())
             {
@@ -93,13 +121,14 @@ namespace PrototypeValidator
 
             var event1Replacers = container.GetAllInstances(event1ReplacerType);
             var event2Replacers = container.GetAllInstances(event2ReplacerType);
+
+            var permanentTypedRegistry = container.GetAllInstances <IPermanentlyTypedRegistry>();
+            var resolvers = container.GetAllInstances<IObjectFactory>();
             var svc = container.GetAllInstances<IPermanentlyTypedObjectService>();
 
-            var myFactory = container.GetInstance<IDependencyResolver>();
-            var event1Replacers2 = myFactory.GetAllInstances(event1ReplacerType).Cast<IMyType> ();
-
-            Logger.Error("Done.");
-
+            var myFactory = container.GetInstance<IObjectFactory>();
+            var event1Replacers2 = myFactory.GetAllInstances(event1ReplacerType).Cast<IMyType>();
+            return;
         }
     }
 }

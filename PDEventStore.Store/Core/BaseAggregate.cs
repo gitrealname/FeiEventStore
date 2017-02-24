@@ -3,31 +3,12 @@
     using System;
     using System.Collections.Generic;
 
-    public abstract class Aggregate<T> : IAggregate
+    public abstract class BaseAggregate<TState> : IAggregate<TState> where TState : IState, new()
     {
-        protected class TransientInfo
-        {
-            public readonly List<IEvent> Changes = new List<IEvent>();
+        public readonly List<IEvent> Changes = new List<IEvent>();
 
-            public AggregateVersion Id;
-
-            public Func<IEvent, IEvent> EventMapper;
-
-        }
-
-        protected TransientInfo TransientState;
-
-        public AggregateVersion Version
-        {
-            get
-            {
-                return TransientState.Id;
-            } 
-            set
-            {
-                TransientState.Id = value;
-            }
-        }
+        public Func<IEvent, IEvent> MessageMapper { get; set; }
+        public AggregateVersion Version { get; set; }
 
         /// <summary>
         /// Helper method To Calculate new Event Version
@@ -35,35 +16,18 @@
         /// <value>
         /// The next event version.
         /// </value>
-        protected long NextEventVersion => Version.Version + TransientState.Changes.Count + 1;
+        protected long NextEventVersion => Version.Version + Changes.Count + 1;
 
-        public IReadOnlyList<IEvent> FlushUncommitedEvents()
+        public IList<IEvent> FlushUncommitedMessages()
         {
-            var changes = TransientState.Changes.ToArray();
+            var changes = Changes.ToArray();
             Version = new AggregateVersion(Version.Id, Version.Version + changes.Length);
-            TransientState.Changes.Clear();
+            Changes.Clear();
             return changes;
-        }
-
-        public void SetEventMapper(Func<IEvent, IEvent> mapper)
-        {
-            TransientState.EventMapper = mapper;
         }
 
         public void LoadFromHistory(IList<IEvent> history)
         {
-            //if(snapshot != null)
-            //{
-            //    if(typeof(T) != snapshot.Payload.GetType())
-            //    {
-            //        throw new ArgumentException(string.Format("Aggregate Type: {0} doesn't match Payload Type: {1}", typeof(T).FullName, snapshot.Payload.GetType().FullName));
-            //    }
-
-            //    this.Data = (T)snapshot.Payload;
-            //    this.Id = snapshot.AggregateVersion.Id;
-            //    this.Version = snapshot.AggregateVersion.Version;
-            //}
-
             long ver = Version.Version;
             foreach(var e in history)
             {
@@ -79,8 +43,8 @@
                 RaiseEvent(e, false);
                 ver++;
             }
-            Version = new AggregateVersion(Version.Id, Version.Version + TransientState.Changes.Count);
-            TransientState.Changes.Clear();
+            Version = new AggregateVersion(Version.Id, Version.Version + Changes.Count);
+            Changes.Clear();
         }
 
         protected void RaiseEvent(IEvent @event, bool isNew = true)
@@ -91,25 +55,25 @@
                 @event.SourceAggregateVersion = id;
                 Version = id;
             }
-            if(TransientState.EventMapper != null)
+            if(MessageMapper != null)
             {
-                @event = TransientState.EventMapper(@event);
+                @event = MessageMapper(@event);
             }
             this.AsDynamic().Apply(@event);
-            TransientState.Changes.Add(@event);
+            Changes.Add(@event);
         }
 
-        public object BackupAndClearTransientState()
+        object IAggregate.State
         {
-            var backup = TransientState;
-            TransientState = null;
-            return backup;
+            get { return State; }
+            set { State = (TState)value; }
         }
 
-        public void RestoreTransientInfoFromBackup(object backup)
+        public TState State { get; set; }
+
+        protected BaseAggregate()
         {
-            TransientState = (TransientInfo)backup;
+            State = new TState();
         }
-
     }
 }

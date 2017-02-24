@@ -22,13 +22,13 @@ namespace PDEventStore.Store.Tests
         [PermanentType("{00000000-0000-0000-0000-000000000002}")]
         public class SecondEvent : ITestEvent, IReplace<FirstEvent>
         {
-            public object InitFromObsolete(FirstEvent obsoleteObject) { return this; }
+            public void InitFromObsolete(FirstEvent obsoleteObject) { return; }
         }
 
         [PermanentType("{00000000-0000-0000-0000-000000000003}")]
         public class ThirdEvent : ITestEvent, IReplace<SecondEvent>
         {
-            public object InitFromObsolete(SecondEvent obsoleteObject) { return this;  }
+            public void InitFromObsolete(SecondEvent obsoleteObject) { return;  }
         }
 
         public class PermanentlyTypedRegistry : IPermanentlyTypedRegistry
@@ -53,10 +53,10 @@ namespace PDEventStore.Store.Tests
         public Guid ThirdTypeId = new Guid("{00000000-0000-0000-0000-000000000003}");
         public PermanentlyTypedObjectServiceTest()
         {
-            var factory = Substitute.For<IDependencyResolver>();
-            factory.GetAllInstances(Arg.Is(typeof(IReplace<FirstEvent>))).Returns(new List<object>{ new SecondEvent() } );
-            factory.GetAllInstances(Arg.Is(typeof(IReplace<SecondEvent>))).Returns(new List<object> { new ThirdEvent() });
-            factory.GetAllInstances(Arg.Is(typeof(ThirdEvent))).Returns(new List<object> { new ThirdEvent() });
+            var factory = Substitute.For<IObjectFactory>();
+            factory.CreateInstance(Arg.Is(typeof(IReplace<FirstEvent>))).Returns(new SecondEvent());
+            factory.CreateInstance(Arg.Is(typeof(IReplace<SecondEvent>))).Returns(new ThirdEvent());
+            factory.CreateInstance(Arg.Is(typeof(ThirdEvent))).Returns(new ThirdEvent());
 
 
             Registry = new PermanentlyTypedRegistry();

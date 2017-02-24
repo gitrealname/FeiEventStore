@@ -22,7 +22,7 @@
 
         public long AggregateVersion { get; set; }
 
-        public Guid AggregateTypeId { get; set; }
+        public Guid StateFinalTypeId { get; set; }
 
         public object State { get; set; }
 

@@ -2,43 +2,26 @@
 {
     using System;
 
-    public abstract class BaseEvent : IEvent
+    public abstract class BaseEvent<TState> : IEvent<TState> where TState : IState, new()
     {
-        protected class HeaderInfo
+        public MessageOrigin Origin { get; set; }
+        public Guid? ProcessId { get; set; }
+        public long StoreVersion { get; set; }
+        public AggregateVersion SourceAggregateVersion { get; set; }
+        public Guid SourceAggregateTypeId { get; set; }
+        public string AggregateKey { get; set; }
+        public DateTimeOffset Timestapm { get; set; }
+        object IEvent.Payload
         {
-            public MessageOrigin Origin;
-            public Guid? ProcessId;
-            public long StoreVersion;
-            public AggregateVersion SourceAggregateVersion;
-            public Guid SourceAggregateTypeId;
-            public string AggregateKey;
-            public DateTimeOffset Timestapm;
+            get { return Payload; }
+            set { Payload = (TState)value; }
         }
-
-        protected HeaderInfo Header;
-
-        public object BackupAndClearTransientState()
-        {
-            return Header;
-        }
-
-        public void RestoreTransientInfoFromBackup(object backup)
-        {
-            Header = (HeaderInfo)backup;
-        }
-
-        public MessageOrigin Origin { get { return Header.Origin;  } set { Header.Origin = value; } }
-        public Guid? ProcessId { get { return Header.ProcessId;  } set { Header.ProcessId = value; } }
-
-        public long StoreVersion { get { return Header.StoreVersion; } set { Header.StoreVersion = value; } }
-        public AggregateVersion SourceAggregateVersion { get { return Header.SourceAggregateVersion; } set { Header.SourceAggregateVersion = value; } }
-        public Guid SourceAggregateTypeId { get { return Header.SourceAggregateTypeId; } set { Header.SourceAggregateTypeId = value; } }
-        public string AggregateKey { get { return Header.AggregateKey; } set { Header.AggregateKey = value; } }
-        public DateTimeOffset Timestapm { get { return Header.Timestapm; } set { Header.Timestapm = value; } }
-
+        public TState Payload { get; set; }
         protected BaseEvent()
         {
-            Header.Timestapm = DateTimeOffset.UtcNow;
+            Timestapm = DateTimeOffset.UtcNow;
+            Payload = new TState();
         }
+
     }
 }

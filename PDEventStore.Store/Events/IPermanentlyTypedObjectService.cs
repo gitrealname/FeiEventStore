@@ -11,7 +11,7 @@ namespace PDEventStore.Store.Events
     public interface IPermanentlyTypedObjectService
     {
 
-        T CreateObject<T>(Type type) where T : IPermanentlyTyped;
+        T CreateObject<T>(Type type);
 
         /// <summary>
         /// Upgrades the object.

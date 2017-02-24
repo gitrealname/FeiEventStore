@@ -2,7 +2,7 @@
 {
     using System;
 
-    public interface IEvent : IMessage, IPermanentlyTyped, IEventStoreSerializable
+    public interface IEvent : IMessage
     {
         long StoreVersion { get; set; }
 
@@ -22,5 +22,12 @@
         string AggregateKey { get; set; }
 
         DateTimeOffset Timestapm { get; set; }
+
+        object Payload { get; set; }
+    }
+
+    public interface IEvent<T> : IEvent where T : IState, new ()
+    {
+        new T Payload { get; set; }
     }
 }
