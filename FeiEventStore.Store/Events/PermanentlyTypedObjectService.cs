@@ -1,8 +1,8 @@
-﻿namespace PDEventStore.Store.Events
+﻿namespace FeiEventStore.Store.Events
 {
-    using PDEventStore.Store.Core;
+    using FeiEventStore.Store.Core;
     using System;
-    using PDEventStore.Store.Persistence;
+    using FeiEventStore.Store.Persistence;
     using NLog;
     using System.Linq;
 

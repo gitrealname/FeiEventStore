@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDEventStore.Store", "PDEventStore.Store\PDEventStore.Store.csproj", "{C6486FAD-4256-4F5C-8B39-B83B8CD2739C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.Store", "FeiEventStore.Store\FeiEventStore.Store.csproj", "{C6486FAD-4256-4F5C-8B39-B83B8CD2739C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrototypeValidator", "PrototypeValidator\PrototypeValidator.csproj", "{AFAD85EA-5070-4872-A021-1F9228C03E86}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDEventStore.Store.Tests", "PDEventStore.Store.Tests\PDEventStore.Store.Tests.csproj", "{476CF0CB-A245-4F09-B8A6-FC9B0A2495C1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.Store.Tests", "FeiEventStore.Store.Tests\FeiEventStore.Store.Tests.csproj", "{476CF0CB-A245-4F09-B8A6-FC9B0A2495C1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDEventStore.Store.Ioc.LightInject", "PDEventStore.Store.Ioc.LightInject\PDEventStore.Store.Ioc.LightInject.csproj", "{DF29E0B9-2130-4A8A-98F8-5160B7811647}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.Store.Ioc.LightInject", "FeiEventStore.Store.Ioc.LightInject\FeiEventStore.Store.Ioc.LightInject.csproj", "{DF29E0B9-2130-4A8A-98F8-5160B7811647}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

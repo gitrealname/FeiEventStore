@@ -1,6 +1,6 @@
-﻿using PDEventStore.Store.Core;
+﻿using FeiEventStore.Store.Core;
 
-namespace PDEventStore.Store.Persistence
+namespace FeiEventStore.Store.Persistence
 {
     using System;
     using System.Collections.Generic;
