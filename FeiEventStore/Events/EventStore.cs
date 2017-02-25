@@ -183,7 +183,7 @@
             return result;
         }
 
-        public T LoadAggregate<T>(Guid aggregateId) where T : IAggregate
+        public IAggregate LoadAggregate(Type aggregateType, Guid aggregateId)
         {
             IAggregate aggregate;
             long startingVersion = 0;
@@ -195,15 +195,15 @@
                 var state = (IState)_engine.DeserializePayload(snapshotRecord.State, type);
                 state = _service.UpgradeObject<IState>(state);
 
-                var aggregateType = typeof(IAggregate<>).MakeGenericType(state.GetType());
-                aggregate = _service.CreateObject<IAggregate>(aggregateType);
+                var newAggregateType = typeof(IAggregate<>).MakeGenericType(state.GetType());
+                aggregate = _service.CreateObject<IAggregate>(newAggregateType);
                 aggregate.State = state;
                 startingVersion = aggregate.Version.Version + 1;
                 aggregate.Version = new AggregateVersion(aggregateId, snapshotRecord.AggregateVersion);
             }
             catch (SnapshotNotFoundException)
             {
-                aggregate = _service.CreateObject<IAggregate>(typeof(T));
+                aggregate = _service.CreateObject<IAggregate>(aggregateType);
                 aggregate.Version = new AggregateVersion(aggregateId, 0);
             }
             //load events
@@ -215,36 +215,42 @@
                     aggregateId, aggregate.GetType().FullName, startingVersion, events.Count);
             }
 
-            return (T)aggregate;
+            return (IAggregate)aggregate;
         }
 
-        public T LoadProcess<T>(Guid processId) where T : IProcess
+        public IProcess LoadProcess(Type processType, Guid processId)
         {
             IProcess process;
             //try to get process
             try
             {
                 var processRecord = _engine.GetProcess(processId);
+
                 var type = _service.LookupTypeByPermanentTypeId(processRecord.StateFinalTypeId);
                 var state = (IState)_engine.DeserializePayload(processRecord.State, type);
                 state = _service.UpgradeObject<IState>(state);
 
-                var processType = typeof(IProcess<>).MakeGenericType(state.GetType());
-                process = _service.CreateObject<IProcess>(processType);
+                var newProcessType = typeof(IProcess<>).MakeGenericType(state.GetType());
+                process = _service.CreateObject<IProcess>(newProcessType);
+                process.Id = processRecord.ProcessId;
                 process.State = state;
+
             }
             catch(ProcessNotFoundException)
             {
-                process = _service.CreateObject<T>(typeof(T));
+                if(Logger.IsTraceEnabled)
+                {
+                    Logger.Trace("Process id '{0}' either completed or not started; Process runtime type '{1}'.", processId, processType.FullName);
+                }
                 throw;
             }
             process.Id = processId;
             if(Logger.IsDebugEnabled)
             {
-                Logger.Debug("Loaded process id {0} runtime type {1}", processId, process.GetType().FullName);
+                Logger.Debug("Loaded process id '{0}' runtime type '{1}'", processId, process.GetType().FullName);
             }
 
-            return (T)process;
+            return (IProcess)process;
         }
 
 

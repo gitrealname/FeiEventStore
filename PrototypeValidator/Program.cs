@@ -2,6 +2,7 @@
 using System.Linq;
 using LightInject;
 using FeiEventStore.Core;
+using FeiEventStore.Domain;
 using FeiEventStore.Events;
 using FeiEventStore.Ioc.LightInject;
 
@@ -44,11 +45,50 @@ namespace PrototypeValidator
 
             //Prog1();
             //Prog2();
-            Prog3();
+            //Prog3();
+            Prog4();
 
             Logger.Error("Done.");
         }
 
+        class AggregateState : IState {}
+        class CommandPayload : IState {}
+        class TestAggregate : BaseAggregate<AggregateState> { }
+        class TestAggregate2 : BaseAggregate<AggregateState> { }
+        class TestCommand : BaseCommand<CommandPayload> { }
+        class TestHandler : IHandleCommand<TestCommand, TestAggregate>
+        {
+            public void Handle(TestCommand cmd, TestAggregate aggregate) { }
+        }
+        class TestHandler2 : IHandleCommand<TestCommand, TestAggregate2>
+        {
+            public void Handle(TestCommand cmd, TestAggregate2 aggregate) { }
+        }
+        private static void Prog4()
+        {
+            var containerOptions = new ContainerOptions();
+            var container = new LightInject.ServiceContainer(containerOptions);
+
+            var t = new TestHandler();
+            container.Register(typeof(IHandleCommand<TestCommand, TestAggregate>), typeof(TestHandler));
+            //container.Register(typeof(IHandleCommand<TestCommand, TestAggregate2>), typeof(TestHandler2));
+
+            var type = typeof(IHandle<>).MakeGenericType(typeof(TestCommand));
+
+            var handlers = container.GetAllInstances(type);
+            var handler = handlers.FirstOrDefault();
+            type = handler.GetType();
+            var interfaces = type.GetInterfaces();
+
+            var inter = interfaces.FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleCommand<,>));
+            Type aggregateType;
+            if (inter != null)
+            {
+                aggregateType = inter.GenericTypeArguments[1];
+            }
+
+            return;
+        }
         public interface ISomething { }
         public interface ISomething<T> : ISomething where T : class { }
 
@@ -77,8 +117,7 @@ namespace PrototypeValidator
         {
             var containerOptions = new ContainerOptions();
             var container = new LightInject.ServiceContainer(containerOptions);
-            container.Register<IObjectFactory, LightInjectObjectFactory>();
-
+            container.Register<IObjectFactory>((serviceFactory) => new LightInjectObjectFactory(serviceFactory), new PerContainerLifetime());
 
             var factory = container.GetAllInstances<IObjectFactory>();
             return factory;
@@ -97,13 +136,13 @@ namespace PrototypeValidator
 
             //although it does all the job, it is very sensitive to EnableVariance flag.
             //when it is true we will be getting multiple instances when only one is expected! 
-            container.RegisterAssembly(typeof(IMyType).Assembly, (serviceType, ImplementingType) => {
-                Logger.Debug("Registering: service type {0}; implementing type {1}", serviceType.Name, ImplementingType.Name);
-                return true;
-            });
-            container.Register<IPermanentlyTypedRegistry, Registry>();
-            container.Register<IObjectFactory, LightInjectObjectFactory>();
-            container.Register<IPermanentlyTypedObjectService, PermanentlyTypedObjectService>();
+            //container.RegisterAssembly(typeof(IMyType).Assembly, (serviceType, ImplementingType) => {
+            //    Logger.Debug("Registering: service type {0}; implementing type {1}", serviceType.Name, ImplementingType.Name);
+            //    return true;
+            //});
+            container.Register<IPermanentlyTypedRegistry, Registry>( new PerContainerLifetime());
+            container.Register<IObjectFactory>((serviceFactory) => new LightInjectObjectFactory(serviceFactory), new PerContainerLifetime());
+            container.Register<IPermanentlyTypedObjectService, PermanentlyTypedObjectService>(new PerContainerLifetime());
 
             foreach(var type in typeof(Event1).Assembly.GetTypes())
             {

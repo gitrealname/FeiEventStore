@@ -63,6 +63,13 @@
     <Compile Include="Core\MessageOrigin.cs" />
     <Compile Include="Core\IProcess.cs" />
     <Compile Include="Core\BaseValueObject.cs" />
+    <Compile Include="Domain\Coordinator.cs" />
+    <Compile Include="Domain\CoordinatorScope.cs" />
+    <Compile Include="Domain\ICoordinator.cs" />
+    <Compile Include="Domain\IEventDispatcher.cs" />
+    <Compile Include="Domain\IHandleCommand.cs" />
+    <Compile Include="Domain\IProcessingResponse.cs" />
+    <Compile Include="Domain\ProcessingResponse.cs" />
     <Compile Include="Events\IPermanentlyTypedObjectService.cs" />
     <Compile Include="Events\MultipleTypeInstancesException.cs" />
     <Compile Include="Events\PermanentlyTypedObjectService.cs" />

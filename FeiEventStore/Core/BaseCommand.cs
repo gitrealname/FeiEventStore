@@ -6,7 +6,10 @@
     {
         public MessageOrigin Origin { get; set; }
         public Guid? ProcessId { get; set; }
-        public AggregateVersion TargetAggregateVersion { get; set; }
+        public Guid TargetAggregateId { get; set; }
+
+        public long? TargetAggregateVersion { get; set; }
+
         public long? TargetStoreVersion { get; set; }
         public TState Payload { get; set; }
 
@@ -15,5 +18,6 @@
             get { return Payload; }
             set { Payload = (TState)value; }
         }
+
     }
 }
