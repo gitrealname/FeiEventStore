@@ -8,7 +8,7 @@
         public Guid? ProcessId { get; set; }
         public long StoreVersion { get; set; }
         public AggregateVersion SourceAggregateVersion { get; set; }
-        public Guid SourceAggregateTypeId { get; set; }
+        public Guid SourceAggregateStateTypeId { get; set; }
         public string AggregateKey { get; set; }
         public DateTimeOffset Timestapm { get; set; }
         object IEvent.Payload

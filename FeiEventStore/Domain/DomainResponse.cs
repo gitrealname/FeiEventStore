@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace FeiEventStore.Domain
 {
-    public interface IProcessingResponse
+    public class DomainResponse : IDomainResponse
     {
         
     }

@@ -8,7 +8,7 @@ namespace FeiEventStore.Domain
     using FeiEventStore.Events;
     using NLog;
 
-    public class Coordinator : ICoordinator 
+    public class DomainFacade : IDomainFacade 
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -16,7 +16,7 @@ namespace FeiEventStore.Domain
         private readonly IEventStore _eventStore;
         private readonly IReadOnlyCollection<IEventDispatcher> _eventDispatchers;
 
-        public Coordinator(IObjectFactory factory, 
+        public DomainFacade(IObjectFactory factory, 
             IEventStore eventStore, 
             IReadOnlyCollection<IEventDispatcher> eventDispatchers)
         {
@@ -24,33 +24,23 @@ namespace FeiEventStore.Domain
             _eventStore = eventStore;
             _eventDispatchers = eventDispatchers;
         }
-        public IProcessingResponse Process(IEnumerable<IMessage> messageBatch)
+        public IDomainResponse Process(IEnumerable<ICommand> messageBatch)
         {
-            var scope = new CoordinatorScope();
+            var scope = new CommandExecutionScope();
             scope.Enqueue(messageBatch);
 
 
-            var result = new ProcessingResponse();
+            var result = new DomainResponse();
             //main loop
             try
             {
                 while(scope.QueueCount > 0)
                 {
                     var msg = scope.Dequeue();
-                    if(msg is ICommand)
-                    {
-                        ProcessCommand(msg as ICommand, scope);
-                    } 
-                    else if(msg is IEvent)
-                    {
-                        ProcessEvent(msg as IEvent, scope);
-                    }
-                    else
-                    {
-                        var ex =  new Exception(string.Format("SYSTEM: Unexpected message type '{0}'; only ICommand or IEvent can be processed.", msg.GetType().FullName));
-                        throw ex;
-                    }
+                    ProcessCommand(msg as ICommand, scope);
                 }
+
+                //Todo: dispatch, 
             }
             catch(Exception e)
             {
@@ -60,12 +50,12 @@ namespace FeiEventStore.Domain
             return result;
         }
 
-        private void ProcessEvent(IEvent e, CoordinatorScope scope)
+        private void ProcessEvent(IEvent e, CommandExecutionScope scope)
         {
             throw new NotImplementedException();
         }
 
-        private void ProcessCommand(ICommand cmd, CoordinatorScope scope)
+        private void ProcessCommand(ICommand cmd, CommandExecutionScope scope)
         {
             if(cmd.TargetAggregateId == Guid.Empty)
             {

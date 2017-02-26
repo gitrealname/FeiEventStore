@@ -9,8 +9,6 @@
         public Guid TargetAggregateId { get; set; }
 
         public long? TargetAggregateVersion { get; set; }
-
-        public long? TargetStoreVersion { get; set; }
         public TState Payload { get; set; }
 
         object ICommand.Payload

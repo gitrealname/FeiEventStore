@@ -18,17 +18,6 @@ namespace FeiEventStore.Core
         long? TargetAggregateVersion { get; set; }
 
         /// <summary>
-        /// Gets or sets the target store version.
-        /// Normally, should not be used, reserved for special (extreme) cases.
-        /// If specified and actual store version is bigger then requested the command will fail with
-        /// Store Version mismatch error.
-        /// </summary>
-        /// <value>
-        /// The target store version.
-        /// </value>
-        long? TargetStoreVersion { get; set; }
-
-        /// <summary>
         /// Gets or sets the payload.
         /// </summary>
         /// <value>

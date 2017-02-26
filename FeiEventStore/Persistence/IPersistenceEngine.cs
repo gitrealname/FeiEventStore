@@ -20,6 +20,10 @@ namespace FeiEventStore.Persistence
     /// 
     ///     4. It has to be a non-unique index on <see cref="EventRecord.EventTimestamp"/> to accommodate time related events lookup 
     /// 
+    /// ProcessTable:
+    ///     1. Unique index should be set on <see cref="ProcessRecord.ProcessVersion"/>, <see cref="ProcessRecord.ProcessId"/>
+    ///     and <see cref="ProcessRecord.AggregateId"/>
+    /// NOTE: When process is stored, record gets created for each unique combination of ProcessId and AggregateId!!!, 
     /// Storage type specific persistence 
     /// TODO: 
     ///     1) GetPendingDispatch() list of pending dispatch batches, (can  be also be cached in memory for optimization purposes)
@@ -56,16 +60,24 @@ namespace FeiEventStore.Persistence
         /// <summary>
         /// Saves the specified events and snapshots.
         /// NOTES:
-        ///     if DB commit fails due to concurrency violation, commit should re-try until success.
+        /// if DB commit fails due to concurrency violation, commit should re-try until success.
         /// </summary>
         /// <param name="events">The events.</param>
         /// <param name="snapshots">The snapshots.</param>
-        /// <param name="constraints">The constraints.</param>
-        /// <returns>Commit Final Store Version</returns>
+        /// <param name="processes">The processes.</param>
+        /// <param name="aggregateConstraints">The constraints.</param>
+        /// <param name="processConstraints">The process constraints.</param>
+        /// <param name="processIdsToBeDeleted">The process ids to be deleted. because they completed.
+        /// IMPORTANT: engine implementation must NOT fail if there are NO records for specified process id.</param>
+        /// <returns>
+        /// Commit Final Store Version
+        /// </returns>
         long Commit(IList<EventRecord> events,
+            IList<Constraint> aggregateConstraints = null,
+            IList<Constraint> processConstraints = null,
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
-            IList<AggregateVersion> constraints = null);
+            IList<Guid> processIdsToBeDeleted = null);
 
         /// <summary>
         /// Serializes the payload.
@@ -130,12 +142,35 @@ namespace FeiEventStore.Persistence
         SnapshotRecord GetSnapshot(Guid aggregateId);
 
         /// <summary>
-        /// Gets the process.
+        /// Gets the process version.
+        /// </summary>
+        /// <param name="processId">The process identifier.</param>
+        /// <returns></returns>
+        long GetProcessVersion(Guid processId);
+        
+        /// <summary>
+        /// Gets the process records.
+        /// IMPORTANT: record with State (must appear first)
         /// </summary>
         /// <param name="processId">The process identifier.</param>
         /// <returns></returns>
         /// <exception cref="ProcessNotFoundException"></exception>
-        ProcessRecord GetProcess ( Guid processId );
+        IList<ProcessRecord> GetProcessRecords ( Guid processId );
+
+        /// <summary>
+        /// Gets the process records.
+        /// IMPORTANT: record with State (must appear first)
+        /// </summary>
+        /// <param name="processStateBaseTypeId">The process state base type identifier.</param>
+        /// <param name="aggregateId">The aggregate identifier.</param>
+        /// <returns></returns>
+        IList<ProcessRecord> GetProcessRecords(Guid processStateBaseTypeId, Guid aggregateId);
+
+        /// <summary>
+        /// Deletes the process.
+        /// </summary>
+        /// <param name="processId">The process identifier.</param>
+        void DeleteProcess(Guid processId);
 
         /// <summary>
         ///     Completely DESTROYS the contents of ANY and ALL aggregates that have been successfully persisted.  Use with caution.

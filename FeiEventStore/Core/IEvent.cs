@@ -8,7 +8,7 @@
 
         AggregateVersion SourceAggregateVersion { get; set; }
 
-        Guid SourceAggregateTypeId { get; set; }
+        Guid SourceAggregateStateTypeId { get; set; }
 
         /// <summary>
         /// Gets or sets the Aggregate Key. 

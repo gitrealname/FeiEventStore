@@ -7,10 +7,10 @@ using FeiEventStore.Core;
 
 namespace FeiEventStore.Domain
 {
-    public class CoordinatorScope
+    public class CommandExecutionScope
     {
         private readonly Queue<IMessage> _queue;
-        public CoordinatorScope()
+        public CommandExecutionScope()
         {
             _queue = new Queue<IMessage>();
         }

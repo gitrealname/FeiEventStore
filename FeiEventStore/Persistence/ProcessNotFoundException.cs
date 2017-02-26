@@ -14,5 +14,11 @@ namespace FeiEventStore.Persistence
         {
 
         }
+
+        public ProcessNotFoundException(Guid processStateBaseTypeId, Guid aggregateId)
+            :base(string.Format("Process with state type id '{0}' for aggregate id {1} was not found.", processStateBaseTypeId, aggregateId))
+        {
+            
+        }
     }
 }

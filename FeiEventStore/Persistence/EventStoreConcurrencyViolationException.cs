@@ -9,10 +9,15 @@ namespace FeiEventStore.Persistence
     /// <seealso cref="System.Exception" />
     public class EventStoreConcurrencyViolationException : System.Exception
     {
-        public EventStoreConcurrencyViolationException(Guid aggregateId)
-            : base(string.Format("Event Store Version collision; Commit is expected to be re-try-ed."))
-        {
+        public long ExpectedVersion { get; }
+        public long PersistedVersion { get; }
 
+        public EventStoreConcurrencyViolationException(long expectedVersion, long persistedVersion)
+            : base(string.Format("Event Store Version collision; expected store version {0}, persisted store version {1} Commit is expected to be re-try-ed.", 
+                expectedVersion, persistedVersion))
+        {
+            ExpectedVersion = expectedVersion;
+            PersistedVersion = persistedVersion;
         }
     }
 }

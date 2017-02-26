@@ -29,10 +29,10 @@
 
         public long StoreVersion => _engine.StoreVersion;
 
-        public void Commit(IList<IEvent> events, 
-            IList<IAggregate> snapshots = null, 
-            IList<IProcess> processes = null, 
-            IList<AggregateVersion> constraints = null)
+        public void Commit(IList<IEvent> events,
+            IList<Constraint> aggregateConstraints = null,
+            IList<SnapshotRecord> snapshots = null,
+            IList<IProcess> processes = null)
         {
             //prepare events
             var eventRecords = new List<EventRecord>();
@@ -51,9 +51,9 @@
                 foreach(var s in snapshots)
                 {
                     var sr = new SnapshotRecord();
-                    sr.AggregateVersion = s.Version.Version;
-                    sr.AggregateId = s.Version.Id;
-                    sr.StateFinalTypeId = _service.GetPermanentTypeIdForType(s.GetType());
+                    sr.AggregateVersion = s.AggregateVersion;
+                    sr.AggregateId = s.AggregateId;
+                    sr.StateFinalTypeId = _service.GetPermanentTypeIdForType(s.State.GetType());
                     var payload = _engine.SerializePayload(s.State);
                     sr.State = payload;
                     snapshotRecords.Add(sr);
@@ -63,17 +63,56 @@
 
             //processes
             var processRecords = new List<ProcessRecord>();
+            var processConstaints = new List<Constraint>();
+            var completeProcessIds = new List<Guid>();
+            var processPersistedCount = 0;
             if(processes != null)
             {
                 foreach(var p in processes)
                 {
-                    var pr = new ProcessRecord();
+                    //for each involved aggregate we create dedicated Process Record
+                    //but only first record will contain State, StateBaseTypeId and StateFinalTypeId
+                    bool head = true;
+                    bool deleted = false;
+                    Guid stateBaseTypeId = Guid.Empty;
+                    foreach (var aggregateId in p.InvolvedAggregateIds)
+                    {
+                        if(p.LatestPersistedVersion != 0)
+                        {
+                            var constraint = new Constraint(p.Id, p.LatestPersistedVersion - 1);
+                            processConstaints.Add(constraint);
+                        }
+                        if(p.IsComplete)
+                        {
+                            if(!deleted)
+                            {
+                                deleted = true;
+                                completeProcessIds.Add(p.Id);
+                            }
+                        } else
+                        {
+                            var pr = new ProcessRecord
+                            {
+                                ProcessVersion = p.Version,
+                                ProcessId = p.Id,
+                                AggregateId = aggregateId
+                            };
+                            if(head)
+                            {
+                                head = false;
+                                pr.StateFinalTypeId = _service.GetPermanentTypeIdForType(p.State.GetType());
+                                var baseType = _service.LookupBaseTypeForPermanentType(p.State.GetType());
+                                stateBaseTypeId = _service.GetPermanentTypeIdForType(baseType);
+                                var payload = _engine.SerializePayload(p.State);
+                                pr.State = payload;
+                                processPersistedCount++;
 
-                    pr.ProcessId = p.Id;
-                    pr.StateFinalTypeId = _service.GetPermanentTypeIdForType(p.GetType());
-                    var payload = _engine.SerializePayload(p.State);
-                    pr.State = payload;
-                    processRecords.Add(pr);
+                            }
+                            pr.StateBaseTypeId = stateBaseTypeId;
+                            processRecords.Add(pr);
+
+                        }
+                    }
                 }
             }
 
@@ -91,7 +130,7 @@
                 //call persistence layer
                 try
                 {
-                    _engine.Commit(eventRecords, snapshotRecords, processRecords, constraints);
+                    _engine.Commit(eventRecords, aggregateConstraints, processConstaints, snapshotRecords, processRecords, completeProcessIds);
                 }
                 catch(EventStoreConcurrencyViolationException ex)
                 {
@@ -119,8 +158,14 @@
                 {
                     if(Logger.IsInfoEnabled)
                     {
-                        Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes: {2}, Constraints validated: {3}. Final store version: {4}",
-                            eventRecords.Count, snapshotRecords.Count, processRecords.Count, constraints?.Count ?? 0, initialStoreVersion);
+                        Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes persisted: {2}, Processes deleted: {3},  Aggregate constraints validated: {4}, Process constraints validated: {5}. Final store version: {6}",
+                            eventRecords.Count, 
+                            snapshotRecords.Count, 
+                            processPersistedCount, 
+                            completeProcessIds.Count,  
+                            aggregateConstraints?.Count ?? 0,
+                            processConstaints.Count, 
+                            initialStoreVersion);
                     }
                 }
             }
@@ -135,6 +180,11 @@
         public long GetAggregateVersion(Guid aggregateId)
         {
             return _engine.GetAggregateVersion(aggregateId);
+        }
+
+        public long GetProcessVersion(Guid processId)
+        {
+            return _engine.GetProcessVersion(processId);
         }
 
         public IList<IEvent> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion = null)
@@ -183,7 +233,7 @@
             return result;
         }
 
-        public IAggregate LoadAggregate(Type aggregateType, Guid aggregateId)
+        public IAggregate LoadAggregate(Type aggregateStateType, Guid aggregateId)
         {
             IAggregate aggregate;
             long startingVersion = 0;
@@ -203,7 +253,7 @@
             }
             catch (SnapshotNotFoundException)
             {
-                aggregate = _service.CreateObject<IAggregate>(aggregateType);
+                aggregate = _service.CreateObject<IAggregate>(aggregateStateType);
                 aggregate.Version = new AggregateVersion(aggregateId, 0);
             }
             //load events
@@ -218,29 +268,62 @@
             return (IAggregate)aggregate;
         }
 
-        public IProcess LoadProcess(Type processType, Guid processId)
+        public IProcess LoadProcess(Type processStateType, Guid aggregateId)
+        {
+            var result = LoadProcess(() => {
+                var baseType = _service.LookupBaseTypeForPermanentType(processStateType);
+                var baseTypeId = _service.GetPermanentTypeIdForType(baseType);
+                return _engine.GetProcessRecords(baseTypeId, aggregateId);
+            });
+            return result;
+        }
+
+        public IProcess LoadProcess(Guid processId)
+        {
+            var result = LoadProcess(() => _engine.GetProcessRecords(processId));
+            return result;
+        }
+
+        private IProcess LoadProcess(Func<IList<ProcessRecord>> getRecords)
         {
             IProcess process;
+            Guid processId = Guid.Empty;
             //try to get process
             try
             {
-                var processRecord = _engine.GetProcess(processId);
-
-                var type = _service.LookupTypeByPermanentTypeId(processRecord.StateFinalTypeId);
-                var state = (IState)_engine.DeserializePayload(processRecord.State, type);
-                state = _service.UpgradeObject<IState>(state);
+                var processRecords = getRecords();
+                var involvedAggregateIds = new List<Guid>();
+                IState state = null;
+                long processVersion = 0;
+                foreach(var pr in processRecords)
+                {
+                    involvedAggregateIds.Add(pr.AggregateId);
+                    if(pr.State != null)
+                    {
+                        processId = pr.ProcessId;
+                        var stateBaseTypeId = pr.StateBaseTypeId;
+                        var stateFinalTypeId = pr.StateFinalTypeId;
+                        var type = _service.LookupTypeByPermanentTypeId(stateFinalTypeId ?? stateBaseTypeId);
+                        state = (IState)_engine.DeserializePayload(pr.State, type);
+                        state = _service.UpgradeObject<IState>(state);
+                        processVersion = pr.ProcessVersion;
+                    }
+                }
 
                 var newProcessType = typeof(IProcess<>).MakeGenericType(state.GetType());
                 process = _service.CreateObject<IProcess>(newProcessType);
-                process.Id = processRecord.ProcessId;
-                process.State = state;
 
+                process.Id = processId;
+                process.LatestPersistedVersion = processVersion;
+                process.State = state;
+                process.Version = processVersion;
+                process.InvolvedAggregateIds.AddRange(involvedAggregateIds);
             }
             catch(ProcessNotFoundException)
             {
                 if(Logger.IsTraceEnabled)
                 {
-                    Logger.Trace("Process id '{0}' either completed or not started; Process runtime type '{1}'.", processId, processType.FullName);
+                    Logger.Trace("Process id '{0}' either completed or not started.", processId);
                 }
                 throw;
             }
@@ -251,8 +334,8 @@
             }
 
             return (IProcess)process;
-        }
 
+        }
 
         private IList<IEvent> LoadEventRecords(IEnumerable<EventRecord> eventRecords)
         {
@@ -277,10 +360,10 @@
             er.AggregateId = @event.SourceAggregateVersion.Id;
             er.AggregateVersion = @event.SourceAggregateVersion.Version;
 
-            var finalType = _service.LookupTypeByPermanentTypeId(@event.SourceAggregateTypeId);
+            var finalType = _service.LookupTypeByPermanentTypeId(@event.SourceAggregateStateTypeId);
             var baseType = _service.LookupBaseTypeForPermanentType(finalType);
             var baseTypeId = _service.GetPermanentTypeIdForType(baseType);
-            var finalTypeId = @event.SourceAggregateTypeId;
+            var finalTypeId = @event.SourceAggregateStateTypeId;
             er.StateBaseTypeId = baseTypeId;
             if(baseTypeId != finalTypeId)
             {
@@ -325,7 +408,7 @@
             @event.SourceAggregateVersion = new AggregateVersion(record.AggregateId, record.AggregateVersion);
             @event.StoreVersion = record.StoreVersion;
             @event.Timestapm = record.EventTimestamp;
-            @event.SourceAggregateTypeId = record.StateFinalTypeId ?? record.StateBaseTypeId;
+            @event.SourceAggregateStateTypeId = record.StateFinalTypeId ?? record.StateBaseTypeId;
 
             //restore aggregate key
             var pos = record.Key.LastIndexOf(":");

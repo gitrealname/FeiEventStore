@@ -9,8 +9,15 @@
 
         public Guid Id { get; set; }
 
+
+        public long LatestPersistedVersion { get; set; }
+        public long Version { get; set; }
+
+        public bool IsComplete { get; protected set; }
+
+        public List<Guid> InvolvedAggregateIds { get; set; }
+
         public Func<ICommand, ICommand> MessageMapper { get; set; }
-        public AggregateVersion Version { get; set; }
 
         public IList<ICommand> FlushUncommitedMessages()
         {
@@ -26,6 +33,8 @@
                 cmd = MessageMapper(cmd);
             }
             PendingCommands.Add(cmd);
+            InvolvedAggregateIds.Add(cmd.TargetAggregateId);
+            Version++;
         }
 
         object IProcess.State

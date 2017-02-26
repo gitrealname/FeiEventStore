@@ -22,13 +22,13 @@
         /// Saves/Commit the specified events and snapshots
         /// </summary>
         /// <param name="events">The events.</param>
+        /// <param name="aggregateConstraints">The constraints.</param>
         /// <param name="snapshots">The snapshots.</param>
-        /// <param name="constraints">The constraints.</param>
-        /// <returns>latest store version.</returns>
+        /// <param name="processes">The processes.</param>
         void Commit(IList<IEvent> events,
-            IList<IAggregate> snapshots = null,
-            IList<IProcess> processes = null,
-            IList<AggregateVersion> constraints = null);
+            IList<Constraint> aggregateConstraints = null,
+            IList<SnapshotRecord> snapshots = null,
+            IList<IProcess> processes = null);
 
         /// <summary>
         /// Get the events for given aggregate. 
@@ -66,15 +66,24 @@
         long GetSnapshotVersion(Guid aggregateId);
 
         /// <summary>
+        /// Gets latest/persisted process version.
+        /// </summary>
+        /// <param name="processId">The process identifier.</param>
+        /// <returns></returns>
+        long GetProcessVersion(Guid processId);
+
+        /// <summary>
         /// Loads the latest aggregate. Create new instance of aggregate if given Id doesn't exists
         /// </summary>
-        /// <param name="aggregateType">Type of the aggregate.</param>
+        /// <param name="aggregateStateType">Type of the aggregate.</param>
         /// <param name="aggregateId">The aggregate identifier.</param>
         /// <returns></returns>
         /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
         /// <exception cref="MultipleTypeInstancesException"></exception>
-        IAggregate LoadAggregate(Type aggregateType, Guid aggregateId);
+        IAggregate LoadAggregate(Type aggregateStateType, Guid aggregateId);
 
-        IProcess LoadProcess(Type processType, Guid processId );
+        IProcess LoadProcess(Type processStateType, Guid aggregateId );
+
+        IProcess LoadProcess(Guid processId);
     }
 }
