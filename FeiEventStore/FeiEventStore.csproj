@@ -83,6 +83,7 @@
     <Compile Include="Events\MustHavePermanentTypeAttributeException.cs" />
     <Compile Include="Events\PermanentTypeImplementationNotFoundException.cs" />
     <Compile Include="Events\EventStore.cs" />
+    <Compile Include="Ioc\ServiceRegistryConfiguratorConfiguration.cs" />
     <Compile Include="Persistence\ProcessConcurrencyViolationException.cs" />
     <Compile Include="Persistence\AggregateConstraintViolationException.cs" />
     <Compile Include="Persistence\AggregatePrimaryKeyViolationException.cs" />

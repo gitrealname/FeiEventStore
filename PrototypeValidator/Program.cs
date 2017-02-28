@@ -4,6 +4,7 @@ using LightInject;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
+using FeiEventStore.Ioc;
 using FeiEventStore.Ioc.LightInject;
 
 namespace PrototypeValidator
@@ -47,9 +48,22 @@ namespace PrototypeValidator
             //Prog2();
             //Prog3();
             //Prog4();
-            ExtractTypeOfTheState();
+            //ExtractTypeOfTheState();
+            ConfigureContainer();
 
             Logger.Error("Done.");
+        }
+
+        private static void ConfigureContainer()
+        {
+            var containerOptions = new ContainerOptions();
+            var container = new LightInject.ServiceContainer(containerOptions);
+            var config = new ServiceRegistryConfiguratorConfiguration();
+            config.AssemblyNamePaterns.Add("PrototypeValidator*exe");
+            config.AssemblyNamePaterns.Add("Fei*dll");
+
+            container.RegisterEventStore(config);
+            return;
         }
 
         class AggregateState : IState {}
