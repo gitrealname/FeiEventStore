@@ -22,7 +22,7 @@ namespace FeiEventStore.Persistence
     /// 
     /// ProcessTable:
     ///     1. Unique index should be set on <see cref="ProcessRecord.ProcessVersion"/>, <see cref="ProcessRecord.ProcessId"/>
-    ///     and <see cref="ProcessRecord.AggregateId"/>
+    ///     and <see cref="ProcessRecord.InvolvedAggregateId"/>
     /// NOTE: When process is stored, record gets created for each unique combination of ProcessId and AggregateId!!!, 
     /// Storage type specific persistence 
     /// TODO: 
@@ -77,7 +77,7 @@ namespace FeiEventStore.Persistence
             IList<Constraint> processConstraints = null,
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
-            IList<Guid> processIdsToBeDeleted = null);
+            HashSet<Guid> processIdsToBeDeleted = null);
 
         /// <summary>
         /// Serializes the payload.
@@ -161,10 +161,10 @@ namespace FeiEventStore.Persistence
         /// Gets the process records.
         /// IMPORTANT: record with State (must appear first)
         /// </summary>
-        /// <param name="processStateBaseTypeId">The process state base type identifier.</param>
+        /// <param name="processTypeId">The process type identifier.</param>
         /// <param name="aggregateId">The aggregate identifier.</param>
         /// <returns></returns>
-        IList<ProcessRecord> GetProcessRecords(Guid processStateBaseTypeId, Guid aggregateId);
+        IList<ProcessRecord> GetProcessRecords(Guid processTypeId, Guid aggregateId);
 
         /// <summary>
         /// Deletes the process.

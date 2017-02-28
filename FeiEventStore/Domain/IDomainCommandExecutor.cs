@@ -14,8 +14,12 @@ namespace FeiEventStore.Domain
     /// 3. command aggregate validation
     /// NOTE: each coordinator instance should be executed in dedicated IOC scope
     /// </summary>
-    public interface IDomainFacade
+    public interface IDomainCommandExecutor
     {
-        IDomainResponse Process(IList<ICommand> commandBatch);
+        Task<DomainCommandResult> ExecuteCommandBatchAsync(IList<ICommand> commandBatch);
+
+        Task<DomainCommandResult> ExecuteCommandAsync(ICommand command);
+
+        DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch);
     }
 }

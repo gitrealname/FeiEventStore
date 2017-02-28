@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.ServiceModel.Channels;
+using System.Threading.Tasks;
 using FeiEventStore.Persistence;
 
 namespace FeiEventStore.Domain
@@ -10,26 +11,26 @@ namespace FeiEventStore.Domain
     using FeiEventStore.Events;
     using NLog;
 
-    public class DomainFacade : IDomainFacade 
+    public class DomainCommandExecutor : IDomainCommandExecutor 
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly IObjectFactory _factory;
         private readonly IEventStore _eventStore;
         private readonly IPermanentlyTypedObjectService _permanentlyTypedObjectService;
-        private readonly IReadOnlyCollection<IEventDispatcher> _eventDispatchers;
+        private readonly IEventDispatcher _eventDispatcher;
 
-        public DomainFacade(IObjectFactory factory, 
+        public DomainCommandExecutor(IObjectFactory factory, 
             IEventStore eventStore, 
             IPermanentlyTypedObjectService permanentlyTypedObjectService,
-            IReadOnlyCollection<IEventDispatcher> eventDispatchers)
+            IEventDispatcher  eventDispatcher)
         {
             _factory = factory;
             _eventStore = eventStore;
             _permanentlyTypedObjectService = permanentlyTypedObjectService;
-            _eventDispatchers = eventDispatchers;
+            _eventDispatcher = eventDispatcher;
         }
-        public IDomainResponse Process(IList<ICommand> commandBatch)
+        public DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch)
         {
 
             while(true)
@@ -132,8 +133,9 @@ namespace FeiEventStore.Domain
                 // handle event otherwise
                 if(isNew)
                 {
-                    var startingTypes = process.GetType().GetGenericInterfaceArgumentTypes(typeof(IStartByEvent<>));
-                    if(startingTypes.Any(t => t == e.GetType()))
+                    var startingTypes = process.GetType().GetGenericInterfaceArgumentTypes(typeof(IStartedByEvent<>));
+                    var eventType = e.GetType();
+                    if(startingTypes.Any(t => t.IsAssignableFrom(eventType)))
                     {
                         isNew = false;
                         process.Id = Guid.NewGuid();
@@ -151,7 +153,7 @@ namespace FeiEventStore.Domain
                 }
                 else
                 {
-                    process.AsDynamic().Handle(e);
+                    process.AsDynamic().HandleEvent(e);
                 }
 
                 //queue commands and track aggregate
@@ -237,13 +239,14 @@ namespace FeiEventStore.Domain
             {
                 scope.AggregateConstraints.Add(new Constraint(aggregate.Id, aggregate.LatestPersistedVersion));
             }
-            aggregate.AsDynamic().Handle(cmd, aggregate);
+            handler.AsDynamic().HandleCommand(cmd, aggregate);
+
             var events = aggregate.FlushUncommitedMessages();
 
             //process events, transfer info from command
             foreach(var e in events)
             {
-                e.SourceAggregateId = _permanentlyTypedObjectService.GetPermanentTypeIdForType(aggregate.GetType());
+                e.SourceAggregateTypeId = aggregate.TypeId;
                 e.Origin = new MessageOrigin(cmd.Origin);
                 scope.Queue.Enqueue(e);
             }
@@ -261,11 +264,28 @@ namespace FeiEventStore.Domain
                 }
             }
 
-            //check if command can be applied on new Aggregate
-            if(!cmd.CanBeExecutedAgainstNewAggregate && aggregate.Version == 0)
+            //check if aggregate can be created by given command
+            if(aggregate.Version == 0)
             {
-                throw new AggregateDoesnotExistsException(aggregate.Id);
+                var canBeCreateByTypes = aggregate.GetType().GetGenericInterfaces(typeof(ICreatedByCommand<>));
+                var cmdType = cmd.GetType();
+                if(!canBeCreateByTypes.Any(t => t.IsAssignableFrom(cmdType)))
+                {
+                    throw new AggregateDoesnotExistsException(aggregate.Id);
+                }
             }
+        }
+
+        public async Task<DomainCommandResult> ExecuteCommandBatchAsync(IList<ICommand> commandBatch)
+        {
+            var result =  await Task.Run(() => ExecuteCommandBatch(commandBatch));
+            return result;
+        }
+
+        public async Task<DomainCommandResult> ExecuteCommandAsync(ICommand command)
+        {
+            var result = await ExecuteCommandBatchAsync(new List<ICommand>() { command });
+            return result;
         }
     }
 }

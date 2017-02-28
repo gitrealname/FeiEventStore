@@ -5,7 +5,7 @@ namespace FeiEventStore.Core
 {
     using FeiEventStore.Core;
 
-    public interface IProcess : IMessageEmitter<ICommand>
+    public interface IProcess : IMessageEmitter<ICommand>, IPermanentlyTyped
     {
         Guid Id { get; set; }
 

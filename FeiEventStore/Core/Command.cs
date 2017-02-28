@@ -2,7 +2,7 @@
 {
     using System;
 
-    public abstract class BaseCommand<TState> : ICommand<TState> where TState : IState, new()
+    public class Command<TState> : ICommand<TState> where TState : IState, new()
     {
         public MessageOrigin Origin { get; set; }
         public Guid? ProcessId { get; set; }
@@ -19,7 +19,7 @@
             set { Payload = (TState)value; }
         }
 
-        protected BaseCommand(bool canBeExecutedAgainstNewAggregate)
+        public Command(bool canBeExecutedAgainstNewAggregate)
         {
             CanBeExecutedAgainstNewAggregate = canBeExecutedAgainstNewAggregate; 
         }

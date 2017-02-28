@@ -21,15 +21,5 @@ namespace FeiEventStore.Ioc.LightInject
             var result = _serviceFactory.GetAllInstances(type);
             return result.ToList();
         }
-
-        public object CreateInstance(Type type)
-        {
-            //var factoryType = typeof(Func<>).MakeGenericType(type);
-            //var factory = (Func<object>)_serviceFactory.GetInstance(factoryType);
-            //var result = factory();
-            //return result;
-
-            return _serviceFactory.Create(type);
-        }
     }
 }

@@ -17,8 +17,6 @@
 
         public HashSet<Guid> InvolvedAggregateIds { get; set; }
 
-        public Func<ICommand, ICommand> MessageMapper { get; set; }
-
         public IList<ICommand> FlushUncommitedMessages()
         {
             var changes = PendingCommands.ToArray();
@@ -28,10 +26,6 @@
 
         protected void ScheduleCommand(ICommand cmd)
         {
-            if(MessageMapper != null)
-            {
-                cmd = MessageMapper(cmd);
-            }
             PendingCommands.Add(cmd);
             InvolvedAggregateIds.Add(cmd.TargetAggregateId);
             Version++;

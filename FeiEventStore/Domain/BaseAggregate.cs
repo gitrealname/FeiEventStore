@@ -7,13 +7,13 @@
     {
         public readonly List<IEvent> Changes = new List<IEvent>();
 
-        public Func<IEvent, IEvent> MessageMapper { get; set; }
-
         public Guid Id { get; set; }
 
         public long Version { get; set; }
 
         public long LatestPersistedVersion { get; set; }
+
+        public Guid TypeId { get; set; }
 
         /// <summary>
         /// Helper method To Calculate new Event Version
@@ -56,6 +56,8 @@
                 @event.SourceAggregateVersion = NextEventVersion;
                 Version = NextEventVersion;
             }
+            //TODO: allow call to apply fail when loading from history. Because historic event may not be used anymore by current aggregate Version
+            //Also consider AbsoleteAttribute on the event to make it deleted from the stream!!!!
             this.AsDynamic().Apply(@event);
             Changes.Add(@event);
         }

@@ -10,7 +10,7 @@
 
         Guid SourceAggregateId { get; set; }
 
-        Guid SourceAggregateStateTypeId { get; set; }
+        Guid SourceAggregateTypeId { get; set; }
 
         /// <summary>
         /// Gets or sets the Aggregate Key. 

@@ -1,4 +1,7 @@
-﻿namespace FeiEventStore.Events
+﻿using System.Collections.Generic;
+using System.Data;
+
+namespace FeiEventStore.Events
 {
     using FeiEventStore.Core;
     using System;
@@ -19,11 +22,17 @@
             _registry = registry;
             _factory = factory;
         }
-        public T CreateObject<T>(Type type)
+        public T GetSingleInstance<T>(Type type)
         {
-            var obj = _factory.CreateInstance(type); //can throw InvalidOperationException or any other that is Ioc container specific.
+            var instances = _factory.GetAllInstances(type).ToList();
+            if(instances.Count > 1)
+            {
+                var ex = new MultipleTypeInstancesException(type, instances.Count);
+                Logger.Fatal(ex);
+                throw ex;
+            }
             //cast if instance found
-            var result = (T)obj;
+            var result = (T)instances.First();
             if(result == null)
             {
                 var ex = new RuntimeTypeInstancesNotFoundException(type);
@@ -39,60 +48,67 @@
             return permanentTypeAttribute.PermanentTypeId;
         }
 
-        public Type LookupBaseTypeForPermanentType(Type type)
-        {
-            GetTypePermanentTypeAttribute(type); //used as a guard
-
-            var replaces = type.GetInterfaces()
-                .Where(i => i.IsGenericType)
-                .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IReplace<>));
-
-            if(replaces == null)
-            {
-                return type;
-            }
-
-            var prevType = replaces.GetGenericArguments().First();
-
-            return LookupBaseTypeForPermanentType(prevType);
-        }
-
         public Type LookupTypeByPermanentTypeId(Guid permanentTypeId)
         {
             return _registry.LookupTypeByPermanentTypeId(permanentTypeId);
         }
 
-        public T UpgradeObject<T>(T originalObject, Guid? finalTypeId = null) where T : IPermanentlyTyped
+        public T UpgradeObject<T>(T originalObject, Type finalType) where T : IPermanentlyTyped
         {
-            //upgrade object
-            Type finalType = null;
-            if(finalTypeId.HasValue)
+            var originalType = originalObject.GetType();
+            var prevType = originalType;
+            if(finalType == null)
             {
-                finalType = LookupTypeByPermanentTypeId(finalTypeId.Value);
+                throw new ArgumentNullException(nameof(finalType));
             }
+            //upgrade object
             while(true)
             {
-                var replacerType = typeof(IReplace<>).MakeGenericType(originalObject.GetType());
+                var replacerType = typeof(IReplace<>).MakeGenericType(prevType);
                 T replacer;
                 try
                 {
-                    replacer = CreateObject<T>(replacerType);
+                    replacer = GetSingleInstance<T>(replacerType);
+                    replacerType = replacer.GetType();
                 }
                 catch(Exception)
                 {
-                    return (T)originalObject;
+                    var ex = new ObjectUpgradeChainIsBrokenException(prevType, originalType, finalType);
+                    throw ex;
                 }
 
-                if(Logger.IsDebugEnabled)
-                {
-                    Logger.Debug("Replacer of type {0} is loading from type {1}", replacer.GetType(), originalObject.GetType());
-                }
                 replacer.AsDynamic().InitFromObsolete(originalObject);
                 if(finalType == replacer.GetType())
                 {
+                    if(Logger.IsDebugEnabled)
+                    {
+                        Logger.Debug("Upgraded object from type {0} to type {1}", originalType, finalType);
+                    }
                     return replacer;
                 }
-                originalObject = replacer;
+                prevType = replacerType;
+            }
+        }
+
+        public IEnumerable<Type> BuildUpgradeTypeChain(Type baseType)
+        {
+            var chain = new List<Type>();
+            chain.Add(baseType);
+            while(true)
+            {
+                var replacerType = typeof(IReplace<>).MakeGenericType(baseType);
+                IPermanentlyTyped replacer;
+                try
+                {
+                    replacer = GetSingleInstance<IPermanentlyTyped>(replacerType);
+                    replacerType = replacer.GetType();
+                }
+                catch(Exception)
+                {
+                    return chain;
+                }
+                chain.Add(replacerType);
+                baseType = replacerType;
             }
         }
 

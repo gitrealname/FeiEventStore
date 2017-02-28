@@ -63,18 +63,18 @@ namespace PrototypeValidator
         }
 
         class TestAggregate2 : BaseAggregate<AggregateState> { }
-        class TestCommand : BaseCommand<CommandPayload> {
+        class TestCommand : Command<CommandPayload> {
             public TestCommand() : base(false)
             {
             }
         }
         class TestHandler : IHandleCommand<TestCommand, TestAggregate>
         {
-            public void Handle(TestCommand cmd, TestAggregate aggregate) { }
+            public void HandleCommand(TestCommand cmd, TestAggregate aggregate) { }
         }
         class TestHandler2 : IHandleCommand<TestCommand, TestAggregate2>
         {
-            public void Handle(TestCommand cmd, TestAggregate2 aggregate) { }
+            public void HandleCommand(TestCommand cmd, TestAggregate2 aggregate) { }
         }
         private static void Prog4()
         {

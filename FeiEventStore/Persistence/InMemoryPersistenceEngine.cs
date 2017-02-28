@@ -73,7 +73,7 @@ namespace FeiEventStore.Persistence
             IList<Constraint> processConstraints = null,
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
-            IList<Guid> processIdsToBeDeleted = null)
+            HashSet<Guid> processIdsToBeDeleted = null)
         {
             var commitId = Guid.NewGuid();
             dynamic stats = new {
@@ -106,7 +106,7 @@ namespace FeiEventStore.Persistence
                     var key = e.Key;
                     if(!_primaryKey.Add(key))
                     {
-                        var ex = new AggregatePrimaryKeyViolationException(e.AggregateId, e.StateBaseTypeId, e.Key);
+                        var ex = new AggregatePrimaryKeyViolationException(e.AggregateId, e.AggregateTypeId, e.Key);
                         Logger.Fatal(ex);
                         throw ex;
                     }
@@ -194,7 +194,7 @@ namespace FeiEventStore.Persistence
                             Logger.Debug("Preparing snapshot for persistence: Aggregate Id: {0} Aggregate Version: {1}",
                                 s.AggregateId, s.AggregateVersion);
                         }
-                        _snapshotByAggregateId [ s.StateFinalTypeId ] = s;
+                        _snapshotByAggregateId [ s.AggregateStateTypeId ] = s;
                     }
                     stats.snapshots = snapshots.Count;
                 }
@@ -215,7 +215,7 @@ namespace FeiEventStore.Persistence
                         {
                             _processByProcessId[p.ProcessId] = p;
                         }
-                        _processByProcessTypeIdAggregateId[new Tuple<Guid, Guid>(p.StateBaseTypeId, p.AggregateId)] = p;
+                        _processByProcessTypeIdAggregateId[new Tuple<Guid, Guid>(p.ProcessTypeId, p.InvolvedAggregateId)] = p;
                     }
                     stats.processes = processes.Count;
                 }
@@ -305,7 +305,7 @@ namespace FeiEventStore.Persistence
             }
             var other = _processByProcessTypeIdAggregateId
                 .Values
-                .Where(p => p.ProcessId == process.ProcessId && p.AggregateId != process.AggregateId);
+                .Where(p => p.ProcessId == process.ProcessId && p.InvolvedAggregateId != process.InvolvedAggregateId);
             var union = new List<ProcessRecord>() { process };
             var result = union.Union(other).ToList();
             return result;
@@ -324,12 +324,12 @@ namespace FeiEventStore.Persistence
             return process.ProcessVersion;
         }
 
-        public IList<ProcessRecord> GetProcessRecords(Guid processStateBaseTypeId, Guid aggregateId)
+        public IList<ProcessRecord> GetProcessRecords(Guid processTypeId, Guid aggregateId)
         {
             ProcessRecord process;
-            if(!_processByProcessTypeIdAggregateId.TryGetValue(new Tuple<Guid, Guid>(processStateBaseTypeId, aggregateId), out process))
+            if(!_processByProcessTypeIdAggregateId.TryGetValue(new Tuple<Guid, Guid>(processTypeId, aggregateId), out process))
             {
-                var ex = new ProcessNotFoundException(processStateBaseTypeId, aggregateId);
+                var ex = new ProcessNotFoundException(processTypeId, aggregateId);
                 Logger.Warn(ex);
                 throw ex;
             }

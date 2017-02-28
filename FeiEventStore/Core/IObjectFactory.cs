@@ -17,13 +17,5 @@ namespace FeiEventStore.Core
         /// <param name="type">The type.</param>
         /// <returns></returns>
         IList<object> GetAllInstances(Type type);
-
-        /// <summary>
-        /// Creates new instance of the type.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="type">The type.</param>
-        /// <returns></returns>
-        object CreateInstance(Type type);
     }
 }

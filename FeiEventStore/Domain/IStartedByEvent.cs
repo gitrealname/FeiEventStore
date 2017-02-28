@@ -14,7 +14,7 @@ namespace FeiEventStore.Domain
     /// and IHandleEvent will not be performed unless there is running/in-complete process manager 
     /// </summary>
     /// <typeparam name="TEvent">The type of the event.</typeparam>
-    public interface IStartByEvent<in TEvent>
+    public interface IStartedByEvent<in TEvent>
         where TEvent : ICommand
     {
         /// <summary>
@@ -22,6 +22,6 @@ namespace FeiEventStore.Domain
         /// IMPORTANT: before renaming method name search code for .AsDynamic().StartWith!!!!
         /// </summary>
         /// <param name="event">The event.</param>
-        void StartWith(TEvent @event);
+        void StartByEvent(TEvent @event);
     }
 }

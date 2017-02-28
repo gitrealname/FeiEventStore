@@ -4,9 +4,11 @@ namespace FeiEventStore.Core
     using System;
     using System.Collections.Generic;
 
-    public interface IAggregate : IMessageEmitter<IEvent>
+    public interface IAggregate : IMessageEmitter<IEvent>, IPermanentlyTyped
     {
         long LatestPersistedVersion { get; set; }
+
+        Guid TypeId { get; set; }
 
         Guid Id { get; set; }
         long Version { get; set; }

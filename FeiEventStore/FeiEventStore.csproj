@@ -47,10 +47,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\BaseCommand.cs" />
-    <Compile Include="Core\BaseProcess.cs" />
-    <Compile Include="Core\BaseAggregate.cs" />
-    <Compile Include="Core\BaseEvent.cs" />
+    <Compile Include="Core\Command.cs" />
+    <Compile Include="Domain\BaseProcess.cs" />
+    <Compile Include="Domain\BaseAggregate.cs" />
+    <Compile Include="Core\Event.cs" />
     <Compile Include="Core\IState.cs" />
     <Compile Include="Core\IObjectFactory.cs" />
     <Compile Include="Core\IReplace.cs" />
@@ -64,18 +64,20 @@
     <Compile Include="Core\BaseValueObject.cs" />
     <Compile Include="Core\TypeExtensions.cs" />
     <Compile Include="Domain\AggregateDoesnotExistsException.cs" />
-    <Compile Include="Domain\DomainFacade.cs" />
+    <Compile Include="Domain\DomainCommandExecutor.cs" />
     <Compile Include="Domain\DomainExecutionScope.cs" />
-    <Compile Include="Domain\IDomainFacade.cs" />
+    <Compile Include="Domain\IDomainCommandExecutor.cs" />
     <Compile Include="Domain\IEventDispatcher.cs" />
-    <Compile Include="Domain\IStartByEvent.cs" />
+    <Compile Include="Domain\ICreatedByCommand.cs" />
+    <Compile Include="Domain\IStartedByEvent.cs" />
     <Compile Include="Domain\IHandleEvent.cs" />
     <Compile Include="Domain\IHandleCommand.cs" />
-    <Compile Include="Domain\IDomainResponse.cs" />
+    <Compile Include="Domain\DomainCommandResult.cs" />
     <Compile Include="Domain\DomainResponse.cs" />
     <Compile Include="Events\IPermanentlyTypedObjectService.cs" />
     <Compile Include="Events\MultipleTypeInstancesException.cs" />
     <Compile Include="Events\PermanentlyTypedObjectService.cs" />
+    <Compile Include="Events\ObjectUpgradeChainIsBrokenException.cs" />
     <Compile Include="Events\RuntimeTypeInstancesNotFoundException.cs" />
     <Compile Include="Events\TypeMismatchException.cs" />
     <Compile Include="Events\MustHavePermanentTypeAttributeException.cs" />
