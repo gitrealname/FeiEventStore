@@ -46,7 +46,8 @@ namespace PrototypeValidator
             //Prog1();
             //Prog2();
             //Prog3();
-            Prog4();
+            //Prog4();
+            ExtractTypeOfTheState();
 
             Logger.Error("Done.");
         }
@@ -54,8 +55,19 @@ namespace PrototypeValidator
         class AggregateState : IState {}
         class CommandPayload : IState {}
         class TestAggregate : BaseAggregate<AggregateState> { }
+
+        private static void ExtractTypeOfTheState()
+        {
+            var type = typeof(TestAggregate);
+            return;
+        }
+
         class TestAggregate2 : BaseAggregate<AggregateState> { }
-        class TestCommand : BaseCommand<CommandPayload> { }
+        class TestCommand : BaseCommand<CommandPayload> {
+            public TestCommand() : base(false)
+            {
+            }
+        }
         class TestHandler : IHandleCommand<TestCommand, TestAggregate>
         {
             public void Handle(TestCommand cmd, TestAggregate aggregate) { }

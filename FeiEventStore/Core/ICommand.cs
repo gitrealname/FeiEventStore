@@ -24,6 +24,14 @@ namespace FeiEventStore.Core
         /// The payload.
         /// </value>
         object Payload { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance can be executed against new aggregate.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance can be executed against new aggregate; otherwise, <c>false</c>.
+        /// </value>
+        bool CanBeExecutedAgainstNewAggregate { get; set; }
     }
 
     public interface ICommand<TState> : ICommand where TState : IState, new()

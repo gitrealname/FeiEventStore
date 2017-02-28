@@ -233,10 +233,11 @@
             return result;
         }
 
-        public IAggregate LoadAggregate(Type aggregateStateType, Guid aggregateId)
+        public IAggregate LoadAggregate(Type aggregateType, Guid aggregateId)
         {
             IAggregate aggregate;
             long startingVersion = 0;
+            var aggregateStateType = aggregateType.GetGenericInterfaceArgumentTypes(typeof(IAggregate<>), 0).FirstOrDefault();
             //try to get snapshot
             try
             {
@@ -250,11 +251,13 @@
                 aggregate.State = state;
                 startingVersion = aggregate.Version.Version + 1;
                 aggregate.Version = new AggregateVersion(aggregateId, snapshotRecord.AggregateVersion);
+                aggregate.LatestPersistedVersion = snapshotRecord.AggregateVersion;
             }
             catch (SnapshotNotFoundException)
             {
                 aggregate = _service.CreateObject<IAggregate>(aggregateStateType);
                 aggregate.Version = new AggregateVersion(aggregateId, 0);
+                aggregate.LatestPersistedVersion = 0;
             }
             //load events
             var events = GetEvents(aggregateId, startingVersion);
@@ -268,8 +271,9 @@
             return (IAggregate)aggregate;
         }
 
-        public IProcess LoadProcess(Type processStateType, Guid aggregateId)
+        public IProcess LoadProcess(Type processType, Guid aggregateId)
         {
+            var processStateType = processType.GetGenericInterfaceArgumentTypes(typeof(IProcess<>), 0).FirstOrDefault();
             var result = LoadProcess(() => {
                 var baseType = _service.LookupBaseTypeForPermanentType(processStateType);
                 var baseTypeId = _service.GetPermanentTypeIdForType(baseType);
@@ -292,7 +296,7 @@
             try
             {
                 var processRecords = getRecords();
-                var involvedAggregateIds = new List<Guid>();
+                var involvedAggregateIds = new HashSet<Guid>();
                 IState state = null;
                 long processVersion = 0;
                 foreach(var pr in processRecords)
@@ -317,7 +321,7 @@
                 process.LatestPersistedVersion = processVersion;
                 process.State = state;
                 process.Version = processVersion;
-                process.InvolvedAggregateIds.AddRange(involvedAggregateIds);
+                process.InvolvedAggregateIds = involvedAggregateIds;
             }
             catch(ProcessNotFoundException)
             {
@@ -383,8 +387,6 @@
             }
             er.EventTimestamp = @event.Timestapm;
 
-            er.ProcessId = @event.ProcessId;
-
             //store version will be later
             er.StoreVersion = 0;
 
@@ -404,7 +406,6 @@
         private IEvent InitEventFromEventRecord(IEvent @event, EventRecord record) {
 
             @event.Origin = new MessageOrigin(record.OriginSystemId, record.OriginUserId);
-            @event.ProcessId = record.ProcessId;
             @event.SourceAggregateVersion = new AggregateVersion(record.AggregateId, record.AggregateVersion);
             @event.StoreVersion = record.StoreVersion;
             @event.Timestapm = record.EventTimestamp;

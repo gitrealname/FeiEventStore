@@ -75,14 +75,14 @@
         /// <summary>
         /// Loads the latest aggregate. Create new instance of aggregate if given Id doesn't exists
         /// </summary>
-        /// <param name="aggregateStateType">Type of the aggregate.</param>
+        /// <param name="aggregateType">Type of the aggregate.</param>
         /// <param name="aggregateId">The aggregate identifier.</param>
         /// <returns></returns>
         /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
         /// <exception cref="MultipleTypeInstancesException"></exception>
-        IAggregate LoadAggregate(Type aggregateStateType, Guid aggregateId);
+        IAggregate LoadAggregate(Type aggregateType, Guid aggregateId);
 
-        IProcess LoadProcess(Type processStateType, Guid aggregateId );
+        IProcess LoadProcess(Type processType, Guid aggregateId );
 
         IProcess LoadProcess(Guid processId);
     }

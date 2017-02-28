@@ -16,6 +16,6 @@ namespace FeiEventStore.Domain
     /// </summary>
     public interface IDomainFacade
     {
-        IDomainResponse Process(IEnumerable<ICommand> messageBatch);
+        IDomainResponse Process(IList<ICommand> commandBatch);
     }
 }

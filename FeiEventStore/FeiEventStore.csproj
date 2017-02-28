@@ -63,10 +63,14 @@
     <Compile Include="Core\MessageOrigin.cs" />
     <Compile Include="Core\IProcess.cs" />
     <Compile Include="Core\BaseValueObject.cs" />
+    <Compile Include="Core\TypeExtensions.cs" />
+    <Compile Include="Domain\AggregateDoesnotExistsException.cs" />
     <Compile Include="Domain\DomainFacade.cs" />
-    <Compile Include="Domain\CommandExecutionScope.cs" />
+    <Compile Include="Domain\DomainExecutionScope.cs" />
     <Compile Include="Domain\IDomainFacade.cs" />
     <Compile Include="Domain\IEventDispatcher.cs" />
+    <Compile Include="Domain\IStartByEvent.cs" />
+    <Compile Include="Domain\IHandleEvent.cs" />
     <Compile Include="Domain\IHandleCommand.cs" />
     <Compile Include="Domain\IDomainResponse.cs" />
     <Compile Include="Domain\DomainResponse.cs" />

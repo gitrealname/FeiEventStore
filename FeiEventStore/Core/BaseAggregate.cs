@@ -10,6 +10,8 @@
         public Func<IEvent, IEvent> MessageMapper { get; set; }
         public AggregateVersion Version { get; set; }
 
+        public long LatestPersistedVersion { get; set; }
+
         /// <summary>
         /// Helper method To Calculate new Event Version
         /// </summary>
@@ -40,16 +42,16 @@
                 {
                     throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Version.Id, e.SourceAggregateVersion.Id));
                 }
-                RaiseEvent(e, false);
+                RaiseEvent(e, true);
                 ver++;
             }
             Version = new AggregateVersion(Version.Id, Version.Version + Changes.Count);
             Changes.Clear();
         }
 
-        protected void RaiseEvent(IEvent @event, bool isNew = true)
+        protected void RaiseEvent(IEvent @event, bool loadingFromHistory = false)
         {
-            if(isNew)
+            if(!loadingFromHistory)
             {
                 var id = new AggregateVersion(Version.Id, NextEventVersion);
                 @event.SourceAggregateVersion = id;

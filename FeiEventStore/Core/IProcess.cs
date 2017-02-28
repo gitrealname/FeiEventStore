@@ -30,7 +30,7 @@ namespace FeiEventStore.Core
         /// <value>
         /// The involved aggregates.
         /// </value>
-        List<Guid> InvolvedAggregateIds { get; set; }
+        HashSet<Guid> InvolvedAggregateIds { get; set; }
     }
 
     public interface IProcess<TState> : IProcess where TState : IState, new()

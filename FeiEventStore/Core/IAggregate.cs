@@ -6,6 +6,8 @@ namespace FeiEventStore.Core
 
     public interface IAggregate : IMessageEmitter<IEvent>
     {
+        long LatestPersistedVersion { get; set; }
+
         AggregateVersion Version { get; set; }
         object State { get; set; }
         void LoadFromHistory(IList<IEvent> history);

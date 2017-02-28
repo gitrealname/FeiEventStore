@@ -23,16 +23,6 @@
         /// </value>
         public DateTimeOffset Timestamp { get; set; }
 
-        /// <summary>
-        /// Gets or sets the process identifier.
-        /// Used to restore ProcessManager states.
-        /// </summary>
-        /// <value>
-        /// The process identifier.
-        /// </value>
-        /// 
-        public Guid? ProcessId { get; set; }
-
         public Guid? OriginUserId { get; set; }
 
         public Guid? OriginSystemId { get; set; }

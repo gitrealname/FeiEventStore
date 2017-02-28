@@ -15,7 +15,7 @@
 
         public bool IsComplete { get; protected set; }
 
-        public List<Guid> InvolvedAggregateIds { get; set; }
+        public HashSet<Guid> InvolvedAggregateIds { get; set; }
 
         public Func<ICommand, ICommand> MessageMapper { get; set; }
 

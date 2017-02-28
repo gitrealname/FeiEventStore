@@ -11,10 +11,17 @@
         public long? TargetAggregateVersion { get; set; }
         public TState Payload { get; set; }
 
+        public bool CanBeExecutedAgainstNewAggregate { get; set; }
+
         object ICommand.Payload
         {
             get { return Payload; }
             set { Payload = (TState)value; }
+        }
+
+        protected BaseCommand(bool canBeExecutedAgainstNewAggregate)
+        {
+            CanBeExecutedAgainstNewAggregate = canBeExecutedAgainstNewAggregate; 
         }
 
     }

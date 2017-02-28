@@ -1,4 +1,6 @@
 ﻿using System.Linq;
+using System.ServiceModel.Channels;
+using FeiEventStore.Persistence;
 
 namespace FeiEventStore.Domain
 {
@@ -14,48 +16,163 @@ namespace FeiEventStore.Domain
 
         private readonly IObjectFactory _factory;
         private readonly IEventStore _eventStore;
+        private readonly IPermanentlyTypedObjectService _permanentlyTypedObjectService;
         private readonly IReadOnlyCollection<IEventDispatcher> _eventDispatchers;
 
         public DomainFacade(IObjectFactory factory, 
             IEventStore eventStore, 
+            IPermanentlyTypedObjectService permanentlyTypedObjectService,
             IReadOnlyCollection<IEventDispatcher> eventDispatchers)
         {
             _factory = factory;
             _eventStore = eventStore;
+            _permanentlyTypedObjectService = permanentlyTypedObjectService;
             _eventDispatchers = eventDispatchers;
         }
-        public IDomainResponse Process(IEnumerable<ICommand> messageBatch)
+        public IDomainResponse Process(IList<ICommand> commandBatch)
         {
-            var scope = new CommandExecutionScope();
-            scope.Enqueue(messageBatch);
 
-
-            var result = new DomainResponse();
-            //main loop
-            try
+            while(true)
             {
-                while(scope.QueueCount > 0)
+                var scope = new DomainExecutionScope();
+                scope.EnqueueList(commandBatch);
+                var externalCommandCount = scope.Queue.Count;
+
+                var result = new DomainResponse();
+                //main loop
+                try
                 {
-                    var msg = scope.Dequeue();
-                    ProcessCommand(msg as ICommand, scope);
+                    while(scope.Queue.Count > 0)
+                    {
+                        var msg = scope.Queue.Dequeue();
+                        if(msg is ICommand)
+                        {
+                            ProcessCommand(msg as ICommand, scope, externalCommandCount > 0);
+                            externalCommandCount--;
+                        }
+                        else if(msg is IEvent)
+                        {
+                            ProcessEvent(msg as IEvent, scope);
+                        }
+                        else
+                        {
+                            var ex = new Exception(string.Format("SYSTEM: Unexpected message type '{0}'; only ICommand or IEvent can be processed.", msg.GetType().FullName));
+                            throw ex;
+                        }
+                    }
+
+                    //Todo: dispatch, 
+
+                    return result;
+                }
+                catch(AggregateConcurrencyViolationException)
+                {
+                    //Todo: re-try
+                }
+                catch(ProcessConcurrencyViolationException)
+                {
+                    //Todo: re-try
+                }
+                catch(AggregateConstraintViolationException)
+                {
+                    //Todo: translate exception to message for user consumption: XYZ has been changed!
+                    throw;
+                }
+                catch(AggregatePrimaryKeyViolationException)
+                {
+                    //Todo: translate exception to message for user consumption: XYZ with name XXX already exists!
+                    throw;
+                }
+                catch(AggregateDoesnotExistsException)
+                {
+                    //Todo: translate exception to message for user consumption: XYZ does not exists!
+                    throw;
+                }
+                catch(Exception e)
+                {
+                    //Todo: set fatal error into response, along with exception message
+                    Logger.Fatal(e);
+                }
+            }
+        }
+
+        private void ProcessEvent(IEvent e, DomainExecutionScope scope)
+        {
+            var iHandleEventType = typeof(IHandleEvent<>).MakeGenericType(e.GetType());
+            var handlers = _factory.GetAllInstances(iHandleEventType);
+
+            foreach(var handler in handlers)
+            {
+                //NOTE: commented out code should stand true. But enforcement will be done during bootstrap or governance test cases.
+                //if(!(handler is IProcess))
+                //{
+                //    throw new Exception(string.Format("SYSTEM: Event handler of type '{0}' must be of IProcess instance; Event type: '{1}'",
+                //        handler.GetType().FullName, e.GetType().FullName));
+                //}
+
+                //search for cached process that handles the event for given aggregate
+                var process = scope.LookupRunningProcess(handler.GetType(), e.SourceAggregateVersion.Id);
+                bool isNew = false;
+                if(process == null)
+                {
+                    isNew = true;
+                    //try loading process from the store
+                    try
+                    {
+                        process = _eventStore.LoadProcess(handler.GetType(), e.SourceAggregateVersion.Id);
+                        isNew = false;
+                    }
+                    catch(ProcessNotFoundException)
+                    {
+                        process = (IProcess)handler;
+                    }
                 }
 
-                //Todo: dispatch, 
+                //if is new, then see if new Process Manager needs to be created
+                // handle event otherwise
+                if(isNew)
+                {
+                    var startingTypes = process.GetType().GetGenericInterfaceArgumentTypes(typeof(IStartByEvent<>));
+                    if(startingTypes.Any(t => t == e.GetType()))
+                    {
+                        isNew = false;
+                        process.Id = Guid.NewGuid();
+                        process.InvolvedAggregateIds.Add(e.SourceAggregateVersion.Id);
+                        process.AsDynamic().StartWith(e);
+                        if(Logger.IsInfoEnabled)
+                        {
+                            Logger.Info("Started new Process Manager id {0}; Runtime type: '{1}', By event type: '{2}', Source Aggregate id: {3}",
+                                process.Id,
+                                process.GetType(),
+                                e.GetType(),
+                                e.SourceAggregateVersion.Id);
+                        }
+                    }
+                }
+                else
+                {
+                    process.AsDynamic().Handle(e);
+                }
+
+                //queue commands and track aggregate
+                if(!isNew)
+                {
+                    var commands = process.FlushUncommitedMessages();
+
+                    //process events, transfer info from command
+                    foreach(var cmd in commands)
+                    {
+                        cmd.Origin = new MessageOrigin(e.Origin);
+                        scope.Queue.Enqueue(cmd);
+                        process.InvolvedAggregateIds.Add(cmd.TargetAggregateId);
+                    }
+                    scope.TrackProcessManager(process);
+                }
             }
-            catch(Exception e)
-            {
-                //Todo: set fatal error into response, along with exception message
-                Logger.Fatal(e);
-            }
-            return result;
+
         }
 
-        private void ProcessEvent(IEvent e, CommandExecutionScope scope)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void ProcessCommand(ICommand cmd, CommandExecutionScope scope)
+        private void ProcessCommand(ICommand cmd, DomainExecutionScope scope, bool createInitialAggregateConstraint)
         {
             if(cmd.TargetAggregateId == Guid.Empty)
             {
@@ -66,7 +183,7 @@ namespace FeiEventStore.Domain
             //get instance of the handler and aggregate
             var iHandleType = typeof(IHandle<>).MakeGenericType(cmd.GetType());
             var iHandlers = _factory.GetAllInstances(iHandleType);
-            //it must just one command handler for given command tipe
+            //it must just one command handler for given command type
             if(iHandlers.Count > 1)
             {
                 throw new Exception(string.Format("SYSTEM: It must be only one command handler for any given command type but {0} were found; Command type '{1}'.",
@@ -90,7 +207,7 @@ namespace FeiEventStore.Domain
             var handler = iHandlers[0];
 
             //Try to find aggregate in the scope by it id
-            var aggregate = scope.GetTrackedObjectById(cmd.TargetAggregateId);
+            var aggregate = scope.LookupAggregate(cmd.TargetAggregateId);
 
             //ensure that found aggregate has the same type as expected by handler
             if(aggregate != null && aggregate.GetType() != aggregateType)
@@ -102,22 +219,53 @@ namespace FeiEventStore.Domain
             //load or create new aggregate from the store
             if(aggregate == null)
             {
-                aggregate = (IAggregate)_eventStore.LoadAggregate(aggregateType, cmd.TargetAggregateId);
+                aggregate = _eventStore.LoadAggregate(aggregateType, cmd.TargetAggregateId);
             }
 
-            //validate target version constant
+            //perform basic validation: target version and command against new aggregate
+            StandardCommandValidation(cmd, aggregate, scope);
 
-            //run command-aggregate validation
+            //start tracking an aggregate in the scope
+            scope.TrackAggregate(aggregate);
+
+            /***************************************
+             * Todo: validation rules!!!!!!!
+             */
 
             //execute command
+            if(createInitialAggregateConstraint)
+            {
+                scope.AggregateConstraints.Add(new Constraint(aggregate.Version.Id, aggregate.LatestPersistedVersion));
+            }
+            aggregate.AsDynamic().Handle(cmd, aggregate);
+            var events = aggregate.FlushUncommitedMessages();
 
-            //update events from command?
+            //process events, transfer info from command
+            foreach(var e in events)
+            {
+                e.SourceAggregateStateTypeId = _permanentlyTypedObjectService.GetPermanentTypeIdForType(aggregate.GetType());
+                e.Origin = new MessageOrigin(cmd.Origin);
+                scope.Queue.Enqueue(e);
+            }
+            scope.RaisedEvents.AddRange(events);
+        }
 
-            //queue events (flush aggregate), also add into commit queue
+        private void StandardCommandValidation(ICommand cmd, IAggregate aggregate, DomainExecutionScope scope)
+        {
+            //check target aggregate version
+            if(cmd.TargetAggregateVersion.HasValue)
+            {
+                if(cmd.TargetAggregateVersion.Value < aggregate.Version.Version)
+                {
+                    throw new AggregateConstraintViolationException(aggregate.Version.Id, cmd.TargetAggregateVersion.Value, aggregate.Version.Version);
+                }
+            }
 
-            //check snapshot strategy, add into commit queue if needed
-
-
+            //check if command can be applied on new Aggregate
+            if(!cmd.CanBeExecutedAgainstNewAggregate && aggregate.Version.Version == 0)
+            {
+                throw new AggregateDoesnotExistsException(aggregate.Version.Id);
+            }
         }
     }
 }

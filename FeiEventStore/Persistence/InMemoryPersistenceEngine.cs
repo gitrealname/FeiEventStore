@@ -171,8 +171,8 @@ namespace FeiEventStore.Persistence
 
                     if(Logger.IsDebugEnabled)
                     {
-                        Logger.Debug("Preparing event for persistence: Store Version: {0}, Process Id: {1}, Aggregate Id: {2} Aggregate Version: {3}",
-                            e.StoreVersion, e.ProcessId.GetValueOrDefault(Guid.Empty), e.AggregateId, e.AggregateVersion);
+                        Logger.Debug("Preparing event for persistence: Store Version: {0}, Aggregate Id: {2} Aggregate Version: {3}",
+                            e.StoreVersion, e.AggregateId, e.AggregateVersion);
                     }
                     _events.Add(e);
                     if(!_eventsByAggregateId.ContainsKey(e.AggregateId))

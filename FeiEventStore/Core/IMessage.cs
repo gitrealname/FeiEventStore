@@ -5,7 +5,5 @@
     public interface IMessage
     {
         MessageOrigin Origin { get; set; }
-
-        Guid? ProcessId { get; set; }
     }
 }

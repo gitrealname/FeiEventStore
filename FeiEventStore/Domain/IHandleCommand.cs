@@ -16,6 +16,12 @@ namespace FeiEventStore.Domain
         where TCommand : ICommand
         where TAggregate : IAggregate
     {
+        /// <summary>
+        /// Handles the specified command.
+        /// IMPORTANT: before renaming method name search code for .AsDynamic().Handle!!!!
+        /// </summary>
+        /// <param name="cmd">The command.</param>
+        /// <param name="aggregate">The aggregate.</param>
         void Handle(TCommand cmd, TAggregate aggregate);
     }
 }
