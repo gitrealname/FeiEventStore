@@ -111,7 +111,7 @@ namespace FeiEventStore.Domain
                 //}
 
                 //search for cached process that handles the event for given aggregate
-                var process = scope.LookupRunningProcess(handler.GetType(), e.SourceAggregateVersion.Id);
+                var process = scope.LookupRunningProcess(handler.GetType(), e.SourceAggregateId);
                 bool isNew = false;
                 if(process == null)
                 {
@@ -119,7 +119,7 @@ namespace FeiEventStore.Domain
                     //try loading process from the store
                     try
                     {
-                        process = _eventStore.LoadProcess(handler.GetType(), e.SourceAggregateVersion.Id);
+                        process = _eventStore.LoadProcess(handler.GetType(), e.SourceAggregateId);
                         isNew = false;
                     }
                     catch(ProcessNotFoundException)
@@ -137,7 +137,7 @@ namespace FeiEventStore.Domain
                     {
                         isNew = false;
                         process.Id = Guid.NewGuid();
-                        process.InvolvedAggregateIds.Add(e.SourceAggregateVersion.Id);
+                        process.InvolvedAggregateIds.Add(e.SourceAggregateId);
                         process.AsDynamic().StartWith(e);
                         if(Logger.IsInfoEnabled)
                         {
@@ -145,7 +145,7 @@ namespace FeiEventStore.Domain
                                 process.Id,
                                 process.GetType(),
                                 e.GetType(),
-                                e.SourceAggregateVersion.Id);
+                                e.SourceAggregateId);
                         }
                     }
                 }
@@ -235,7 +235,7 @@ namespace FeiEventStore.Domain
             //execute command
             if(createInitialAggregateConstraint)
             {
-                scope.AggregateConstraints.Add(new Constraint(aggregate.Version.Id, aggregate.LatestPersistedVersion));
+                scope.AggregateConstraints.Add(new Constraint(aggregate.Id, aggregate.LatestPersistedVersion));
             }
             aggregate.AsDynamic().Handle(cmd, aggregate);
             var events = aggregate.FlushUncommitedMessages();
@@ -243,7 +243,7 @@ namespace FeiEventStore.Domain
             //process events, transfer info from command
             foreach(var e in events)
             {
-                e.SourceAggregateStateTypeId = _permanentlyTypedObjectService.GetPermanentTypeIdForType(aggregate.GetType());
+                e.SourceAggregateId = _permanentlyTypedObjectService.GetPermanentTypeIdForType(aggregate.GetType());
                 e.Origin = new MessageOrigin(cmd.Origin);
                 scope.Queue.Enqueue(e);
             }
@@ -255,16 +255,16 @@ namespace FeiEventStore.Domain
             //check target aggregate version
             if(cmd.TargetAggregateVersion.HasValue)
             {
-                if(cmd.TargetAggregateVersion.Value < aggregate.Version.Version)
+                if(cmd.TargetAggregateVersion.Value < aggregate.Version)
                 {
-                    throw new AggregateConstraintViolationException(aggregate.Version.Id, cmd.TargetAggregateVersion.Value, aggregate.Version.Version);
+                    throw new AggregateConstraintViolationException(aggregate.Id, cmd.TargetAggregateVersion.Value, aggregate.Version);
                 }
             }
 
             //check if command can be applied on new Aggregate
-            if(!cmd.CanBeExecutedAgainstNewAggregate && aggregate.Version.Version == 0)
+            if(!cmd.CanBeExecutedAgainstNewAggregate && aggregate.Version == 0)
             {
-                throw new AggregateDoesnotExistsException(aggregate.Version.Id);
+                throw new AggregateDoesnotExistsException(aggregate.Id);
             }
         }
     }

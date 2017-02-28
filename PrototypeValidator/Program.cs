@@ -11,7 +11,7 @@ namespace PrototypeValidator
     using System;
     using NLog;
 
-    public interface IMyType : IPermanentlyTyped { }
+    public interface IMyType : IState { }
 
     public class Event1 : IMyType { }
 

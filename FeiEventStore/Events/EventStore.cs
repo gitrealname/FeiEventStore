@@ -197,7 +197,7 @@
                 Logger.Debug("Loaded {0} events for aggregate id {1} up until version {2}", 
                     result.Count, 
                     aggregateId, 
-                    result.Last().SourceAggregateVersion.Version);
+                    result.Last().SourceAggregateVersion);
             }
 
             return result;
@@ -227,7 +227,7 @@
                 Logger.Debug("Loaded {0} events starting with event store version {1} up until {2}",
                     result.Count,
                     startingStoreVersion,
-                    result.Last().SourceAggregateVersion.Version);
+                    result.Last().SourceAggregateVersion);
             }
 
             return result;
@@ -249,14 +249,16 @@
                 var newAggregateType = typeof(IAggregate<>).MakeGenericType(state.GetType());
                 aggregate = _service.CreateObject<IAggregate>(newAggregateType);
                 aggregate.State = state;
-                startingVersion = aggregate.Version.Version + 1;
-                aggregate.Version = new AggregateVersion(aggregateId, snapshotRecord.AggregateVersion);
+                startingVersion = aggregate.Version + 1;
+                aggregate.Id = aggregateId;
+                aggregate.Version = snapshotRecord.AggregateVersion;
                 aggregate.LatestPersistedVersion = snapshotRecord.AggregateVersion;
             }
             catch (SnapshotNotFoundException)
             {
                 aggregate = _service.CreateObject<IAggregate>(aggregateStateType);
-                aggregate.Version = new AggregateVersion(aggregateId, 0);
+                aggregate.Id = aggregateId;
+                aggregate.Version = 0;
                 aggregate.LatestPersistedVersion = 0;
             }
             //load events
@@ -361,13 +363,13 @@
         private EventRecord CreateEventRecordFromEvent ( IEvent @event )
         {
             var er = new EventRecord();
-            er.AggregateId = @event.SourceAggregateVersion.Id;
-            er.AggregateVersion = @event.SourceAggregateVersion.Version;
+            er.AggregateId = @event.SourceAggregateId;
+            er.AggregateVersion = @event.SourceAggregateVersion;
 
-            var finalType = _service.LookupTypeByPermanentTypeId(@event.SourceAggregateStateTypeId);
+            var finalType = _service.LookupTypeByPermanentTypeId(@event.SourceAggregateId);
             var baseType = _service.LookupBaseTypeForPermanentType(finalType);
             var baseTypeId = _service.GetPermanentTypeIdForType(baseType);
-            var finalTypeId = @event.SourceAggregateStateTypeId;
+            var finalTypeId = @event.SourceAggregateId;
             er.StateBaseTypeId = baseTypeId;
             if(baseTypeId != finalTypeId)
             {
@@ -406,7 +408,8 @@
         private IEvent InitEventFromEventRecord(IEvent @event, EventRecord record) {
 
             @event.Origin = new MessageOrigin(record.OriginSystemId, record.OriginUserId);
-            @event.SourceAggregateVersion = new AggregateVersion(record.AggregateId, record.AggregateVersion);
+            @event.SourceAggregateId = record.AggregateId;
+            @event.SourceAggregateVersion = record.AggregateVersion;
             @event.StoreVersion = record.StoreVersion;
             @event.Timestapm = record.EventTimestamp;
             @event.SourceAggregateStateTypeId = record.StateFinalTypeId ?? record.StateBaseTypeId;

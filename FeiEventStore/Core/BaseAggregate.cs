@@ -8,7 +8,10 @@
         public readonly List<IEvent> Changes = new List<IEvent>();
 
         public Func<IEvent, IEvent> MessageMapper { get; set; }
-        public AggregateVersion Version { get; set; }
+
+        public Guid Id { get; set; }
+
+        public long Version { get; set; }
 
         public long LatestPersistedVersion { get; set; }
 
@@ -18,34 +21,30 @@
         /// <value>
         /// The next event version.
         /// </value>
-        protected long NextEventVersion => Version.Version + Changes.Count + 1;
+        protected long NextEventVersion => Version + Changes.Count + 1;
 
         public IList<IEvent> FlushUncommitedMessages()
         {
             var changes = Changes.ToArray();
-            Version = new AggregateVersion(Version.Id, Version.Version + changes.Length);
             Changes.Clear();
             return changes;
         }
 
         public void LoadFromHistory(IList<IEvent> history)
         {
-            long ver = Version.Version;
             foreach(var e in history)
             {
-                if(e.SourceAggregateVersion.Version != ver + 1)
+                if(e.SourceAggregateVersion != Version + 1)
                 {
-                    throw new Exception(string.Format("Events are out of order for aggregate id {0}; Previous version: {1}, Next version: {2}",
-                        e.SourceAggregateVersion.Id, Version, e.SourceAggregateVersion.Version));
+                    throw new Exception(string.Format("Events are out of order for aggregate id {0}; Aggregate version: {1}, Event version: {2}",
+                        e.SourceAggregateId, Version, e.SourceAggregateVersion));
                 }
-                if(e.SourceAggregateVersion.Id != Version.Id)
+                if(e.SourceAggregateId != Id)
                 {
-                    throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Version.Id, e.SourceAggregateVersion.Id));
+                    throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Id, e.SourceAggregateId));
                 }
                 RaiseEvent(e, true);
-                ver++;
             }
-            Version = new AggregateVersion(Version.Id, Version.Version + Changes.Count);
             Changes.Clear();
         }
 
@@ -53,13 +52,9 @@
         {
             if(!loadingFromHistory)
             {
-                var id = new AggregateVersion(Version.Id, NextEventVersion);
-                @event.SourceAggregateVersion = id;
-                Version = id;
-            }
-            if(MessageMapper != null)
-            {
-                @event = MessageMapper(@event);
+                @event.SourceAggregateId = Id;
+                @event.SourceAggregateVersion = NextEventVersion;
+                Version = NextEventVersion;
             }
             this.AsDynamic().Apply(@event);
             Changes.Add(@event);

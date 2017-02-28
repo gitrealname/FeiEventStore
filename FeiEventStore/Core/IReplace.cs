@@ -7,7 +7,7 @@
     /// Must be marked with this interface.
     /// </summary>
     /// <typeparam name="TObsolete">The type of the obsolete object.</typeparam>
-    public interface IReplace<TObsolete>  where TObsolete : IPermanentlyTyped
+    public interface IReplace<in TObsolete>  where TObsolete : IPermanentlyTyped, IState
     {
         /// <summary>
         /// Initializes from obsolete object type.

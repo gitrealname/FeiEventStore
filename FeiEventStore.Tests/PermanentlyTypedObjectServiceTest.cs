@@ -14,7 +14,7 @@ namespace FeiEventStore.Tests
     public class PermanentlyTypedObjectServiceTest
     {
      
-        public interface ITestEvent : IPermanentlyTyped { }
+        public interface ITestEvent : IState { }
 
         [PermanentType("{00000000-0000-0000-0000-000000000001}")]
         public class FirstEvent : ITestEvent { }

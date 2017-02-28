@@ -48,7 +48,7 @@ namespace FeiEventStore.Domain
 
         public void TrackAggregate(IAggregate aggregate)
         {
-            AggregateMap[aggregate.Version.Id] = aggregate;
+            AggregateMap[aggregate.Id] = aggregate;
         }
 
         /// <summary>

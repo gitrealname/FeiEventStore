@@ -47,7 +47,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\AggregateVersion.cs" />
     <Compile Include="Core\BaseCommand.cs" />
     <Compile Include="Core\BaseProcess.cs" />
     <Compile Include="Core\BaseAggregate.cs" />
