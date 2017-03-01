@@ -74,7 +74,7 @@ namespace PrototypeValidator
             var container = new LightInject.ServiceContainer(containerOptions);
             var config = new ServiceRegistryConfiguratorConfiguration();
             config.AssemblyNamePaterns.Add("PrototypeValidator*exe");
-            //config.AssemblyNamePaterns.Add("Fei*dll");
+            config.AssemblyNamePaterns.Add("Fei*dll");
 
             container.RegisterEventStore(config);
             return;

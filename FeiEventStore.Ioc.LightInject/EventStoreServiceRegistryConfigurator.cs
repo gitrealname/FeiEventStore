@@ -67,7 +67,7 @@ namespace FeiEventStore.Ioc.LightInject
                         {
                             continue;
                         }
-                        Console.WriteLine(t.FullName);
+                        //Console.WriteLine(t.FullName);
                         foreach(var i in t.GetInterfaces())
                         {
                            //Console.WriteLine("Service type '{0}'.", i.FullName);
