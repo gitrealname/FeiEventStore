@@ -19,7 +19,7 @@ namespace FeiEventStore.Domain
     {
         /// <summary>
         /// Starts the with.
-        /// IMPORTANT: before renaming method name search code for .AsDynamic().StartWith!!!!
+        /// IMPORTANT: before renaming method name search code for .AsDynamic().StartByEvent!!!!
         /// </summary>
         /// <param name="event">The event.</param>
         void StartByEvent(TEvent @event);

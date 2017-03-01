@@ -54,20 +54,33 @@ namespace PrototypeValidator
             Logger.Error("Done.");
         }
 
+        public class CommandPayload : IState { }
+        public class CommandPayload2 : IState, IReplace<CommandPayload>
+        {
+            public void InitFromObsolete(CommandPayload obsoleteObject) { }
+        }
+
+        public class CommandPayLoad3 : IReplace<CommandPayload2>
+        {
+            public void InitFromObsolete(CommandPayload2 obsoleteObject) { }
+        }
+
         private static void ConfigureContainer()
         {
+            var payload = new CommandPayLoad3();
+            payload.InitFromObsolete(new CommandPayload2());
+
             var containerOptions = new ContainerOptions();
             var container = new LightInject.ServiceContainer(containerOptions);
             var config = new ServiceRegistryConfiguratorConfiguration();
             config.AssemblyNamePaterns.Add("PrototypeValidator*exe");
-            config.AssemblyNamePaterns.Add("Fei*dll");
+            //config.AssemblyNamePaterns.Add("Fei*dll");
 
             container.RegisterEventStore(config);
             return;
         }
 
         class AggregateState : IState {}
-        class CommandPayload : IState {}
         class TestAggregate : BaseAggregate<AggregateState> { }
 
         private static void ExtractTypeOfTheState()

@@ -140,7 +140,7 @@ namespace FeiEventStore.Domain
                         isNew = false;
                         process.Id = Guid.NewGuid();
                         process.InvolvedAggregateIds.Add(e.SourceAggregateId);
-                        process.AsDynamic().StartWith(e);
+                        process.AsDynamic().StartByEvent(e);
                         if(Logger.IsInfoEnabled)
                         {
                             Logger.Info("Started new Process Manager id {0}; Runtime type: '{1}', By event type: '{2}', Source Aggregate id: {3}",

@@ -8,7 +8,7 @@ namespace FeiEventStore.Persistence
     using System.Threading;
     using NLog;
 
-    class InMemoryPersistenceEngine : IPersistenceEngine
+    public class InMemoryPersistenceEngine : IPersistenceEngine
     {
 
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
