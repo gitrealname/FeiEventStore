@@ -48,7 +48,7 @@ namespace FeiEventStore.Domain
                         var msg = scope.Queue.Dequeue();
                         if(msg is ICommand)
                         {
-                            ProcessCommand(msg as ICommand, scope, externalCommandCount > 0);
+                            ProcessCommand(msg as ICommand, scope/*, externalCommandCount > 0*/);
                             externalCommandCount--;
                         }
                         else if(msg is IEvent)
@@ -62,6 +62,7 @@ namespace FeiEventStore.Domain
                         }
                     }
 
+                    //Todo: commit
                     //Todo: dispatch, 
 
                     return result;
@@ -174,7 +175,7 @@ namespace FeiEventStore.Domain
 
         }
 
-        private void ProcessCommand(ICommand cmd, DomainExecutionScope scope, bool createInitialAggregateConstraint)
+        private void ProcessCommand(ICommand cmd, DomainExecutionScope scope/*, bool createInitialAggregateConstraint*/)
         {
             if(cmd.TargetAggregateId == Guid.Empty)
             {
@@ -235,10 +236,10 @@ namespace FeiEventStore.Domain
              */
 
             //execute command
-            if(createInitialAggregateConstraint)
-            {
-                scope.AggregateConstraints.Add(new Constraint(aggregate.Id, aggregate.LatestPersistedVersion));
-            }
+            //if(createInitialAggregateConstraint)
+            //{
+            //    scope.AggregateConstraints.Add(new Constraint(aggregate.Id, aggregate.LatestPersistedVersion));
+            //}
             handler.AsDynamic().HandleCommand(cmd, aggregate);
 
             var events = aggregate.FlushUncommitedMessages();

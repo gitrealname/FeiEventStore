@@ -24,6 +24,8 @@ namespace FeiEventStore.Persistence
 
         private HashSet<string> _primaryKey;
 
+        private Dictionary<Guid, string> _primaryKeyByAggregateId;
+
         private long _dispatchedStoreVersion;
         private long _storeVersion;
 
@@ -66,11 +68,12 @@ namespace FeiEventStore.Persistence
             _processByProcessId = new Dictionary<Guid, ProcessRecord>();
             _processByProcessTypeIdAggregateId = new Dictionary<Tuple<Guid,Guid>, ProcessRecord>();
             _primaryKey = new HashSet<string>();
+            _primaryKeyByAggregateId = new Dictionary<Guid, string>();
         }
 
         public long Commit(IList<EventRecord> events,
-            IList<Constraint> aggregateConstraints = null,
-            IList<Constraint> processConstraints = null,
+            //IList<Constraint> aggregateConstraints = null,
+            //IList<Constraint> processConstraints = null,
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
             HashSet<Guid> processIdsToBeDeleted = null)
@@ -78,8 +81,8 @@ namespace FeiEventStore.Persistence
             var commitId = Guid.NewGuid();
             dynamic stats = new {
                 events = 0,
-                aggregateConstraints = 0,
-                processConstraints = 0,
+                //aggregateConstraints = 0,
+                //processConstraints = 0,
                 snapshots = 0,
                 processes = 0,
             };
@@ -100,63 +103,93 @@ namespace FeiEventStore.Persistence
                     throw ex;
                 }
 
-                //check primary key violation
+                //check constraints
                 foreach(var e in events)
                 {
-                    var key = e.Key;
-                    if(!_primaryKey.Add(key))
+                    string key;
+                    //delete primary key
+                    if(e.AggregateTypeUniqueKey == null)
                     {
-                        var ex = new AggregatePrimaryKeyViolationException(e.AggregateId, e.AggregateTypeId, e.Key);
-                        Logger.Fatal(ex);
+                        if(_primaryKeyByAggregateId.TryGetValue(e.AggregateId, out key))
+                        {
+                            _primaryKey.Remove(key);
+                            _primaryKeyByAggregateId.Remove(e.AggregateId);
+                        }
+                    }
+                    else
+                    {
+                        key = e.AggregateTypeUniqueKey + ":" + e.AggregateTypeId;
+                        if(!_primaryKey.Add(key))
+                        {
+                            var ex = new AggregatePrimaryKeyViolationException(e.AggregateId, e.AggregateTypeId, e.AggregateTypeUniqueKey);
+                            Logger.Fatal(ex);
+                            throw ex;
+                        }
+                        _primaryKeyByAggregateId[e.AggregateId] = key;
+                    }
+
+                    //check aggregate version
+                    var currentVersion = GetAggregateVersion(e.AggregateId);
+                    if(currentVersion >= e.AggregateVersion)
+                    {
+                        var ex = new AggregateConcurrencyViolationException(e.AggregateId, e.AggregateVersion, currentVersion);
+                        Logger.Warn(ex);
                         throw ex;
                     }
                 }
 
-                //check for conflicts
-                if(aggregateConstraints != null)
+                if(processes != null)
                 {
-                    foreach(var c in aggregateConstraints)
+                    foreach(var p in processes)
                     {
-                        var currentVersion = GetAggregateVersion(c.Id);
-                        if(currentVersion != c.Version)
+                        if(p.State != null)
                         {
-                            if(c.IsCritical)
+                            //remove finished processes
+                            if(processIdsToBeDeleted != null && processIdsToBeDeleted.Contains(p.ProcessId))
                             {
-                                var ex = new AggregateConstraintViolationException(c.Id, c.Version, currentVersion);
-                                Logger.Fatal(ex);
-                                throw ex;
+                                var keysToDelete = _processByProcessTypeIdAggregateId.Where(kv => kv.Value.ProcessId == p.ProcessId).Select(kv => kv.Key);
+                                foreach(var k in keysToDelete)
+                                {
+                                    _processByProcessTypeIdAggregateId.Remove(k);
+                                }
                             }
-                            else
+
+                            if(_processByProcessId.ContainsKey(p.ProcessId))
                             {
-                                var ex = new AggregateConcurrencyViolationException(c.Id, c.Version, currentVersion);
-                                Logger.Warn(ex);
-                                throw ex;
+                                var currentProcess = _processByProcessId[p.ProcessId];
+                                if(currentProcess.ProcessVersion >= p.ProcessVersion)
+                                {
+                                    var ex = new ProcessConcurrencyViolationException(p.ProcessId, p.ProcessTypeId, p.ProcessVersion, currentProcess.ProcessVersion);
+                                    Logger.Warn(ex);
+                                    throw ex;
+
+                                }
                             }
                         }
                     }
-                    stats.aggregateConstraints = aggregateConstraints.Count;
                 }
 
-                if(processConstraints != null)
-                {
-                    foreach(var c in processConstraints)
-                    {
-                        var currentVersion = GetProcessVersion(c.Id);
-                        if(currentVersion != c.Version)
-                        {
-                            //if(c.IsCritical)
-                            //{
-                            //    var ex = new ProcessConstraintViolationException(c.Id, c.Version, currentVersion);
-                            //    Logger.Fatal(ex);
-                            //    throw ex;
-                            //}
-                            var ex = new ProcessConcurrencyViolationException(c.Id, c.Version, currentVersion);
-                            Logger.Fatal(ex);
-                            throw ex;
-                        }
-                    }
-                    stats.processConstraints = processConstraints.Count;
-                }
+                //check for conflicts
+                //if(processConstraints != null)
+                //{
+                //    foreach(var c in processConstraints)
+                //    {
+                //        var currentVersion = GetProcessVersion(c.Id);
+                //        if(currentVersion != c.Version)
+                //        {
+                //            //if(c.IsCritical)
+                //            //{
+                //            //    var ex = new ProcessConstraintViolationException(c.Id, c.Version, currentVersion);
+                //            //    Logger.Fatal(ex);
+                //            //    throw ex;
+                //            //}
+                //            var ex = new ProcessConcurrencyViolationException(c.Id, c.Version, currentVersion);
+                //            Logger.Fatal(ex);
+                //            throw ex;
+                //        }
+                //    }
+                //    stats.processConstraints = processConstraints.Count;
+                //}
 
                 var startPos = _events.Count;
                 var endPos = startPos;
@@ -199,7 +232,9 @@ namespace FeiEventStore.Persistence
                     stats.snapshots = snapshots.Count;
                 }
 
-                //process processes (F
+                //delete finished processes 
+
+                //process processes
                 if(processes != null)
                 {
                     foreach(var p in processes)
@@ -225,8 +260,10 @@ namespace FeiEventStore.Persistence
 
                 if(Logger.IsInfoEnabled)
                 {
-                    Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes: {2}, Aggregate constraints validated: {3}, Process constraints validated: {4}. Final store version: {5}",
-                        stats.events, stats.napshots, stats.processes, stats.aggregateConstraints, stats.processConstraints, StoreVersion);
+                    //Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes: {2}, Aggregate constraints validated: {3}, Process constraints validated: {4}. Final store version: {5}",
+                    //    stats.events, stats.napshots, stats.processes, stats.aggregateConstraints, stats.processConstraints, StoreVersion);
+                    Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes: {2}. Final store version: {3}",
+                        stats.events, stats.napshots, stats.processes, StoreVersion);
                 }
 
                 return StoreVersion;

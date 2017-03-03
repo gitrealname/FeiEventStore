@@ -9,8 +9,6 @@
 
     /// <summary>
     /// Event store implementation.
-    /// Important notes: Aggregates, Event and Processes must have default constructor.
-    /// Todo: when loading from history, only upgrade object when FinalAggregateType or FinalEventType not null
     /// </summary>
     /// <seealso cref="FeiEventStore.Events.IEventStore" />
     public class EventStore : IEventStore
@@ -30,7 +28,7 @@
         public long StoreVersion => _engine.StoreVersion;
 
         public void Commit(IList<IEvent> events,
-            IList<Constraint> aggregateConstraints = null,
+            //IList<Constraint> aggregateConstraints = null,
             IList<IAggregate> snapshots = null,
             IList<IProcess> processes = null)
         {
@@ -64,7 +62,7 @@
 
             //processes
             var processRecords = new List<ProcessRecord>();
-            var processConstaints = new List<Constraint>();
+            //var processConstaints = new List<Constraint>();
             var completeProcessIds = new HashSet<Guid>();
             var processPersistedCount = 0;
             if(processes != null)
@@ -78,11 +76,11 @@
                     Guid stateTypeId = Guid.Empty;
                     foreach (var aggregateId in p.InvolvedAggregateIds)
                     {
-                        if(p.LatestPersistedVersion != 0)
-                        {
-                            var constraint = new Constraint(p.Id, p.LatestPersistedVersion - 1);
-                            processConstaints.Add(constraint);
-                        }
+                        //if(p.LatestPersistedVersion != 0)
+                        //{
+                        //    var constraint = new Constraint(p.Id, p.LatestPersistedVersion);
+                        //    processConstaints.Add(constraint);
+                        //}
                         if(p.IsComplete)
                         {
                             if(!deleted)
@@ -113,7 +111,6 @@
 
                             }
                             processRecords.Add(pr);
-
                         }
                     }
                 }
@@ -133,7 +130,7 @@
                 //call persistence layer
                 try
                 {
-                    _engine.Commit(eventRecords, aggregateConstraints, processConstaints, snapshotRecords, processRecords, completeProcessIds);
+                    _engine.Commit(eventRecords, /*aggregateConstraints, processConstaints,*/ snapshotRecords, processRecords, completeProcessIds);
                 }
                 catch(EventStoreConcurrencyViolationException ex)
                 {
@@ -161,13 +158,19 @@
                 {
                     if(Logger.IsInfoEnabled)
                     {
-                        Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes persisted: {2}, Processes deleted: {3},  Aggregate constraints validated: {4}, Process constraints validated: {5}. Final store version: {6}",
-                            eventRecords.Count, 
-                            snapshotRecords.Count, 
-                            processPersistedCount, 
-                            completeProcessIds.Count,  
-                            aggregateConstraints?.Count ?? 0,
-                            processConstaints.Count, 
+                        //Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes persisted: {2}, Processes deleted: {3},  Aggregate constraints validated: {4}, Process constraints validated: {5}. Final store version: {6}",
+                        //    eventRecords.Count, 
+                        //    snapshotRecords.Count, 
+                        //    processPersistedCount, 
+                        //    completeProcessIds.Count,  
+                        //    aggregateConstraints?.Count ?? 0,
+                        //    processConstaints.Count, 
+                        //    initialStoreVersion);
+                        Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes persisted: {2}, Processes deleted: {3}. Final store version: {4}",
+                            eventRecords.Count,
+                            snapshotRecords.Count,
+                            processPersistedCount,
+                            completeProcessIds.Count,
                             initialStoreVersion);
                     }
                 }
@@ -414,14 +417,15 @@
             er.EventTimestamp = @event.Timestapm;
 
             //setup key
-            if(string.IsNullOrWhiteSpace(@event.AggregateKey))
-            {
-                er.Key = er.AggregateId.ToString() + '.' + er.AggregateVersion.ToString();
-            }
-            else
-            {
-                er.Key = @event.AggregateKey + ':' + er.AggregateTypeId.ToString();
-            }
+            //if(string.IsNullOrWhiteSpace(@event.AggregateKey))
+            //{
+            //    er.Key = Guid.NewGuid().ToString();
+            //}
+            //else
+            //{
+            //    er.Key = @event.AggregateKey + ':' + er.AggregateTypeId.ToString();
+            //}
+            er.AggregateTypeUniqueKey = @event.AggregateKey?.Trim();
 
             return er;
         }
@@ -436,8 +440,9 @@
             @event.Timestapm = record.EventTimestamp;
 
             //restore aggregate key
-            var pos = record.Key.LastIndexOf(":");
-            @event.AggregateKey = pos < 0 ? null : record.Key.Substring(0, pos);
+            //var pos = record.Key.LastIndexOf(":");
+            //@event.AggregateKey = pos < 0 ? null : record.Key.Substring(0, pos);
+            @event.AggregateKey = record.AggregateTypeUniqueKey;
 
             return @event;
         }

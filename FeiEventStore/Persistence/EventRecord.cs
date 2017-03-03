@@ -26,14 +26,12 @@
         public Guid AggregateTypeId { get; set; }
 
         /// <summary>
-        /// Gets or sets the Aggregate Key. 
-        /// It can be any string that in combination with <paramref name="AggregateTypeId"/> create 
-        /// globally unique Key.
+        /// Gets or sets the Unique Key per Aggregate Type. 
         /// </summary>
         /// <value>
         /// The aggregate key.
         /// </value>
-        public string Key { get; set; }
+        public string AggregateTypeUniqueKey { get; set; }
 
         /// <summary>
         /// Gets or sets the event type identifier.

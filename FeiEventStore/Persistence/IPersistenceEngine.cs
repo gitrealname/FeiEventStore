@@ -15,7 +15,7 @@ namespace FeiEventStore.Persistence
     ///         This is required to perform lookup and load an Aggregate. 
     ///         Violation of this index is not expected as all collisions are handled using #1.
     ///         
-    ///     3. It has to be an unique index on <see cref="EventRecord.Key"/>.
+    ///     3. It has to be an unique index on <see cref="EventRecord.AggregateTypeUniqueKey"/>.
     ///        Violation of this index must produce <see cref="AggregatePrimaryKeyViolationException"/>.
     /// 
     ///     4. It has to be a non-unique index on <see cref="EventRecord.EventTimestamp"/> to accommodate time related events lookup 
@@ -73,8 +73,8 @@ namespace FeiEventStore.Persistence
         /// Commit Final Store Version
         /// </returns>
         long Commit(IList<EventRecord> events,
-            IList<Constraint> aggregateConstraints = null,
-            IList<Constraint> processConstraints = null,
+            //IList<Constraint> aggregateConstraints = null,
+            //IList<Constraint> processConstraints = null,
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
             HashSet<Guid> processIdsToBeDeleted = null);

@@ -16,7 +16,7 @@
         /// Gets or sets the Aggregate Key. 
         /// AggregateKey in combination with Base Type Id of the Source Aggregate Type
         /// Makes Globally Unique Key. 
-        /// NOTE: If null, Event store will set this value to Aggregate.Id + AggregateVersion right before commit.
+        /// NOTE: If null, Event store will set this value to Guid.NewGuid() right before commit.
         /// </summary>
         /// <value>
         /// The aggregate key.

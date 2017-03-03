@@ -26,7 +26,7 @@
         /// <param name="snapshots">The snapshots.</param>
         /// <param name="processes">The processes.</param>
         void Commit(IList<IEvent> events,
-            IList<Constraint> aggregateConstraints = null,
+            //IList<Constraint> aggregateConstraints = null,
             IList<IAggregate> snapshots = null,
             IList<IProcess> processes = null);
 
