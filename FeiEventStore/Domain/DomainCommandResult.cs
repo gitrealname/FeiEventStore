@@ -12,23 +12,21 @@ namespace FeiEventStore.Domain
     /// </summary>
     public class DomainCommandResult
     {
-        public enum UserMessageType
+        public DomainCommandResult()
         {
-            SystemError = 0,
-            Error,
-            Warning,
-            Info,
+            FatalErrors = new List<string>();
+            Errors = new List<string>();
+            Warnings = new List<string>();
+            Infos = new List<string>();
         }
-        public class UserMessage
-        {
-            public UserMessageType Type { get; set; }
-            public string Value { get; set; }
-        }
-
         public long EventStoreVersion { get; set; }
+        public bool CommandHasFailed { get; set; }
 
-        public List<UserMessage> UserMessages { get; set; }
+        public Exception Exception { get; set; }
+        public List<string> FatalErrors { get; set; }
+        public List<string> Errors { get; set; }
+        public List<string> Warnings { get; set; }
+        public List<string> Infos { get; set; }
 
-        public bool IsCommandFailed { get; set; }
     }
 }

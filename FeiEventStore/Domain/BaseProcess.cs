@@ -5,7 +5,7 @@
 
     public abstract class BaseProcess<TState> : IProcess<TState> where TState : IState, new()
     {
-        public readonly List<ICommand> PendingCommands = new List<ICommand>();
+        protected readonly List<ICommand> PendingCommands = new List<ICommand>();
 
         public Guid Id { get; set; }
 
@@ -42,6 +42,7 @@
         protected BaseProcess()
         {
             State = new TState();
+            IsComplete = true; /*make is complete by default, as we expect that majority of process managers to be of non-long running kind*/
         }
     }
 }

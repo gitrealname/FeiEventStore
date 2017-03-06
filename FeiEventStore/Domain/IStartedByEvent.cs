@@ -15,11 +15,11 @@ namespace FeiEventStore.Domain
     /// </summary>
     /// <typeparam name="TEvent">The type of the event.</typeparam>
     public interface IStartedByEvent<in TEvent>
-        where TEvent : ICommand
+        where TEvent : IEvent
     {
         /// <summary>
         /// Starts the with.
-        /// IMPORTANT: before renaming method name search code for .AsDynamic().StartByEvent!!!!
+        /// IMPORTANT: before renaming this method search code for .AsDynamic().StartByEvent!!!!
         /// </summary>
         /// <param name="event">The event.</param>
         void StartByEvent(TEvent @event);

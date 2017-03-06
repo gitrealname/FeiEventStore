@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.ServiceModel.Channels;
+using System.ServiceModel.Dispatcher;
 using System.Threading.Tasks;
 using FeiEventStore.Persistence;
 
@@ -16,89 +17,100 @@ namespace FeiEventStore.Domain
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly IObjectFactory _factory;
+        private readonly IInScopeExecutorFactory _executorFactory;
         private readonly IEventStore _eventStore;
-        private readonly IPermanentlyTypedObjectService _permanentlyTypedObjectService;
+        //private readonly IPermanentlyTypedObjectService _permanentlyTypedObjectService;
         private readonly IEventDispatcher _eventDispatcher;
+        private readonly ISnapshotStrategy _snapshotStrategy;
 
-        public DomainCommandExecutor(IObjectFactory factory, 
+        public DomainCommandExecutor(IObjectFactory factory, IInScopeExecutorFactory executorFactory,
             IEventStore eventStore, 
-            IPermanentlyTypedObjectService permanentlyTypedObjectService,
+            ISnapshotStrategy snapshotStrategy,
+            //IPermanentlyTypedObjectService permanentlyTypedObjectService,
             IEventDispatcher  eventDispatcher)
         {
             _factory = factory;
+            _executorFactory = executorFactory;
             _eventStore = eventStore;
-            _permanentlyTypedObjectService = permanentlyTypedObjectService;
+            //_permanentlyTypedObjectService = permanentlyTypedObjectService;
+            _executorFactory = executorFactory;
             _eventDispatcher = eventDispatcher;
+            _snapshotStrategy = snapshotStrategy;
         }
-        public DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch)
+
+        private void Execute(IList<ICommand> commandBatch, IDomainCommandExecutionScope execScope)
         {
+            var cache = new DomainObjectCache();
+            cache.EnqueueList(commandBatch);
+            var externalCommandCount = cache.Queue.Count;
 
-            while(true)
+            //main loop
+            try
             {
-                var scope = new DomainExecutionScope();
-                scope.EnqueueList(commandBatch);
-                var externalCommandCount = scope.Queue.Count;
-
-                var result = new DomainResponse();
-                //main loop
-                try
+                while(cache.Queue.Count > 0 && !execScope.CommandHasFailed)
                 {
-                    while(scope.Queue.Count > 0)
+                    var msg = cache.Queue.Dequeue();
+                    if(msg is ICommand)
                     {
-                        var msg = scope.Queue.Dequeue();
-                        if(msg is ICommand)
-                        {
-                            ProcessCommand(msg as ICommand, scope/*, externalCommandCount > 0*/);
-                            externalCommandCount--;
-                        }
-                        else if(msg is IEvent)
-                        {
-                            ProcessEvent(msg as IEvent, scope);
-                        }
-                        else
-                        {
-                            var ex = new Exception(string.Format("SYSTEM: Unexpected message type '{0}'; only ICommand or IEvent can be processed.", msg.GetType().FullName));
-                            throw ex;
-                        }
+                        ProcessCommand(msg as ICommand, cache/*, externalCommandCount > 0*/);
+                        externalCommandCount--;
                     }
+                    else if(msg is IEvent)
+                    {
+                        ProcessEvent(msg as IEvent, cache);
+                    }
+                    else
+                    {
+                        var ex = new Exception(string.Format("SYSTEM: Unexpected message type '{0}'; only ICommand or IEvent can be processed.", msg.GetType().FullName));
+                        throw ex;
+                    }
+                }
 
-                    //Todo: commit
-                    //Todo: dispatch, 
+                if(execScope.CommandHasFailed)
+                {
+                    return;
+                }
+                
+                //commit
+                if(cache.RaisedEvents.Count > 0)
+                {
+                    var snapshots = cache.AggregateMap.Values.Where(a => _snapshotStrategy.ShouldAggregateSnapshotBeCreated(a)).ToList();
+                    var processes = cache.ProcessMap.Values.ToList();
+                    _eventStore.Commit(cache.RaisedEvents, snapshots.Count > 0 ? snapshots : null, processes.Count > 0 ? processes : null);
+                }
 
-                    return result;
-                }
-                catch(AggregateConcurrencyViolationException)
+                if(execScope.CommandHasFailed)
                 {
-                    //Todo: re-try
+                    return;
                 }
-                catch(ProcessConcurrencyViolationException)
-                {
-                    //Todo: re-try
-                }
-                catch(AggregateConstraintViolationException)
-                {
-                    //Todo: translate exception to message for user consumption: XYZ has been changed!
-                    throw;
-                }
-                catch(AggregatePrimaryKeyViolationException)
-                {
-                    //Todo: translate exception to message for user consumption: XYZ with name XXX already exists!
-                    throw;
-                }
-                catch(AggregateDoesnotExistsException)
-                {
-                    //Todo: translate exception to message for user consumption: XYZ does not exists!
-                    throw;
-                }
-                catch(Exception e)
-                {
-                    //Todo: set fatal error into response, along with exception message
-                    Logger.Fatal(e);
-                }
+
+                //Todo: dispatch, 
+
+            }
+            catch(BaseAggregateException ex)
+            {
+                TranslateAndReportError(ex, execScope, cache);
             }
         }
 
-        private void ProcessEvent(IEvent e, DomainExecutionScope scope)
+        private void TranslateAndReportError(BaseAggregateException exception, IDomainCommandExecutionScope execScope, DomainObjectCache cache )
+        {
+            var aggregate = cache.LookupAggregate(exception.AggregateId);
+            string errorMessage;
+            var translator = (IErrorTranslator)aggregate;
+            if(translator != null)
+            {
+                errorMessage = translator.AsDynamic().Translate(exception);
+            } else
+            {
+                errorMessage = exception.Message;
+            }
+
+            execScope.ReportFatalError(errorMessage);
+            Logger.Fatal(exception);
+        }
+
+        private void ProcessEvent(IEvent e, DomainObjectCache cache)
         {
             var iHandleEventType = typeof(IHandleEvent<>).MakeGenericType(e.GetType());
             var handlers = _factory.GetAllInstances(iHandleEventType);
@@ -113,7 +125,7 @@ namespace FeiEventStore.Domain
                 //}
 
                 //search for cached process that handles the event for given aggregate
-                var process = scope.LookupRunningProcess(handler.GetType(), e.SourceAggregateId);
+                var process = cache.LookupRunningProcess(handler.GetType(), e.SourceAggregateId);
                 bool isNew = false;
                 if(process == null)
                 {
@@ -166,16 +178,16 @@ namespace FeiEventStore.Domain
                     foreach(var cmd in commands)
                     {
                         cmd.Origin = new MessageOrigin(e.Origin);
-                        scope.Queue.Enqueue(cmd);
+                        cache.Queue.Enqueue(cmd);
                         process.InvolvedAggregateIds.Add(cmd.TargetAggregateId);
                     }
-                    scope.TrackProcessManager(process);
+                    cache.TrackProcessManager(process);
                 }
             }
 
         }
 
-        private void ProcessCommand(ICommand cmd, DomainExecutionScope scope/*, bool createInitialAggregateConstraint*/)
+        private void ProcessCommand(ICommand cmd, DomainObjectCache cache/*, bool createInitialAggregateConstraint*/)
         {
             if(cmd.TargetAggregateId == Guid.Empty)
             {
@@ -210,12 +222,12 @@ namespace FeiEventStore.Domain
             var handler = iHandlers[0];
 
             //Try to find aggregate in the scope by it id
-            var aggregate = scope.LookupAggregate(cmd.TargetAggregateId);
+            var aggregate = cache.LookupAggregate(cmd.TargetAggregateId);
 
             //ensure that found aggregate has the same type as expected by handler
             if(aggregate != null && aggregate.GetType() != aggregateType)
             {
-                throw new Exception(string.Format("SYSTEM: Scope cached aggregate with id '{0}' of type '{1}' doesn't match type '{2}' which is expected by command handler.",
+                throw new Exception(string.Format("SYSTEM: Cached aggregate with id '{0}' of type '{1}' doesn't match type '{2}' which is expected by command handler.",
                     cmd.TargetAggregateId, aggregate.GetType().FullName, aggregateType.FullName));
             }
 
@@ -226,10 +238,10 @@ namespace FeiEventStore.Domain
             }
 
             //perform basic validation: target version and command against new aggregate
-            StandardCommandValidation(cmd, aggregate, scope);
+            StandardCommandValidation(cmd, aggregate, cache);
 
             //start tracking an aggregate in the scope
-            scope.TrackAggregate(aggregate);
+            cache.TrackAggregate(aggregate);
 
             /***************************************
              * Todo: validation rules!!!!!!!
@@ -249,12 +261,12 @@ namespace FeiEventStore.Domain
             {
                 e.SourceAggregateTypeId = aggregate.TypeId;
                 e.Origin = new MessageOrigin(cmd.Origin);
-                scope.Queue.Enqueue(e);
+                cache.Queue.Enqueue(e);
             }
-            scope.RaisedEvents.AddRange(events);
+            cache.RaisedEvents.AddRange(events);
         }
 
-        private void StandardCommandValidation(ICommand cmd, IAggregate aggregate, DomainExecutionScope scope)
+        private void StandardCommandValidation(ICommand cmd, IAggregate aggregate, DomainObjectCache cache)
         {
             //check target aggregate version
             if(cmd.TargetAggregateVersion.HasValue)
@@ -288,5 +300,55 @@ namespace FeiEventStore.Domain
             var result = await ExecuteCommandBatchAsync(new List<ICommand>() { command });
             return result;
         }
+
+        public DomainCommandResult ExecuteCommand(ICommand command)
+        {
+            var result = ExecuteCommandBatch(new List<ICommand>() { command });
+            return result;
+        }
+        public DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch)
+        {
+            DomainCommandResult result = null;
+            var reTry = true;
+            while(reTry)
+            {
+                reTry = false;
+                _executorFactory.ExecuteInScope<IDomainCommandExecutionScope, DomainCommandResult>((execScope) => {
+                    try
+                    {
+                        Execute(commandBatch, execScope);
+                    }
+                    catch(AggregateConcurrencyViolationException ex)
+                    {
+                        reTry = true;
+                        if(Logger.IsInfoEnabled)
+                        {
+                            Logger.Info(ex);
+                        }
+                    }
+                    catch(ProcessConcurrencyViolationException ex)
+                    {
+                        reTry = true;
+                        if(Logger.IsInfoEnabled)
+                        {
+                            Logger.Info(ex);
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        execScope.ReportException(ex);
+                        Logger.Fatal(ex);
+                    }
+                    finally
+                    {
+                        result = execScope.BuildResult();
+                    }
+                    return result;
+                });
+            }
+            return result;
+        }
+
+
     }
 }

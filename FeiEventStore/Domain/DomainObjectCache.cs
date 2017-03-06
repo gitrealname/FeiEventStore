@@ -8,11 +8,9 @@ using FeiEventStore.Persistence;
 
 namespace FeiEventStore.Domain
 {
-    public class DomainExecutionScope
+    public class DomainObjectCache
     {
         public Queue<IMessage> Queue { get; set; }
-
-        public List<Constraint> AggregateConstraints { get; set; }
 
         public List<IEvent> RaisedEvents { get; set; }
 
@@ -20,13 +18,15 @@ namespace FeiEventStore.Domain
 
         public Dictionary<Guid, IProcess> ProcessMap { get; set; }
 
-        public DomainExecutionScope()
+        private readonly Dictionary<Tuple<Type, Guid>, IProcess> _processByTypeAndAggregateIdMap;
+
+        public DomainObjectCache()
         {
             Queue= new Queue<IMessage>();
-            AggregateConstraints = new List<Constraint>();
             RaisedEvents = new List<IEvent>();
             AggregateMap = new Dictionary<Guid, IAggregate>();
             ProcessMap = new Dictionary<Guid, IProcess>();
+            _processByTypeAndAggregateIdMap = new Dictionary<Tuple<Type, Guid>, IProcess>();
         }
 
         public void EnqueueList(IEnumerable<IMessage> messages)
@@ -54,17 +54,29 @@ namespace FeiEventStore.Domain
         /// <summary>
         /// Lookups the running process.
         /// </summary>
-        /// <param name="getType">Type of the get.</param>
+        /// <param name="processType">Type of the get.</param>
         /// <param name="aggregateId">The aggregate identifier.</param>
         /// <returns>null, if no running process found</returns>
-        public IProcess LookupRunningProcess(Type getType, Guid aggregateId)
+        public IProcess LookupRunningProcess(Type processType, Guid aggregateId)
         {
-            throw new NotImplementedException();
+            var key = new Tuple<Type, Guid>(processType, aggregateId);
+            IProcess result;
+            if(!_processByTypeAndAggregateIdMap.TryGetValue(key, out result))
+            {
+                result = null;
+            }
+            return result;
         }
 
         public void TrackProcessManager(IProcess process)
         {
-            throw new NotImplementedException();
+            ProcessMap[process.Id] = process;
+            var type = process.GetType();
+            foreach(var id in process.InvolvedAggregateIds)
+            {
+                var key = new Tuple<Type, Guid>(type, id);
+                _processByTypeAndAggregateIdMap[key] = process;
+            }
         }
     }
 }

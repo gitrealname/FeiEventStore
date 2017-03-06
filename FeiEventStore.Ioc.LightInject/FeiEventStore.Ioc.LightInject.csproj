@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="EventStoreServiceRegistryConfigurator.cs" />
     <Compile Include="LightInjectObjectFactory.cs" />
+    <Compile Include="LightInjectInScopeExecutorFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

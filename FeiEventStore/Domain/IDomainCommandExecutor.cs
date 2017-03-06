@@ -21,5 +21,7 @@ namespace FeiEventStore.Domain
         Task<DomainCommandResult> ExecuteCommandAsync(ICommand command);
 
         DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch);
+
+        DomainCommandResult ExecuteCommand(ICommand commandBatch);
     }
 }

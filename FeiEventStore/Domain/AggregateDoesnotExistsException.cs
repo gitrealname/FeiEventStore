@@ -2,13 +2,11 @@
 
 namespace FeiEventStore.Domain
 {
-    public class AggregateDoesnotExistsException : System.Exception
+    public class AggregateDoesnotExistsException : BaseAggregateException
     {
-        public Guid AggregateId { get; }
         public AggregateDoesnotExistsException(Guid aggregateId)
-            : base(string.Format("Aggregate id {0} doesn't exist.", aggregateId))
+            : base(aggregateId, string.Format("Aggregate id {0} doesn't exist.", aggregateId))
         {
-            AggregateId = aggregateId;
         }
     }
 }
