@@ -13,7 +13,7 @@
 
         public long LatestPersistedVersion { get; set; }
 
-        public Guid TypeId { get; set; }
+        public TypeId TypeId { get; set; }
 
         /// <summary>
         /// Helper method To Calculate new Event Version

@@ -1,4 +1,5 @@
 ﻿using System;
+using FeiEventStore.Core;
 
 namespace FeiEventStore.Persistence
 {
@@ -15,7 +16,7 @@ namespace FeiEventStore.Persistence
 
         }
 
-        public ProcessNotFoundException(Guid processStateBaseTypeId, Guid aggregateId)
+        public ProcessNotFoundException(TypeId processStateBaseTypeId, Guid aggregateId)
             :base(string.Format("Process with state type id '{0}' for aggregate id {1} was not found.", processStateBaseTypeId, aggregateId))
         {
             

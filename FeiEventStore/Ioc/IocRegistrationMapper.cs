@@ -9,21 +9,22 @@ namespace FeiEventStore.Ioc
 {
     public class IocRegistrationMapper : IIocRegistrationMapper
     {
-        private static readonly Dictionary<Tuple<Type,Type>, IocMappingAction> _fixedMap = new Dictionary<Tuple<Type, Type>, IocMappingAction>
+        private readonly Dictionary<Tuple<Type,Type>, IocMappingAction> _explicitMap = new Dictionary<Tuple<Type, Type>, IocMappingAction>
         {
-            { new Tuple<Type, Type>(typeof(IPermanentlyTypedRegistry), typeof(PermanentlyTypeRegistry)), IocMappingAction.RegisterPerScopeLifetime },
-            { new Tuple<Type, Type>(typeof(IPermanentlyTypedObjectService), typeof(PermanentlyTypedObjectService)), IocMappingAction.RegisterPerScopeLifetime },
-            { new Tuple<Type, Type>(typeof(IEventStore), typeof(EventStore)), IocMappingAction.RegisterPerScopeLifetime },
-            { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocMappingAction.RegisterPerScopeLifetime },
-            { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocMappingAction.RegisterPerScopeLifetime },
+            { new Tuple<Type, Type>(typeof(IPermanentlyTypedRegistry), typeof(PermanentlyTypeRegistry)), IocMappingAction.RegisterPerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IPermanentlyTypedObjectService), typeof(PermanentlyTypedObjectService)), IocMappingAction.RegisterPerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IEventStore), typeof(EventStore)), IocMappingAction.RegisterPerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocMappingAction.RegisterPerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocMappingAction.RegisterPerContainerLifetime },
 
+            //per scope!
             { new Tuple<Type, Type>(typeof(IDomainCommandExecutionContext), typeof(DomainCommandExecutionContext)), IocMappingAction.RegisterPerScopeLifetime },
 
             //in production expected to be overridden/handled by in-fact persistent engine mapper
             { new Tuple<Type, Type>(typeof(IPersistenceEngine), typeof(InMemoryPersistenceEngine)), IocMappingAction.RegisterPerContainerLifetime },
         };
 
-        private static readonly Dictionary<Type, IocMappingAction> _serviceTypeMap = new Dictionary<Type, IocMappingAction>
+        private readonly Dictionary<Type, IocMappingAction> _genericMap = new Dictionary<Type, IocMappingAction>
         {
             { typeof(IPermanentlyTyped), IocMappingAction.RegisterTransientLifetime },
             { typeof(IReplace<>), IocMappingAction.RegisterTransientLifetime },
@@ -41,12 +42,16 @@ namespace FeiEventStore.Ioc
 
         public IocMappingAction Map(Type serviceType, Type implementationType)
         {
+            if(serviceType.IsGenericType)
+            {
+                serviceType = serviceType.GetGenericTypeDefinition();
+            }
             IocMappingAction action;
-            if(_fixedMap.TryGetValue(new Tuple<Type, Type>(serviceType, implementationType), out action))
+            if(_explicitMap.TryGetValue(new Tuple<Type, Type>(serviceType, implementationType), out action))
             {
                 return action;
             }
-            if(_serviceTypeMap.TryGetValue(serviceType, out action))
+            if(_genericMap.TryGetValue(serviceType, out action))
             {
                 return action;
             }

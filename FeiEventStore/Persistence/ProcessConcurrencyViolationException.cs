@@ -1,4 +1,5 @@
 ﻿using System;
+using FeiEventStore.Core;
 
 namespace FeiEventStore.Persistence
 {
@@ -9,12 +10,12 @@ namespace FeiEventStore.Persistence
     /// <seealso cref="System.Exception" />
     public class ProcessConcurrencyViolationException : System.Exception
     {
-        public Guid ProcessTypeId { get; }
+        public TypeId ProcessTypeId { get; }
         public Guid ProcessId { get; }
         public long ExpectedVersion { get; }
         public long PersistedVersion { get; }
 
-        public ProcessConcurrencyViolationException(Guid processId, Guid processTypeId, long expectedVersion, long persistedVersion)
+        public ProcessConcurrencyViolationException(Guid processId, TypeId processTypeId, long expectedVersion, long persistedVersion)
             : base(string.Format("Process id {0} type '{1}. Version collision; expected process version {2}, persisted process version {3}.", 
                 processId, processTypeId, expectedVersion, persistedVersion))
         {

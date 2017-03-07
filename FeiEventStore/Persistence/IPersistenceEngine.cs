@@ -164,7 +164,7 @@ namespace FeiEventStore.Persistence
         /// <param name="processTypeId">The process type identifier.</param>
         /// <param name="aggregateId">The aggregate identifier.</param>
         /// <returns></returns>
-        IList<ProcessRecord> GetProcessRecords(Guid processTypeId, Guid aggregateId);
+        IList<ProcessRecord> GetProcessRecords(TypeId processTypeId, Guid aggregateId);
 
         /// <summary>
         /// Deletes the process.

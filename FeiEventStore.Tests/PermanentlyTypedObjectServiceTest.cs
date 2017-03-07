@@ -16,16 +16,16 @@ namespace FeiEventStore.Tests
      
         public interface ITestEvent : IState { }
 
-        [PermanentType("{00000000-0000-0000-0000-000000000001}")]
+        [PermanentType("00000000-0000-0000-0000-000000000001")]
         public class FirstEvent : ITestEvent { }
 
-        [PermanentType("{00000000-0000-0000-0000-000000000002}")]
+        [PermanentType("00000000-0000-0000-0000-000000000002")]
         public class SecondEvent : ITestEvent, IReplace<FirstEvent>
         {
             public void InitFromObsolete(FirstEvent obsoleteObject) { return; }
         }
 
-        [PermanentType("{00000000-0000-0000-0000-000000000003}")]
+        [PermanentType("00000000-0000-0000-0000-000000000003")]
         public class ThirdEvent : ITestEvent, IReplace<SecondEvent>
         {
             public void InitFromObsolete(SecondEvent obsoleteObject) { return;  }
@@ -34,8 +34,8 @@ namespace FeiEventStore.Tests
 
         public class PermanentlyTypedRegistry : IPermanentlyTypedRegistry
         {
-            public Dictionary<Guid, Type> Map = new Dictionary<Guid, Type>();
-            public Type LookupTypeByPermanentTypeId(Guid permanentTypeId)
+            public Dictionary<TypeId, Type> Map = new Dictionary<TypeId, Type>();
+            public Type LookupTypeByPermanentTypeId(TypeId permanentTypeId)
             {
                 Type type;
                 if(!Map.TryGetValue(permanentTypeId, out type))
@@ -49,9 +49,9 @@ namespace FeiEventStore.Tests
         public PermanentlyTypedRegistry Registry;
         public PermanentlyTypedObjectService Service;
 
-        public Guid FirstTypeId = new Guid("{00000000-0000-0000-0000-000000000001}");
-        public Guid SecondTypeId = new Guid("{00000000-0000-0000-0000-000000000002}");
-        public Guid ThirdTypeId = new Guid("{00000000-0000-0000-0000-000000000003}");
+        public TypeId FirstTypeId = "00000000-0000-0000-0000-000000000001";
+        public TypeId SecondTypeId = "00000000-0000-0000-0000-000000000002";
+        public TypeId ThirdTypeId = "00000000-0000-0000-0000-000000000003";
         public PermanentlyTypedObjectServiceTest()
         {
             var factory = Substitute.For<IObjectFactory>();

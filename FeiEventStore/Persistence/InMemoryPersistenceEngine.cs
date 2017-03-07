@@ -20,7 +20,7 @@ namespace FeiEventStore.Persistence
 
         private Dictionary<Guid, ProcessRecord> _processByProcessId;
 
-        private Dictionary<Tuple<Guid, Guid>, ProcessRecord> _processByProcessTypeIdAggregateId;
+        private Dictionary<Tuple<TypeId, Guid>, ProcessRecord> _processByProcessTypeIdAggregateId;
 
         private HashSet<string> _primaryKey;
 
@@ -66,7 +66,7 @@ namespace FeiEventStore.Persistence
             _eventsByAggregateId = new Dictionary<Guid, List<Tuple<EventRecord, int>>>();
             _snapshotByAggregateId = new Dictionary<Guid, SnapshotRecord>();
             _processByProcessId = new Dictionary<Guid, ProcessRecord>();
-            _processByProcessTypeIdAggregateId = new Dictionary<Tuple<Guid,Guid>, ProcessRecord>();
+            _processByProcessTypeIdAggregateId = new Dictionary<Tuple<TypeId,Guid>, ProcessRecord>();
             _primaryKey = new HashSet<string>();
             _primaryKeyByAggregateId = new Dictionary<Guid, string>();
         }
@@ -169,28 +169,6 @@ namespace FeiEventStore.Persistence
                     }
                 }
 
-                //check for conflicts
-                //if(processConstraints != null)
-                //{
-                //    foreach(var c in processConstraints)
-                //    {
-                //        var currentVersion = GetProcessVersion(c.Id);
-                //        if(currentVersion != c.Version)
-                //        {
-                //            //if(c.IsCritical)
-                //            //{
-                //            //    var ex = new ProcessConstraintViolationException(c.Id, c.Version, currentVersion);
-                //            //    Logger.Fatal(ex);
-                //            //    throw ex;
-                //            //}
-                //            var ex = new ProcessConcurrencyViolationException(c.Id, c.Version, currentVersion);
-                //            Logger.Fatal(ex);
-                //            throw ex;
-                //        }
-                //    }
-                //    stats.processConstraints = processConstraints.Count;
-                //}
-
                 var startPos = _events.Count;
                 var endPos = startPos;
 
@@ -227,7 +205,7 @@ namespace FeiEventStore.Persistence
                             Logger.Debug("Preparing snapshot for persistence: Aggregate Id: {0} Aggregate Version: {1}",
                                 s.AggregateId, s.AggregateVersion);
                         }
-                        _snapshotByAggregateId [ s.AggregateStateTypeId ] = s;
+                        _snapshotByAggregateId [ s.AggregateId ] = s;
                     }
                     stats.snapshots = snapshots.Count;
                 }
@@ -250,7 +228,7 @@ namespace FeiEventStore.Persistence
                         {
                             _processByProcessId[p.ProcessId] = p;
                         }
-                        _processByProcessTypeIdAggregateId[new Tuple<Guid, Guid>(p.ProcessTypeId, p.InvolvedAggregateId)] = p;
+                        _processByProcessTypeIdAggregateId[new Tuple<TypeId, Guid>(p.ProcessTypeId, p.InvolvedAggregateId)] = p;
                     }
                     stats.processes = processes.Count;
                 }
@@ -361,10 +339,10 @@ namespace FeiEventStore.Persistence
             return process.ProcessVersion;
         }
 
-        public IList<ProcessRecord> GetProcessRecords(Guid processTypeId, Guid aggregateId)
+        public IList<ProcessRecord> GetProcessRecords(TypeId processTypeId, Guid aggregateId)
         {
             ProcessRecord process;
-            if(!_processByProcessTypeIdAggregateId.TryGetValue(new Tuple<Guid, Guid>(processTypeId, aggregateId), out process))
+            if(!_processByProcessTypeIdAggregateId.TryGetValue(new Tuple<TypeId, Guid>(processTypeId, aggregateId), out process))
             {
                 var ex = new ProcessNotFoundException(processTypeId, aggregateId);
                 Logger.Warn(ex);

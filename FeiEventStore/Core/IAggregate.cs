@@ -8,7 +8,7 @@ namespace FeiEventStore.Core
     {
         long LatestPersistedVersion { get; set; }
 
-        Guid TypeId { get; set; }
+        TypeId TypeId { get; set; }
 
         Guid Id { get; set; }
         long Version { get; set; }

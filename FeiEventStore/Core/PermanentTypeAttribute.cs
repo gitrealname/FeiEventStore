@@ -9,10 +9,10 @@ namespace FeiEventStore.Core
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
     public class PermanentTypeAttribute : Attribute
     {
-        public Guid PermanentTypeId { get; private set; }
-        public PermanentTypeAttribute(string guidString)
+        public TypeId PermanentTypeId { get; private set; }
+        public PermanentTypeAttribute(string str)
         {
-            PermanentTypeId = new Guid(guidString);
+            PermanentTypeId = str;
         }
     }
 }

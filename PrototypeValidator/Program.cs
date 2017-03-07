@@ -34,7 +34,7 @@ namespace PrototypeValidator
 
         public class Registry : IPermanentlyTypedRegistry
         {
-            public Type LookupTypeByPermanentTypeId(Guid permanentTypeId)
+            public Type LookupTypeByPermanentTypeId(TypeId permanentTypeId)
             {
                 throw new NotImplementedException();
             }

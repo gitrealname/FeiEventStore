@@ -1,6 +1,7 @@
 ﻿namespace FeiEventStore.Persistence
 {
     using System;
+    using FeiEventStore.Core;
 
     public class EventRecord
     {
@@ -23,7 +24,7 @@
 
         public long AggregateVersion { get; set; }
 
-        public Guid AggregateTypeId { get; set; }
+        public TypeId AggregateTypeId { get; set; }
 
         /// <summary>
         /// Gets or sets the Unique Key per Aggregate Type. 
@@ -40,7 +41,7 @@
         /// <value>
         /// The event type identifier.
         /// </value>
-        public Guid EventPayloadTypeId { get; set; }
+        public TypeId EventPayloadTypeId { get; set; }
 
         /// <summary>
         /// Gets or sets the event Creation Timestamp.

@@ -48,7 +48,7 @@ namespace FeiEventStore.Events
         /// <param name="permanentTypeId">The permanent type identifier.</param>
         /// <returns><see cref="Type"/></returns>
         /// <exception cref="PermanentTypeImplementationNotFoundException"></exception>
-        Type LookupTypeByPermanentTypeId(Guid permanentTypeId);
+        Type LookupTypeByPermanentTypeId(TypeId permanentTypeId);
 
 
         /// <summary>
@@ -56,6 +56,6 @@ namespace FeiEventStore.Events
         /// </summary>
         /// <param name="type">The target object.</param>
         /// <returns></returns>
-        Guid GetPermanentTypeIdForType(Type type);
+        TypeId GetPermanentTypeIdForType(Type type);
     }
 }

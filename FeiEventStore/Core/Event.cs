@@ -9,7 +9,7 @@
         public long StoreVersion { get; set; }
         public Guid SourceAggregateId { get; set; }
         public long SourceAggregateVersion { get; set; }
-        public Guid SourceAggregateTypeId { get; set; }
+        public TypeId SourceAggregateTypeId { get; set; }
         public string AggregateKey { get; set; }
         public DateTimeOffset Timestapm { get; set; }
         object IEvent.Payload

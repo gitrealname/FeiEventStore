@@ -1,4 +1,6 @@
-﻿namespace FeiEventStore.Persistence
+﻿using FeiEventStore.Core;
+
+namespace FeiEventStore.Persistence
 {
     using System;
 
@@ -14,9 +16,9 @@
 
         public long AggregateVersion { get; set; }
 
-        public Guid AggregateTypeId { get; set; }
+        public TypeId AggregateTypeId { get; set; }
 
-        public Guid AggregateStateTypeId { get; set; }
+        public TypeId AggregateStateTypeId { get; set; }
 
         public object State { get; set; }
 

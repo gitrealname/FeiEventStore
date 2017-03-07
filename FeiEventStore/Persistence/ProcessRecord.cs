@@ -1,4 +1,6 @@
-﻿namespace FeiEventStore.Persistence
+﻿using FeiEventStore.Core;
+
+namespace FeiEventStore.Persistence
 {
     using System;
 
@@ -12,11 +14,11 @@
 
         public long ProcessVersion { get; set; }
 
-        public Guid ProcessTypeId { get; set; }
+        public TypeId ProcessTypeId { get; set; }
 
         public Guid InvolvedAggregateId { get; set; }
 
-        public Guid? ProcessStateTypeId { get; set; }
+        public TypeId ProcessStateTypeId { get; set; }
 
         public object State { get; set; }
 

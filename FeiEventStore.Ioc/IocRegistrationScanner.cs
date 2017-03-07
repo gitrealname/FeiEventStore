@@ -201,7 +201,7 @@ namespace FeiEventStore.Ioc
                     //convert to Registration lifetime
                     var lifetime = (IocRegistrationLifetime)(int)action;
                     _registrar.Register(serviceType, type, lifetime);
-                    Logger.Debug("Registered type '{0}' as service of type '{1}.", type.FullName, serviceType.FullName);
+                    Logger.Debug("Registered type '{0}' as service of type '{1}' with lifetime {2}.", type.FullName, serviceType.FullName, lifetime.ToString());
                 } else
                 {
                     Logger.Debug("Swallowed type '{0}' of service type '{1}.", type.FullName, serviceType.FullName);

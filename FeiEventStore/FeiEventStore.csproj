@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\Command.cs" />
+    <Compile Include="Core\TypeId.cs" />
     <Compile Include="Domain\BaseAggregateException.cs" />
     <Compile Include="Domain\BaseProcess.cs" />
     <Compile Include="Domain\BaseAggregate.cs" />

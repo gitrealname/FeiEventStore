@@ -214,7 +214,7 @@ namespace FeiEventStore.Domain
             var iHandleCommandIterface = interfaces.FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleCommand<,>));
             if(iHandleCommandIterface == null)
             {
-                throw new Exception(string.Format("SYSTEM: Command handler must implement '{0}' interface, instead of '{1}'.",
+                throw new Exception(string.Format("SYSTEM: Command handler must implement 'IHandleCommand<{0}>' interface, instead of '{1}'.",
                     cmd.GetType().FullName, typeof(IHandle<>).FullName));
 
             }
@@ -351,7 +351,5 @@ namespace FeiEventStore.Domain
             }
             return result;
         }
-
-
     }
 }

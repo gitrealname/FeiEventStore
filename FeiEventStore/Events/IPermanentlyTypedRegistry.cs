@@ -1,4 +1,6 @@
 ﻿
+using FeiEventStore.Core;
+
 namespace FeiEventStore.Events
 {
     using System;
@@ -15,6 +17,6 @@ namespace FeiEventStore.Events
         /// <param name="permanentTypeId"></param>
         /// <returns></returns>
         /// <exception cref="PermanentTypeImplementationNotFoundException"></exception>
-        Type LookupTypeByPermanentTypeId(Guid permanentTypeId);
+        Type LookupTypeByPermanentTypeId(TypeId permanentTypeId);
     }
 }

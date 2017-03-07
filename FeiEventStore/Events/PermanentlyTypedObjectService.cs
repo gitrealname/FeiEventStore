@@ -42,13 +42,13 @@ namespace FeiEventStore.Events
             return (T)result;
         }
 
-        public Guid GetPermanentTypeIdForType(Type type)
+        public TypeId GetPermanentTypeIdForType(Type type)
         {
             var permanentTypeAttribute =  GetTypePermanentTypeAttribute(type);
             return permanentTypeAttribute.PermanentTypeId;
         }
 
-        public Type LookupTypeByPermanentTypeId(Guid permanentTypeId)
+        public Type LookupTypeByPermanentTypeId(TypeId permanentTypeId)
         {
             return _registry.LookupTypeByPermanentTypeId(permanentTypeId);
         }
