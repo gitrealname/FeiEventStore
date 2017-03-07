@@ -1,0 +1,57 @@
+﻿using System;
+using System.Collections.Generic;
+using FeiEventStore.Core;
+using FeiEventStore.Domain;
+using FeiEventStore.Events;
+using FeiEventStore.Persistence;
+
+namespace FeiEventStore.Ioc
+{
+    public class IocRegistrationMapper : IIocRegistrationMapper
+    {
+        private static readonly Dictionary<Tuple<Type,Type>, IocMappingAction> _fixedMap = new Dictionary<Tuple<Type, Type>, IocMappingAction>
+        {
+            { new Tuple<Type, Type>(typeof(IPermanentlyTypedRegistry), typeof(PermanentlyTypeRegistry)), IocMappingAction.RegisterPerScopeLifetime },
+            { new Tuple<Type, Type>(typeof(IPermanentlyTypedObjectService), typeof(PermanentlyTypedObjectService)), IocMappingAction.RegisterPerScopeLifetime },
+            { new Tuple<Type, Type>(typeof(IEventStore), typeof(EventStore)), IocMappingAction.RegisterPerScopeLifetime },
+            { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocMappingAction.RegisterPerScopeLifetime },
+            { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocMappingAction.RegisterPerScopeLifetime },
+
+            { new Tuple<Type, Type>(typeof(IDomainCommandExecutionContext), typeof(DomainCommandExecutionContext)), IocMappingAction.RegisterPerScopeLifetime },
+
+            //in production expected to be overridden/handled by in-fact persistent engine mapper
+            { new Tuple<Type, Type>(typeof(IPersistenceEngine), typeof(InMemoryPersistenceEngine)), IocMappingAction.RegisterPerContainerLifetime },
+        };
+
+        private static readonly Dictionary<Type, IocMappingAction> _serviceTypeMap = new Dictionary<Type, IocMappingAction>
+        {
+            { typeof(IPermanentlyTyped), IocMappingAction.RegisterTransientLifetime },
+            { typeof(IReplace<>), IocMappingAction.RegisterTransientLifetime },
+            { typeof(IHandle<>), IocMappingAction.RegisterTransientLifetime },
+            { typeof(IHandleCommand<,>), IocMappingAction.RegisterTransientLifetime },
+            { typeof(IHandleEvent<>), IocMappingAction.RegisterTransientLifetime },
+            { typeof(ICreatedByCommand<>), IocMappingAction.RegisterTransientLifetime },
+            { typeof(IStartedByEvent<>), IocMappingAction.RegisterTransientLifetime },
+            { typeof(IAggregate<>), IocMappingAction.RegisterTransientLifetime },
+            { typeof(IProcess<>), IocMappingAction.RegisterTransientLifetime },
+            
+            //swallow types with helper interfaces
+            { typeof(IErrorTranslator), IocMappingAction.Swallow },
+        };
+
+        public IocMappingAction Map(Type serviceType, Type implementationType)
+        {
+            IocMappingAction action;
+            if(_fixedMap.TryGetValue(new Tuple<Type, Type>(serviceType, implementationType), out action))
+            {
+                return action;
+            }
+            if(_serviceTypeMap.TryGetValue(serviceType, out action))
+            {
+                return action;
+            }
+
+            return IocMappingAction.PassToNext;
+        }
+    }
+}

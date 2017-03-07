@@ -66,14 +66,15 @@
     <Compile Include="Core\TypeExtensions.cs" />
     <Compile Include="Domain\AggregateDoesnotExistsException.cs" />
     <Compile Include="Domain\ByEventCountSnapshotStrategy.cs" />
-    <Compile Include="Domain\DomainCommandExecutionScope.cs" />
+    <Compile Include="Domain\DomainCommandExecutionContext.cs" />
     <Compile Include="Domain\DomainCommandExecutor.cs" />
     <Compile Include="Domain\DomainObjectCache.cs" />
     <Compile Include="Domain\IDomainCommandExecutor.cs" />
-    <Compile Include="Domain\IDomainCommandExecutionScope.cs" />
+    <Compile Include="Domain\IDomainCommandExecutionContext.cs" />
+    <Compile Include="Domain\IDomainCommandValidationProvider.cs" />
     <Compile Include="Domain\IEventDispatcher.cs" />
     <Compile Include="Domain\ICreatedByCommand.cs" />
-    <Compile Include="Domain\IInScopeExecutorFactory.cs" />
+    <Compile Include="Domain\IDomainCommandScopedExecutionContextFactory.cs" />
     <Compile Include="Domain\IErrorTranslator.cs" />
     <Compile Include="Domain\ISnapshotStrategy.cs" />
     <Compile Include="Domain\IStartedByEvent.cs" />
@@ -84,12 +85,13 @@
     <Compile Include="Events\MultipleTypeInstancesException.cs" />
     <Compile Include="Events\PermanentlyTypedObjectService.cs" />
     <Compile Include="Events\ObjectUpgradeChainIsBrokenException.cs" />
+    <Compile Include="Events\PermanentlyTypeRegistry.cs" />
     <Compile Include="Events\RuntimeTypeInstancesNotFoundException.cs" />
     <Compile Include="Events\TypeMismatchException.cs" />
     <Compile Include="Events\MustHavePermanentTypeAttributeException.cs" />
     <Compile Include="Events\PermanentTypeImplementationNotFoundException.cs" />
     <Compile Include="Events\EventStore.cs" />
-    <Compile Include="Ioc\ServiceRegistryConfiguratorConfiguration.cs" />
+    <Compile Include="Ioc\IocRegistrationMapper.cs" />
     <Compile Include="Persistence\AggregateTypeUniqueKeyRecord.cs" />
     <Compile Include="Persistence\ProcessConcurrencyViolationException.cs" />
     <Compile Include="Persistence\AggregateConstraintViolationException.cs" />
@@ -121,6 +123,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FeiEventStore.Ioc\FeiEventStore.Ioc.csproj">
+      <Project>{f92992f2-1684-45a7-bd4b-16560b592aa8}</Project>
+      <Name>FeiEventStore.Ioc</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

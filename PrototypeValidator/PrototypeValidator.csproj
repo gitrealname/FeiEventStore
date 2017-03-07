@@ -78,6 +78,10 @@
       <Project>{df29e0b9-2130-4a8a-98f8-5160b7811647}</Project>
       <Name>FeiEventStore.Ioc.LightInject</Name>
     </ProjectReference>
+    <ProjectReference Include="..\FeiEventStore.Ioc\FeiEventStore.Ioc.csproj">
+      <Project>{f92992f2-1684-45a7-bd4b-16560b592aa8}</Project>
+      <Name>FeiEventStore.Ioc</Name>
+    </ProjectReference>
     <ProjectReference Include="..\FeiEventStore\FeiEventStore.csproj">
       <Project>{c6486fad-4256-4f5c-8b39-b83b8cd2739c}</Project>
       <Name>FeiEventStore</Name>

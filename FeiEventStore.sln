@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.Tests", "FeiE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.Ioc.LightInject", "FeiEventStore.Ioc.LightInject\FeiEventStore.Ioc.LightInject.csproj", "{DF29E0B9-2130-4A8A-98F8-5160B7811647}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.Ioc", "FeiEventStore.Ioc\FeiEventStore.Ioc.csproj", "{F92992F2-1684-45A7-BD4B-16560B592AA8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{DF29E0B9-2130-4A8A-98F8-5160B7811647}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF29E0B9-2130-4A8A-98F8-5160B7811647}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF29E0B9-2130-4A8A-98F8-5160B7811647}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F92992F2-1684-45A7-BD4B-16560B592AA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F92992F2-1684-45A7-BD4B-16560B592AA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F92992F2-1684-45A7-BD4B-16560B592AA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F92992F2-1684-45A7-BD4B-16560B592AA8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

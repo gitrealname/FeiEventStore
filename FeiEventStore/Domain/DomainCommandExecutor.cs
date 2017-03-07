@@ -17,28 +17,28 @@ namespace FeiEventStore.Domain
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly IObjectFactory _factory;
-        private readonly IInScopeExecutorFactory _executorFactory;
+        private readonly IDomainCommandScopedExecutionContextFactory _executorFactory;
         private readonly IEventStore _eventStore;
-        //private readonly IPermanentlyTypedObjectService _permanentlyTypedObjectService;
         private readonly IEventDispatcher _eventDispatcher;
         private readonly ISnapshotStrategy _snapshotStrategy;
+        private readonly IEnumerable<IDomainCommandValidationProvider> _validationProviders;
 
-        public DomainCommandExecutor(IObjectFactory factory, IInScopeExecutorFactory executorFactory,
+        public DomainCommandExecutor(IObjectFactory factory, IDomainCommandScopedExecutionContextFactory executorFactory,
             IEventStore eventStore, 
             ISnapshotStrategy snapshotStrategy,
-            //IPermanentlyTypedObjectService permanentlyTypedObjectService,
+            IEnumerable<IDomainCommandValidationProvider> validationProviders,
             IEventDispatcher  eventDispatcher)
         {
             _factory = factory;
             _executorFactory = executorFactory;
             _eventStore = eventStore;
-            //_permanentlyTypedObjectService = permanentlyTypedObjectService;
             _executorFactory = executorFactory;
             _eventDispatcher = eventDispatcher;
             _snapshotStrategy = snapshotStrategy;
+            _validationProviders = validationProviders;
         }
 
-        private void Execute(IList<ICommand> commandBatch, IDomainCommandExecutionScope execScope)
+        private void Execute(IList<ICommand> commandBatch, IDomainCommandExecutionContext execContext)
         {
             var cache = new DomainObjectCache();
             cache.EnqueueList(commandBatch);
@@ -47,17 +47,17 @@ namespace FeiEventStore.Domain
             //main loop
             try
             {
-                while(cache.Queue.Count > 0 && !execScope.CommandHasFailed)
+                while(cache.Queue.Count > 0 && !execContext.CommandHasFailed)
                 {
                     var msg = cache.Queue.Dequeue();
                     if(msg is ICommand)
                     {
-                        ProcessCommand(msg as ICommand, cache/*, externalCommandCount > 0*/);
+                        ProcessCommand(msg as ICommand, execContext, cache);
                         externalCommandCount--;
                     }
                     else if(msg is IEvent)
                     {
-                        ProcessEvent(msg as IEvent, cache);
+                        ProcessEvent(msg as IEvent, execContext, cache);
                     }
                     else
                     {
@@ -66,7 +66,7 @@ namespace FeiEventStore.Domain
                     }
                 }
 
-                if(execScope.CommandHasFailed)
+                if(execContext.CommandHasFailed)
                 {
                     return;
                 }
@@ -79,21 +79,21 @@ namespace FeiEventStore.Domain
                     _eventStore.Commit(cache.RaisedEvents, snapshots.Count > 0 ? snapshots : null, processes.Count > 0 ? processes : null);
                 }
 
-                if(execScope.CommandHasFailed)
+                if(execContext.CommandHasFailed)
                 {
                     return;
                 }
 
-                //Todo: dispatch, 
+                //Todo: dispatch, what if last dispatch version < initial dispatch (before first event was created), concurrent dispatch???
 
             }
             catch(BaseAggregateException ex)
             {
-                TranslateAndReportError(ex, execScope, cache);
+                TranslateAndReportError(ex, execContext, cache);
             }
         }
 
-        private void TranslateAndReportError(BaseAggregateException exception, IDomainCommandExecutionScope execScope, DomainObjectCache cache )
+        private void TranslateAndReportError(BaseAggregateException exception, IDomainCommandExecutionContext execScope, DomainObjectCache cache )
         {
             var aggregate = cache.LookupAggregate(exception.AggregateId);
             string errorMessage;
@@ -110,7 +110,7 @@ namespace FeiEventStore.Domain
             Logger.Fatal(exception);
         }
 
-        private void ProcessEvent(IEvent e, DomainObjectCache cache)
+        private void ProcessEvent(IEvent e, IDomainCommandExecutionContext execContext, DomainObjectCache cache)
         {
             var iHandleEventType = typeof(IHandleEvent<>).MakeGenericType(e.GetType());
             var handlers = _factory.GetAllInstances(iHandleEventType);
@@ -187,7 +187,7 @@ namespace FeiEventStore.Domain
 
         }
 
-        private void ProcessCommand(ICommand cmd, DomainObjectCache cache/*, bool createInitialAggregateConstraint*/)
+        private void ProcessCommand(ICommand cmd, IDomainCommandExecutionContext execContext, DomainObjectCache cache)
         {
             if(cmd.TargetAggregateId == Guid.Empty)
             {
@@ -243,15 +243,18 @@ namespace FeiEventStore.Domain
             //start tracking an aggregate in the scope
             cache.TrackAggregate(aggregate);
 
-            /***************************************
-             * Todo: validation rules!!!!!!!
-             */
+            //perform command validation
+            foreach(var validationProvider in _validationProviders)
+            {
+                validationProvider.ValidateCommand(cmd, aggregate, execContext);
+            }
+
+            if(execContext.CommandHasFailed)
+            {
+                return;
+            }
 
             //execute command
-            //if(createInitialAggregateConstraint)
-            //{
-            //    scope.AggregateConstraints.Add(new Constraint(aggregate.Id, aggregate.LatestPersistedVersion));
-            //}
             handler.AsDynamic().HandleCommand(cmd, aggregate);
 
             var events = aggregate.FlushUncommitedMessages();
@@ -313,7 +316,7 @@ namespace FeiEventStore.Domain
             while(reTry)
             {
                 reTry = false;
-                _executorFactory.ExecuteInScope<IDomainCommandExecutionScope, DomainCommandResult>((execScope) => {
+                _executorFactory.ExecuteInScope<IDomainCommandExecutionContext, DomainCommandResult>((execScope) => {
                     try
                     {
                         Execute(commandBatch, execScope);

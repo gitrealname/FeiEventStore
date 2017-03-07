@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace FeiEventStore.Domain
 {
-    public class DomainCommandExecutionScope : IDomainCommandExecutionScope
+    public class DomainCommandExecutionContext : IDomainCommandExecutionContext
     {
         private readonly DomainCommandResult _commandResult;
 
@@ -14,7 +14,7 @@ namespace FeiEventStore.Domain
         {
             _commandResult.Exception = e;
         }
-        public DomainCommandExecutionScope()
+        public DomainCommandExecutionContext()
         {
             _commandResult = new DomainCommandResult();
         }

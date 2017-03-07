@@ -8,11 +8,11 @@ using LightInject;
 
 namespace FeiEventStore.Ioc.LightInject
 {
-    public class LightInjectInScopeExecutorFactory : IInScopeExecutorFactory
+    public class LightInjectDomainCommandExecutionContextFactory : IDomainCommandScopedExecutionContextFactory
     {
         private readonly IServiceFactory _serviceFactory;
 
-        public LightInjectInScopeExecutorFactory(IServiceFactory serviceFactory)
+        public LightInjectDomainCommandExecutionContextFactory(IServiceFactory serviceFactory)
         {
             _serviceFactory = serviceFactory;
         }

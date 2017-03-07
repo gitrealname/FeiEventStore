@@ -67,16 +67,23 @@ namespace PrototypeValidator
 
         private static void ConfigureContainer()
         {
-            var payload = new CommandPayLoad3();
-            payload.InitFromObsolete(new CommandPayload2());
+            //var payload = new CommandPayLoad3();
+            //payload.InitFromObsolete(new CommandPayload2());
 
             var containerOptions = new ContainerOptions();
             var container = new LightInject.ServiceContainer(containerOptions);
-            var config = new ServiceRegistryConfiguratorConfiguration();
-            config.AssemblyNamePaterns.Add("PrototypeValidator*exe");
-            config.AssemblyNamePaterns.Add("Fei*dll");
+            //var config = new ServiceRegistryConfiguratorConfiguration();
+            //config.AssemblyNamePaterns.Add("PrototypeValidator*exe");
+            //config.AssemblyNamePaterns.Add("Fei*dll");
 
-            container.RegisterEventStore(config);
+            //container.RegisterEventStore(config);
+            IocRegistrationScanner
+                .WithRegistrar(new LightInjectIocRegistrar(container))
+                .ScanAssembly("Fei*dll")
+                .ScanAssembly(typeof(CommandPayLoad3))
+                .UseMapper(new FeiEventStore.Ioc.LightInject.IocRegistrationMapper())
+                .UseMapper(new FeiEventStore.Ioc.IocRegistrationMapper())
+                .Register();
             return;
         }
 
