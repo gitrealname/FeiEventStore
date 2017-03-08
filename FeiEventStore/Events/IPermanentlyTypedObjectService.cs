@@ -34,7 +34,7 @@ namespace FeiEventStore.Events
         /// <param name="finalType">The final type.</param>
         /// <returns>upgraded object</returns>
         /// <exception cref="ObjectUpgradeChainIsBrokenException"></exception>
-        T UpgradeObject<T>(T originalObject, Type finalType) where T : IPermanentlyTyped;
+        T UpgradeObject<T>(T originalObject, Type finalType) where T : class, IPermanentlyTyped;
 
         /// <summary>
         /// Build upgrade type chain.

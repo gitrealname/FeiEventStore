@@ -42,6 +42,7 @@ namespace EventStoreIntegrationTester
             Bootstrap(container);
 
             var tests = container.GetAllInstances<ITest>().ToList();
+            var persistenceEngine = container.GetInstance<IPersistenceEngine>();
             var defaultColor = Console.ForegroundColor;
             var i = 0;
             var sw = new Stopwatch();
@@ -53,6 +54,7 @@ namespace EventStoreIntegrationTester
                 sw.Restart();
                 try
                 {
+                    persistenceEngine.Purge();
                     success = t.Run();
                 } catch(Exception e)
                 {

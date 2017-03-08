@@ -20,6 +20,7 @@ namespace FeiEventStore.Domain
         private readonly IDomainCommandScopedExecutionContextFactory _executorFactory;
         private readonly IEventStore _eventStore;
         private readonly IEventDispatcher _eventDispatcher;
+        private readonly IPermanentlyTypedRegistry _permanentlyTypedRegistry;
         private readonly ISnapshotStrategy _snapshotStrategy;
         private readonly IEnumerable<IDomainCommandValidationProvider> _validationProviders;
 
@@ -27,13 +28,15 @@ namespace FeiEventStore.Domain
             IEventStore eventStore, 
             ISnapshotStrategy snapshotStrategy,
             IEnumerable<IDomainCommandValidationProvider> validationProviders,
-            IEventDispatcher  eventDispatcher)
+            IEventDispatcher  eventDispatcher,
+            IPermanentlyTypedRegistry permanentlyTypedRegistry)
         {
             _factory = factory;
             _executorFactory = executorFactory;
             _eventStore = eventStore;
             _executorFactory = executorFactory;
             _eventDispatcher = eventDispatcher;
+            _permanentlyTypedRegistry = permanentlyTypedRegistry;
             _snapshotStrategy = snapshotStrategy;
             _validationProviders = validationProviders;
         }

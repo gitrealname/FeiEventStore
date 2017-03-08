@@ -263,7 +263,7 @@
                 var stateType = _service.LookupTypeByPermanentTypeId(snapshotRecord.AggregateStateTypeId);
                 var state = (IState)_engine.DeserializePayload(snapshotRecord.State, stateType);
                 //determine what state type is expected by current implementation of the aggregate
-                var finalStateType = persistedAggregateType.GetGenericInterfaceArgumentTypes(typeof(IAggregate)).FirstOrDefault();
+                var finalStateType = persistedAggregateType.GetGenericInterfaceArgumentTypes(typeof(IAggregate<>), 0).FirstOrDefault();
                 //upgrade state to desired level
                 state = _service.UpgradeObject(state, finalStateType);
                 aggregate.State = state;
@@ -379,8 +379,7 @@
                 {
                     try
                     {
-                        eventPayloadType = typeof(IEvent<>).MakeGenericType(t);
-                        @event = _service.GetSingleInstanceForGenericType<IEvent>(eventPayloadType);
+                        @event = _service.GetSingleInstanceForGenericType<IEvent>(typeof(IEvent<>), t);
                         break;
                     }
                     catch(RuntimeTypeInstancesNotFoundException) { }
@@ -394,6 +393,7 @@
                     throw ex;
                 }
                 //upgrade payload
+                eventPayloadType = @event.GetType().GetGenericInterfaceArgumentTypes(typeof(IEvent<>), 0).FirstOrDefault();
                 payload = _service.UpgradeObject(payload, eventPayloadType);
                 @event.Payload = payload;
                 InitEventFromEventRecord(@event, er);

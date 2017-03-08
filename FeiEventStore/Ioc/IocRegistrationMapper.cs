@@ -35,6 +35,7 @@ namespace FeiEventStore.Ioc
             { typeof(IStartedByEvent<>), IocMappingAction.RegisterTransientLifetime },
             { typeof(IAggregate<>), IocMappingAction.RegisterTransientLifetime },
             { typeof(IProcess<>), IocMappingAction.RegisterTransientLifetime },
+            { typeof(IEvent<>), IocMappingAction.RegisterTransientLifetime },
             
             //swallow types with helper interfaces
             { typeof(IErrorTranslator), IocMappingAction.Swallow },
@@ -55,7 +56,7 @@ namespace FeiEventStore.Ioc
             }
             if(_genericMap.TryGetValue(serviceType, out action))
             {
-                //Console.WriteLine("Registering type {0} for {1}", implementationType.Name, serviceType.Name);
+                Console.WriteLine("Registering type {0} for {1}", implementationType.Name, serviceType.Name);
                 return action;
             }
 

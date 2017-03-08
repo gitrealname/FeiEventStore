@@ -34,7 +34,7 @@ namespace FeiEventStore.Events
                 throw ex;
             }
             //cast if instance found
-            var result = (T)instances.First();
+            var result = (T)instances.FirstOrDefault();
             if(result == null)
             {
                 var ex = new RuntimeTypeInstancesNotFoundException(closedGenericType);
@@ -80,19 +80,19 @@ namespace FeiEventStore.Events
             return _registry.LookupTypeByPermanentTypeId(permanentTypeId);
         }
 
-        public T UpgradeObject<T>(T originalObject, Type finalType) where T : IPermanentlyTyped
+        public T UpgradeObject<T>(T originalObject, Type finalType) where T : class, IPermanentlyTyped
         {
             var originalType = originalObject.GetType();
             var prevType = originalType;
+            T replacer = originalObject;
             if(finalType == null)
             {
                 throw new ArgumentNullException(nameof(finalType));
             }
             //upgrade object
-            while(true)
+            while(prevType != finalType)
             {
                 var replacerType = typeof(IReplace<>).MakeGenericType(prevType);
-                T replacer;
                 try
                 {
                     replacer = GetSingleInstance<T>(replacerType);
@@ -105,16 +105,15 @@ namespace FeiEventStore.Events
                 }
 
                 replacer.AsDynamic().InitFromObsolete(originalObject);
-                if(finalType == replacer.GetType())
-                {
-                    if(Logger.IsDebugEnabled)
-                    {
-                        Logger.Debug("Upgraded object from type {0} to type {1}", originalType, finalType);
-                    }
-                    return replacer;
-                }
                 prevType = replacerType;
             }
+
+            if(Logger.IsDebugEnabled)
+            {
+                Logger.Debug("Upgraded object from type {0} to type {1}", originalType, finalType);
+            }
+
+            return replacer;
         }
 
         public IEnumerable<Type> BuildUpgradeTypeChain(Type baseType)
