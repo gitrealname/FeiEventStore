@@ -47,12 +47,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\Command.cs" />
+    <Compile Include="Core\BaseCommand.cs" />
+    <Compile Include="Core\Guard.cs" />
     <Compile Include="Core\TypeId.cs" />
     <Compile Include="Domain\BaseAggregateException.cs" />
     <Compile Include="Domain\BaseProcess.cs" />
     <Compile Include="Domain\BaseAggregate.cs" />
-    <Compile Include="Core\Event.cs" />
+    <Compile Include="Core\BaseEvent.cs" />
     <Compile Include="Core\IState.cs" />
     <Compile Include="Core\IObjectFactory.cs" />
     <Compile Include="Core\IReplace.cs" />
@@ -70,6 +71,7 @@
     <Compile Include="Domain\DomainCommandExecutionContext.cs" />
     <Compile Include="Domain\DomainCommandExecutor.cs" />
     <Compile Include="Domain\DomainObjectCache.cs" />
+    <Compile Include="Domain\EventDispatcher.cs" />
     <Compile Include="Domain\IDomainCommandExecutor.cs" />
     <Compile Include="Domain\IDomainCommandExecutionContext.cs" />
     <Compile Include="Domain\IDomainCommandValidationProvider.cs" />

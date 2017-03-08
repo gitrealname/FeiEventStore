@@ -1,8 +1,9 @@
-﻿namespace FeiEventStore.Core
-{
-    using System;
-    using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using FeiEventStore.Core;
 
+namespace FeiEventStore.Domain
+{
     public abstract class BaseAggregate<TState> : IAggregate<TState> where TState : IState, new()
     {
         public readonly List<IEvent> Changes = new List<IEvent>();

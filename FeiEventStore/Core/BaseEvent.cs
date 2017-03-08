@@ -2,10 +2,9 @@
 {
     using System;
 
-    public class Event<TState> : IEvent<TState> where TState : IState, new()
+    public abstract class BaseEvent<TState> : IEvent<TState> where TState : IState, new()
     {
         public MessageOrigin Origin { get; set; }
-        public Guid? ProcessId { get; set; }
         public long StoreVersion { get; set; }
         public Guid SourceAggregateId { get; set; }
         public long SourceAggregateVersion { get; set; }
@@ -18,7 +17,7 @@
             set { Payload = (TState)value; }
         }
         public TState Payload { get; set; }
-        public Event()
+        protected BaseEvent()
         {
             Timestapm = DateTimeOffset.UtcNow;
             Payload = new TState();

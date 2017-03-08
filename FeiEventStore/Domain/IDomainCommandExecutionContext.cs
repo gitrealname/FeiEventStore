@@ -27,7 +27,7 @@ namespace FeiEventStore.Domain
 
         void ReportInfo(string infoMessage);
 
-        DomainCommandResult BuildResult();
+        DomainCommandResult BuildResult(long eventStoreVersion);
 
         bool CommandHasFailed { get; }
     }

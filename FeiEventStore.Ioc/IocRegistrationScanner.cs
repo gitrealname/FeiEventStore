@@ -176,10 +176,22 @@ namespace FeiEventStore.Ioc
                             continue;
                         }
                         //Console.WriteLine(t.FullName);
+                        HashSet<Type> ignoreType = new HashSet<Type>();
                         foreach(var i in t.GetInterfaces())
                         {
+                            if(ignoreType.Contains(i))
+                            {
+                                continue;
+                            }
                             //Console.WriteLine("Service type '{0}'.", i.FullName);
-                            ProcessType(i, t);
+                            var ignoreSubTypes = ProcessType(i, t);
+                            if(ignoreSubTypes)
+                            {
+                                foreach(var subTypeInterface in i.GetInterfaces())
+                                {
+                                    ignoreType.Add(subTypeInterface);
+                                }
+                            }
                         }
                     }
                 }
@@ -187,8 +199,9 @@ namespace FeiEventStore.Ioc
 
         }
 
-        private void ProcessType(Type serviceType, Type type)
+        private bool ProcessType(Type serviceType, Type type)
         {
+            var ignoreSubTypes = false;
             foreach(var mapper in _mappers)
             {
                 var action = mapper.Map(serviceType, type);
@@ -202,12 +215,16 @@ namespace FeiEventStore.Ioc
                     var lifetime = (IocRegistrationLifetime)(int)action;
                     _registrar.Register(serviceType, type, lifetime);
                     Logger.Debug("Registered type '{0}' as service of type '{1}' with lifetime {2}.", type.FullName, serviceType.FullName, lifetime.ToString());
-                } else
+                    ignoreSubTypes = true;
+                }
+                else
                 {
                     Logger.Debug("Swallowed type '{0}' of service type '{1}.", type.FullName, serviceType.FullName);
+
                 }
                 break;
             }
+            return ignoreSubTypes;
         }
     }
 }

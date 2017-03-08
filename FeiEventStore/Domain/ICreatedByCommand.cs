@@ -7,7 +7,7 @@
     /// Every aggregate must have one or more ICreatedByCommand
     /// </summary>
     /// <typeparam name="TCommand">The type of the event.</typeparam>
-    public interface ICreatedByCommand<in TCommand>
+    public interface ICreatedByCommand<in TCommand> 
         where TCommand : ICommand
     {
     }

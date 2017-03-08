@@ -79,13 +79,9 @@ namespace FeiEventStore.Persistence
             HashSet<Guid> processIdsToBeDeleted = null)
         {
             var commitId = Guid.NewGuid();
-            dynamic stats = new {
-                events = 0,
-                //aggregateConstraints = 0,
-                //processConstraints = 0,
-                snapshots = 0,
-                processes = 0,
-            };
+            var stats_events = 0;
+            var stats_snapshots = 0;
+            var stats_processes = 0;
 
             lock(_locker)
             {
@@ -192,7 +188,7 @@ namespace FeiEventStore.Persistence
                     }
                     _eventsByAggregateId[e.AggregateId].Add(new Tuple<EventRecord, int>(e, endPos));
                     endPos++;
-                    stats.events = events.Count;
+                    stats_events = events.Count;
                 }
 
                 //process snapshots
@@ -207,7 +203,7 @@ namespace FeiEventStore.Persistence
                         }
                         _snapshotByAggregateId [ s.AggregateId ] = s;
                     }
-                    stats.snapshots = snapshots.Count;
+                    stats_snapshots = snapshots.Count;
                 }
 
                 //delete finished processes 
@@ -230,7 +226,7 @@ namespace FeiEventStore.Persistence
                         }
                         _processByProcessTypeIdAggregateId[new Tuple<TypeId, Guid>(p.ProcessTypeId, p.InvolvedAggregateId)] = p;
                     }
-                    stats.processes = processes.Count;
+                    stats_processes = processes.Count;
                 }
 
                 //update StoreVersion
@@ -241,7 +237,7 @@ namespace FeiEventStore.Persistence
                     //Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes: {2}, Aggregate constraints validated: {3}, Process constraints validated: {4}. Final store version: {5}",
                     //    stats.events, stats.napshots, stats.processes, stats.aggregateConstraints, stats.processConstraints, StoreVersion);
                     Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes: {2}. Final store version: {3}",
-                        stats.events, stats.napshots, stats.processes, StoreVersion);
+                        stats_events, stats_snapshots, stats_processes, StoreVersion);
                 }
 
                 return StoreVersion;
@@ -265,6 +261,10 @@ namespace FeiEventStore.Persistence
 
         public IEnumerable<EventRecord> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion)
         {
+            if(!_eventsByAggregateId.ContainsKey(aggregateId))
+            {
+                return new List<EventRecord>();
+            }
             var result = _eventsByAggregateId[aggregateId]
                 .Where(r => r.Item1.AggregateVersion >= fromAggregateVersion && (!toAggregateVersion.HasValue || r.Item1.AggregateVersion <= toAggregateVersion.Value))
                 .Select(t => t.Item1);

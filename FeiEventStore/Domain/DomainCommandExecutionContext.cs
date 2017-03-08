@@ -13,6 +13,7 @@ namespace FeiEventStore.Domain
         public void ReportException(Exception e)
         {
             _commandResult.Exception = e;
+            _commandResult.CommandHasFailed = true;
         }
         public DomainCommandExecutionContext()
         {
@@ -20,7 +21,7 @@ namespace FeiEventStore.Domain
         }
         public void ReportFatalError(string errorMessage)
         {
-            _commandResult.FatalErrors.Add(errorMessage);
+            _commandResult.Errors.Add(errorMessage);
             _commandResult.CommandHasFailed = true;
         }
 
@@ -39,8 +40,9 @@ namespace FeiEventStore.Domain
             _commandResult.Infos.Add(infoMessage);
         }
 
-        public DomainCommandResult BuildResult()
+        public DomainCommandResult BuildResult(long eventStoreVersion)
         {
+            _commandResult.EventStoreVersion = eventStoreVersion;
             return _commandResult;
         }
 

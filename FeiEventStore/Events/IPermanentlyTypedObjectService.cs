@@ -12,16 +12,18 @@ namespace FeiEventStore.Events
     /// </summary>
     public interface IPermanentlyTypedObjectService
     {
+        T GetSingleInstanceForConcreteType<T>(Type concreteType, Type genericType);
 
         /// <summary>
-        /// Get single instance of the object.
+        /// Get single instance of the object that implements specified
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="type">The type.</param>
+        /// <param name="genericType">Type of the generic.</param>
+        /// <param name="typeArguments">The type arguments.</param>
         /// <returns></returns>
         /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
         /// <exception cref="MultipleTypeInstancesException"></exception>
-        T GetSingleInstance<T>(Type type);
+        T GetSingleInstanceForGenericType<T>(Type genericType, params Type[] typeArguments);
 
         /// <summary>
         /// Upgrades the object.

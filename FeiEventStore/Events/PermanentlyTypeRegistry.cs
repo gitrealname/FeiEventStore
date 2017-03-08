@@ -9,12 +9,26 @@ namespace FeiEventStore.Events
 {
     public class PermanentlyTypeRegistry : IPermanentlyTypedRegistry
     {
+        /*private IEnumerable<IPermanentlyTyped> _permanentlyTypedCollection;*/
+        private readonly IObjectFactory _objectFactory;
         private readonly Dictionary<TypeId, Type> _typeIdToType;
+        private bool _initialized = false;
 
 
-        public PermanentlyTypeRegistry(IEnumerable<IPermanentlyTyped> permanentlyTypedCollection)
+        public PermanentlyTypeRegistry(/*IEnumerable<IPermanentlyTyped> permanentlyTypedCollection,*/ IObjectFactory objectFactory)
         {
+            /*_permanentlyTypedCollection = permanentlyTypedCollection;*/
+            _objectFactory = objectFactory;
             _typeIdToType = new Dictionary<TypeId, Type>();
+        }
+
+        private void Initialize()
+        {
+            if(_initialized)
+            {
+                return;
+            }
+            var permanentlyTypedCollection = _objectFactory.GetAllInstances(typeof(IEnumerable<IPermanentlyTyped>)); 
             foreach(var o in permanentlyTypedCollection)
             {
                 var objectType = o.GetType();
@@ -25,9 +39,15 @@ namespace FeiEventStore.Events
                 }
                 _typeIdToType.Add(attr.PermanentTypeId, objectType);
             }
+            _initialized = true;
         }
         public Type LookupTypeByPermanentTypeId(TypeId permanentTypeId)
         {
+            if(!_initialized)
+            {
+                Initialize();
+            }
+
             Type type;
             if(!_typeIdToType.TryGetValue(permanentTypeId, out type))
             {

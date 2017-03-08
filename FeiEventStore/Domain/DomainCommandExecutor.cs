@@ -38,8 +38,9 @@ namespace FeiEventStore.Domain
             _validationProviders = validationProviders;
         }
 
-        private void Execute(IList<ICommand> commandBatch, IDomainCommandExecutionContext execContext)
+        private long Execute(IList<ICommand> commandBatch, IDomainCommandExecutionContext execContext)
         {
+            var finalStoreVersion = -1L;
             var cache = new DomainObjectCache();
             cache.EnqueueList(commandBatch);
             var externalCommandCount = cache.Queue.Count;
@@ -68,20 +69,21 @@ namespace FeiEventStore.Domain
 
                 if(execContext.CommandHasFailed)
                 {
-                    return;
+                    return finalStoreVersion;
                 }
-                
+
                 //commit
                 if(cache.RaisedEvents.Count > 0)
                 {
                     var snapshots = cache.AggregateMap.Values.Where(a => _snapshotStrategy.ShouldAggregateSnapshotBeCreated(a)).ToList();
                     var processes = cache.ProcessMap.Values.ToList();
                     _eventStore.Commit(cache.RaisedEvents, snapshots.Count > 0 ? snapshots : null, processes.Count > 0 ? processes : null);
+                    finalStoreVersion = cache.RaisedEvents.Count == 0 ? 0L : cache.RaisedEvents[cache.RaisedEvents.Count - 1].StoreVersion;
                 }
 
                 if(execContext.CommandHasFailed)
                 {
-                    return;
+                    return finalStoreVersion;
                 }
 
                 //Todo: dispatch, what if last dispatch version < initial dispatch (before first event was created), concurrent dispatch???
@@ -90,7 +92,9 @@ namespace FeiEventStore.Domain
             catch(BaseAggregateException ex)
             {
                 TranslateAndReportError(ex, execContext, cache);
+                return finalStoreVersion;
             }
+            return finalStoreVersion;
         }
 
         private void TranslateAndReportError(BaseAggregateException exception, IDomainCommandExecutionContext execScope, DomainObjectCache cache )
@@ -237,6 +241,11 @@ namespace FeiEventStore.Domain
                 aggregate = _eventStore.LoadAggregate(aggregateType, cmd.TargetAggregateId);
             }
 
+            if(aggregate.GetType() == handler.GetType())
+            {
+                handler = aggregate;
+            }
+
             //perform basic validation: target version and command against new aggregate
             StandardCommandValidation(cmd, aggregate, cache);
 
@@ -285,7 +294,7 @@ namespace FeiEventStore.Domain
             {
                 var canBeCreateByTypes = aggregate.GetType().GetGenericInterfaces(typeof(ICreatedByCommand<>));
                 var cmdType = cmd.GetType();
-                if(!canBeCreateByTypes.Any(t => t.IsAssignableFrom(cmdType)))
+                if(!canBeCreateByTypes.Any(t => t.GenericTypeArguments.Any(tt => tt == cmdType)))
                 {
                     throw new AggregateDoesnotExistsException(aggregate.Id);
                 }
@@ -316,10 +325,11 @@ namespace FeiEventStore.Domain
             while(reTry)
             {
                 reTry = false;
+                var finalStoreVersion = -1L;
                 _executorFactory.ExecuteInScope<IDomainCommandExecutionContext, DomainCommandResult>((execScope) => {
                     try
                     {
-                        Execute(commandBatch, execScope);
+                        finalStoreVersion = Execute(commandBatch, execScope);
                     }
                     catch(AggregateConcurrencyViolationException ex)
                     {
@@ -344,7 +354,7 @@ namespace FeiEventStore.Domain
                     }
                     finally
                     {
-                        result = execScope.BuildResult();
+                        result = execScope.BuildResult(finalStoreVersion);
                     }
                     return result;
                 });

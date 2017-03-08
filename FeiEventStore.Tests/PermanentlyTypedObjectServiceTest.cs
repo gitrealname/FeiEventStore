@@ -16,17 +16,19 @@ namespace FeiEventStore.Tests
      
         public interface ITestEvent : IState { }
 
+        public interface ITestEvent<T> : ITestEvent where T : ITestEvent { }
+
         [PermanentType("00000000-0000-0000-0000-000000000001")]
-        public class FirstEvent : ITestEvent { }
+        public class FirstEvent : ITestEvent<FirstEvent> { }
 
         [PermanentType("00000000-0000-0000-0000-000000000002")]
-        public class SecondEvent : ITestEvent, IReplace<FirstEvent>
+        public class SecondEvent : ITestEvent<SecondEvent>, IReplace<FirstEvent>
         {
             public void InitFromObsolete(FirstEvent obsoleteObject) { return; }
         }
 
         [PermanentType("00000000-0000-0000-0000-000000000003")]
-        public class ThirdEvent : ITestEvent, IReplace<SecondEvent>
+        public class ThirdEvent : ITestEvent<ThirdEvent>, IReplace<SecondEvent>
         {
             public void InitFromObsolete(SecondEvent obsoleteObject) { return;  }
             public ITestEvent DynamicTest(SecondEvent secondEvent) { return secondEvent; }
@@ -57,7 +59,7 @@ namespace FeiEventStore.Tests
             var factory = Substitute.For<IObjectFactory>();
             factory.GetAllInstances(Arg.Is(typeof(IReplace<FirstEvent>))).Returns(new List<object>() { new SecondEvent() });
             factory.GetAllInstances(Arg.Is(typeof(IReplace<SecondEvent>))).Returns(new List<object>() { new ThirdEvent() });
-            factory.GetAllInstances(Arg.Is(typeof(ThirdEvent))).Returns(new List<object>() { new ThirdEvent() });
+            factory.GetAllInstances(Arg.Is(typeof(ITestEvent<ThirdEvent>))).Returns(new List<object>() { new ThirdEvent() });
 
 
             Registry = new PermanentlyTypedRegistry();
@@ -86,7 +88,7 @@ namespace FeiEventStore.Tests
         [Fact]
         public void can_create_object()
         {
-            var o = Service.GetSingleInstance<ITestEvent>(typeof(ThirdEvent));
+            var o = Service.GetSingleInstanceForConcreteType<ITestEvent>(typeof(ThirdEvent), typeof(ITestEvent<>));
             Assert.IsAssignableFrom<ITestEvent>(o);
         }
         [Fact]

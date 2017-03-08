@@ -7,6 +7,10 @@
         public Guid? SystemId { get; private set; }
         public Guid? UserId { get; private set; }
 
+        public MessageOrigin() : this(null, null)
+        {
+            
+        }
         public MessageOrigin(MessageOrigin other) : this(other.SystemId, other.UserId)
         {
         }

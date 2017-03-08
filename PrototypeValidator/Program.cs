@@ -97,8 +97,8 @@ namespace PrototypeValidator
         }
 
         class TestAggregate2 : BaseAggregate<AggregateState> { }
-        class TestCommand : Command<CommandPayload> {
-            public TestCommand() : base(false)
+        class TestCommand : BaseCommand<CommandPayload> {
+            public TestCommand() : base()
             {
             }
         }

@@ -22,12 +22,14 @@ namespace FeiEventStore.Events
             _registry = registry;
             _factory = factory;
         }
-        public T GetSingleInstance<T>(Type type)
+
+
+        private T GetSingleInstance<T>(Type closedGenericType)
         {
-            var instances = _factory.GetAllInstances(type).ToList();
+            var instances = _factory.GetAllInstances(closedGenericType).ToList();
             if(instances.Count > 1)
             {
-                var ex = new MultipleTypeInstancesException(type, instances.Count);
+                var ex = new MultipleTypeInstancesException(closedGenericType, instances.Count);
                 Logger.Fatal(ex);
                 throw ex;
             }
@@ -35,11 +37,36 @@ namespace FeiEventStore.Events
             var result = (T)instances.First();
             if(result == null)
             {
-                var ex = new RuntimeTypeInstancesNotFoundException(type);
+                var ex = new RuntimeTypeInstancesNotFoundException(closedGenericType);
                 Logger.Fatal(ex);
                 throw ex;
             }
             return (T)result;
+
+        }
+        public T GetSingleInstanceForConcreteType<T>(Type concreteType, Type genericType)
+        {
+            var interfaces = concreteType.GetInterfaces();
+            var types = interfaces.Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == genericType).ToList();
+            if(types.Count != 1)
+            {
+                var ex = new ArgumentException(string.Format("Concrete Type '{0}' expected to implement generic type '{1}' once.", concreteType.FullName, genericType.FullName));
+                Logger.Fatal(ex);
+                throw ex;
+            }
+            return GetSingleInstance<T>(types[0]);
+        }
+
+        public T GetSingleInstanceForGenericType<T>(Type genericType, params Type[] typeArguments)
+        {
+            if(!genericType.IsGenericType)
+            {
+                var ex = new ArgumentException(string.Format("'{0}' must be a generic type.", nameof(genericType)));
+                Logger.Fatal(ex);
+                throw ex;
+            }
+            var type = genericType.MakeGenericType(typeArguments);
+            return GetSingleInstance<T>(type);
         }
 
         public TypeId GetPermanentTypeIdForType(Type type)
@@ -96,11 +123,11 @@ namespace FeiEventStore.Events
             chain.Add(baseType);
             while(true)
             {
-                var replacerType = typeof(IReplace<>).MakeGenericType(baseType);
+                Type replacerType;
                 IPermanentlyTyped replacer;
                 try
                 {
-                    replacer = GetSingleInstance<IPermanentlyTyped>(replacerType);
+                    replacer = GetSingleInstanceForGenericType<IPermanentlyTyped>(typeof(IReplace<>), new[] {baseType});
                     replacerType = replacer.GetType();
                 }
                 catch(Exception)

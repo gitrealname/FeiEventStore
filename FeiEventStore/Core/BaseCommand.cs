@@ -2,16 +2,14 @@
 {
     using System;
 
-    public class Command<TState> : ICommand<TState> where TState : IState, new()
+    public abstract class BaseCommand<TState> : ICommand<TState> where TState : IState, new()
     {
         public MessageOrigin Origin { get; set; }
-        public Guid? ProcessId { get; set; }
+
         public Guid TargetAggregateId { get; set; }
 
         public long? TargetAggregateVersion { get; set; }
         public TState Payload { get; set; }
-
-        public bool CanBeExecutedAgainstNewAggregate { get; set; }
 
         object ICommand.Payload
         {
@@ -19,9 +17,9 @@
             set { Payload = (TState)value; }
         }
 
-        public Command(bool canBeExecutedAgainstNewAggregate)
+        public BaseCommand()
         {
-            CanBeExecutedAgainstNewAggregate = canBeExecutedAgainstNewAggregate; 
+            Payload = new TState();
         }
 
     }

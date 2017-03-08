@@ -5,11 +5,14 @@ namespace FeiEventStore.Ioc.LightInject
 {
     public class LightInjectIocRegistrar : IIocRegistrar
     {
-        private readonly IServiceRegistry _container;
+        private readonly IServiceContainer _container;
 
-        public LightInjectIocRegistrar(IServiceRegistry container)
+        public LightInjectIocRegistrar(IServiceContainer container)
         {
             _container = container;
+            
+            //register IServiceFactory
+            container.Register<IServiceFactory>((factory) => _container);
         }
 
         public void Register(Type serviceType, Type implementationType, IocRegistrationLifetime lifetime)

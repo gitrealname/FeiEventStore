@@ -117,8 +117,10 @@
             }
 
             //attempt commit
-            while(true)
+            bool reTry = true;
+            while(reTry)
             {
+                reTry = false;
                 //setup event store version for event records
                 var initialStoreVersion = StoreVersion;
                 var ver = initialStoreVersion;
@@ -135,6 +137,7 @@
                 catch(EventStoreConcurrencyViolationException ex)
                 {
                     //warn and re-try attempt
+                    reTry = true;
                     if(Logger.IsWarnEnabled)
                     {
                         Logger.Warn(ex);
@@ -256,7 +259,7 @@
                     Logger.Fatal(ex);
                     throw ex;
                 }
-                aggregate = _service.GetSingleInstance<IAggregate>(persistedAggregateType);
+                aggregate = _service.GetSingleInstanceForConcreteType<IAggregate>(persistedAggregateType, typeof(IAggregate<>));
                 var stateType = _service.LookupTypeByPermanentTypeId(snapshotRecord.AggregateStateTypeId);
                 var state = (IState)_engine.DeserializePayload(snapshotRecord.State, stateType);
                 //determine what state type is expected by current implementation of the aggregate
@@ -272,7 +275,7 @@
             }
             catch (SnapshotNotFoundException)
             {
-                aggregate = _service.GetSingleInstance<IAggregate>(aggregateType);
+                aggregate = _service.GetSingleInstanceForConcreteType<IAggregate>(aggregateType, typeof(IAggregate<>));
                 aggregate.TypeId = _service.GetPermanentTypeIdForType(aggregateType);
                 aggregate.Id = aggregateId;
                 aggregate.Version = 0;
@@ -334,7 +337,7 @@
                 }
 
                 var newProcessType = typeof(IProcess<>).MakeGenericType(state.GetType());
-                process = _service.GetSingleInstance<IProcess>(newProcessType);
+                process = _service.GetSingleInstanceForGenericType<IProcess>(newProcessType);
 
                 process.Id = processId;
                 process.LatestPersistedVersion = processVersion;
@@ -377,7 +380,7 @@
                     try
                     {
                         eventPayloadType = typeof(IEvent<>).MakeGenericType(t);
-                        @event = _service.GetSingleInstance<IEvent>(eventPayloadType);
+                        @event = _service.GetSingleInstanceForGenericType<IEvent>(eventPayloadType);
                         break;
                     }
                     catch(RuntimeTypeInstancesNotFoundException) { }

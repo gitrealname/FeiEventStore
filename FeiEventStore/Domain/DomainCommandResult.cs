@@ -14,7 +14,6 @@ namespace FeiEventStore.Domain
     {
         public DomainCommandResult()
         {
-            FatalErrors = new List<string>();
             Errors = new List<string>();
             Warnings = new List<string>();
             Infos = new List<string>();
@@ -23,7 +22,6 @@ namespace FeiEventStore.Domain
         public bool CommandHasFailed { get; set; }
 
         public Exception Exception { get; set; }
-        public List<string> FatalErrors { get; set; }
         public List<string> Errors { get; set; }
         public List<string> Warnings { get; set; }
         public List<string> Infos { get; set; }

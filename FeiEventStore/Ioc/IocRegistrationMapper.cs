@@ -16,6 +16,7 @@ namespace FeiEventStore.Ioc
             { new Tuple<Type, Type>(typeof(IEventStore), typeof(EventStore)), IocMappingAction.RegisterPerContainerLifetime },
             { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocMappingAction.RegisterPerContainerLifetime },
             { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocMappingAction.RegisterPerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IEventDispatcher), typeof(EventDispatcher)), IocMappingAction.RegisterPerContainerLifetime },
 
             //per scope!
             { new Tuple<Type, Type>(typeof(IDomainCommandExecutionContext), typeof(DomainCommandExecutionContext)), IocMappingAction.RegisterPerScopeLifetime },
@@ -28,7 +29,6 @@ namespace FeiEventStore.Ioc
         {
             { typeof(IPermanentlyTyped), IocMappingAction.RegisterTransientLifetime },
             { typeof(IReplace<>), IocMappingAction.RegisterTransientLifetime },
-            { typeof(IHandle<>), IocMappingAction.RegisterTransientLifetime },
             { typeof(IHandleCommand<,>), IocMappingAction.RegisterTransientLifetime },
             { typeof(IHandleEvent<>), IocMappingAction.RegisterTransientLifetime },
             { typeof(ICreatedByCommand<>), IocMappingAction.RegisterTransientLifetime },
@@ -38,6 +38,7 @@ namespace FeiEventStore.Ioc
             
             //swallow types with helper interfaces
             { typeof(IErrorTranslator), IocMappingAction.Swallow },
+            { typeof(IHandle<>), IocMappingAction.Swallow },
         };
 
         public IocMappingAction Map(Type serviceType, Type implementationType)
@@ -49,10 +50,12 @@ namespace FeiEventStore.Ioc
             IocMappingAction action;
             if(_explicitMap.TryGetValue(new Tuple<Type, Type>(serviceType, implementationType), out action))
             {
+                //Console.WriteLine("Registering type {0} for {1}", implementationType.Name, serviceType.Name);
                 return action;
             }
             if(_genericMap.TryGetValue(serviceType, out action))
             {
+                //Console.WriteLine("Registering type {0} for {1}", implementationType.Name, serviceType.Name);
                 return action;
             }
 
