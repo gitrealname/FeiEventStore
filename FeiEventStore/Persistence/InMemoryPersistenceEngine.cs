@@ -134,22 +134,26 @@ namespace FeiEventStore.Persistence
                     }
                 }
 
+                //remove finished processes
+                if(processIdsToBeDeleted != null)
+                {
+                    foreach(var id in processIdsToBeDeleted)
+                    {
+                        var keysToDelete = _processByProcessTypeIdAggregateId.Where(kv => kv.Value.ProcessId == id).Select(kv => kv.Key).ToList();
+                        _processByProcessId.Remove(id);
+                        foreach(var k in keysToDelete)
+                        {
+                            _processByProcessTypeIdAggregateId.Remove(k);
+                        }
+                    }
+                }
+
                 if(processes != null)
                 {
                     foreach(var p in processes)
                     {
                         if(p.State != null)
                         {
-                            //remove finished processes
-                            if(processIdsToBeDeleted != null && processIdsToBeDeleted.Contains(p.ProcessId))
-                            {
-                                var keysToDelete = _processByProcessTypeIdAggregateId.Where(kv => kv.Value.ProcessId == p.ProcessId).Select(kv => kv.Key);
-                                foreach(var k in keysToDelete)
-                                {
-                                    _processByProcessTypeIdAggregateId.Remove(k);
-                                }
-                            }
-
                             if(_processByProcessId.ContainsKey(p.ProcessId))
                             {
                                 var currentProcess = _processByProcessId[p.ProcessId];

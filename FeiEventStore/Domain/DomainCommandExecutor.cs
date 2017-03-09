@@ -151,6 +151,7 @@ namespace FeiEventStore.Domain
                         try
                         {
                             process = _eventStore.LoadProcess(handler.GetType(), e.SourceAggregateId);
+                            process.Version++;
                             cache.TrackProcessManager(process);
                         }
                         catch(ProcessNotFoundException)
@@ -195,6 +196,9 @@ namespace FeiEventStore.Domain
                     }
                     if(!isCached && commands.Count > 0)
                     {
+                        //once cached, process manager will be passed into commit and theoretically (if no complete) persisted.
+                        //thus, increment process version
+                        process.Version++;
                         cache.TrackProcessManager(process);
                     }
                 }

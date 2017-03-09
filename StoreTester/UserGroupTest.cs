@@ -46,4 +46,39 @@ namespace EventStoreIntegrationTester
             return !result.CommandHasFailed;
         }
     }
+
+    //[Only]
+    public class LongRunningProcessManagerTest : BaseTest<LongRunningProcessManagerTest>
+    {
+        public LongRunningProcessManagerTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore) : base(commandExecutor, eventStore, "Process Manager Long running") { }
+        public override bool Run()
+        {
+            //'_' in the name will be used by CreateUserGroupCounterProcessManager to run long running process
+            CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.DefaultUserGroup, "_prefered group", Const.FirstCounterId));
+
+            CommandExecutor.ExecuteCommand(new Increment(Const.FirstCounterId, 1));
+            CommandExecutor.ExecuteCommand(new Increment(Const.FirstCounterId, 1)); 
+
+            //Process manager state should be stored in event store for both UserGroupAggregate and CounterAggregate
+            var pm = (CreateUserGroupCounterProcessManager)EventStore.LoadProcess(typeof(CreateUserGroupCounterProcessManager), Const.DefaultUserGroup);
+            Guard.EqualTo(() => pm.State.LongRunning, pm.State.LongRunning, true);
+            Guard.EqualTo(() => pm.State.ProcessedEventCount, pm.State.ProcessedEventCount, 4);
+
+            pm = (CreateUserGroupCounterProcessManager)EventStore.LoadProcess(typeof(CreateUserGroupCounterProcessManager), Const.FirstCounterId);
+            Guard.EqualTo(() => pm.State.ProcessedEventCount, pm.State.ProcessedEventCount, 4);
+
+            //terminate process by incrementing counter by 100 (see CreateUserGroupCounterProcessManager)
+            CommandExecutor.ExecuteCommand(new Increment(Const.FirstCounterId, 100));
+
+            try
+            {
+                pm = (CreateUserGroupCounterProcessManager)EventStore.LoadProcess(typeof(CreateUserGroupCounterProcessManager), Const.DefaultUserGroup);
+            }
+            catch(ProcessNotFoundException)
+            {
+                return true;
+            }
+            return false;
+        }
+    }
 }

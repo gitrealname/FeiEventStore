@@ -339,8 +339,7 @@
                     }
                 }
 
-                var newProcessType = typeof(IProcess<>).MakeGenericType(state.GetType());
-                process = _service.GetSingleInstanceForGenericType<IProcess>(newProcessType);
+                process = _service.GetSingleInstanceForGenericType<IProcess>(typeof(IProcess<>), state.GetType());
 
                 process.Id = processId;
                 process.LatestPersistedVersion = processVersion;

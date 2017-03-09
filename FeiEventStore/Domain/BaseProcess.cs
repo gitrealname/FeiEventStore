@@ -28,7 +28,6 @@
         {
             PendingCommands.Add(cmd);
             InvolvedAggregateIds.Add(cmd.TargetAggregateId);
-            Version++;
         }
 
         object IProcess.State
