@@ -57,6 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseTest.cs" />
+    <Compile Include="OnlyAttribute.cs" />
     <Compile Include="TestConst.cs" />
     <Compile Include="UserGroupTest.cs" />
     <Compile Include="UserGroup\CreateUserGroupCounterProcessManager.cs" />

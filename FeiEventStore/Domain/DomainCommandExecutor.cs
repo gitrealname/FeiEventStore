@@ -120,10 +120,20 @@ namespace FeiEventStore.Domain
         private void ProcessEvent(IEvent e, IDomainCommandExecutionContext execContext, DomainObjectCache cache)
         {
             var iHandleEventType = typeof(IHandleEvent<>).MakeGenericType(e.GetType());
-            var handlers = _factory.GetAllInstances(iHandleEventType);
+            var iStartByEventType = typeof(IStartedByEvent<>).MakeGenericType(e.GetType());
 
-            foreach(var handler in handlers)
+            var handlers = _factory.GetAllInstances(iHandleEventType).ToList();
+            var starters = _factory.GetAllInstances(iStartByEventType);
+            //filter starters that also are handlers
+            var pureStarters = starters.Where(s => !iHandleEventType.IsInstanceOfType(s));
+            var handlersCount = handlers.Count;
+            //
+            handlers.AddRange(pureStarters);
+            for(var i = 0;  i < handlers.Count; i++)
             {
+                var handler = handlers[i];
+                IProcess process = null;
+                bool isCached = false;
                 //NOTE: commented out code should stand true. But enforcement will be done during bootstrap or governance test cases.
                 //if(!(handler is IProcess))
                 //{
@@ -131,53 +141,48 @@ namespace FeiEventStore.Domain
                 //        handler.GetType().FullName, e.GetType().FullName));
                 //}
 
-                //search for cached process that handles the event for given aggregate
-                var process = cache.LookupRunningProcess(handler.GetType(), e.SourceAggregateId);
-                bool isNew = false;
-                if(process == null)
+                if(i < handlersCount)
                 {
-                    isNew = true;
-                    //try loading process from the store
-                    try
+                    //search for cached process that handles the event for given aggregate
+                    process = cache.LookupRunningProcess(handler.GetType(), e.SourceAggregateId);
+                    if(process == null)
                     {
-                        process = _eventStore.LoadProcess(handler.GetType(), e.SourceAggregateId);
-                        isNew = false;
-                    }
-                    catch(ProcessNotFoundException)
-                    {
-                        process = (IProcess)handler;
-                    }
-                }
-
-                //if is new, then see if new Process Manager needs to be created
-                // handle event otherwise
-                if(isNew)
-                {
-                    var startingTypes = process.GetType().GetGenericInterfaceArgumentTypes(typeof(IStartedByEvent<>));
-                    var eventType = e.GetType();
-                    if(startingTypes.Any(t => t.IsAssignableFrom(eventType)))
-                    {
-                        isNew = false;
-                        process.Id = Guid.NewGuid();
-                        process.InvolvedAggregateIds.Add(e.SourceAggregateId);
-                        process.AsDynamic().StartByEvent(e);
-                        if(Logger.IsInfoEnabled)
+                        //try loading process from the store
+                        try
                         {
-                            Logger.Info("Started new Process Manager id {0}; Runtime type: '{1}', By event type: '{2}', Source Aggregate id: {3}",
-                                process.Id,
-                                process.GetType(),
-                                e.GetType(),
-                                e.SourceAggregateId);
+                            process = _eventStore.LoadProcess(handler.GetType(), e.SourceAggregateId);
+                            cache.TrackProcessManager(process);
                         }
+                        catch(ProcessNotFoundException)
+                        {
+                            process = null;
+                        }
+                    } else
+                    {
+                        isCached = true;
+                    }
+                    if(process != null)
+                    {
+                        process.AsDynamic().HandleEvent(e);
                     }
                 }
-                else
+                if(process == null && iStartByEventType.IsInstanceOfType(handler))
                 {
-                    process.AsDynamic().HandleEvent(e);
+                    process = (IProcess)handler;
+                    process.Id = Guid.NewGuid();
+                    process.InvolvedAggregateIds.Add(e.SourceAggregateId);
+                    process.AsDynamic().StartByEvent(e);
+                    if(Logger.IsInfoEnabled)
+                    {
+                        Logger.Info("Started new Process Manager id {0}; Runtime type: '{1}', By event type: '{2}', Source Aggregate id: {3}",
+                            process.Id,
+                            process.GetType(),
+                            e.GetType(),
+                            e.SourceAggregateId);
+                    }
                 }
 
-                //queue commands and track aggregate
-                if(!isNew)
+                if(process != null)
                 {
                     var commands = process.FlushUncommitedMessages();
 
@@ -188,10 +193,12 @@ namespace FeiEventStore.Domain
                         cache.Queue.Enqueue(cmd);
                         process.InvolvedAggregateIds.Add(cmd.TargetAggregateId);
                     }
-                    cache.TrackProcessManager(process);
+                    if(!isCached && commands.Count > 0)
+                    {
+                        cache.TrackProcessManager(process);
+                    }
                 }
             }
-
         }
 
         private void ProcessCommand(ICommand cmd, IDomainCommandExecutionContext execContext, DomainObjectCache cache)

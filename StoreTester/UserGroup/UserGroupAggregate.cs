@@ -1,4 +1,5 @@
-﻿using EventStoreIntegrationTester.UserGroup.Messages;
+﻿using System;
+using EventStoreIntegrationTester.UserGroup.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Persistence;
@@ -24,9 +25,9 @@ namespace EventStoreIntegrationTester.UserGroup
         {
             _ctx = ctx;
         }
-        public void Create(string name)
+        public void Create(string name, Guid? groupCounterId = null)
         {
-            var e = new UserGroupCreated {Payload = {Name = name}};
+            var e = new UserGroupCreated {Payload = {Name = name, GroupCounterId = groupCounterId}};
             e.AggregateKey = name;
             RaiseEvent(e);
 

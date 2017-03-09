@@ -14,7 +14,7 @@ namespace EventStoreIntegrationTester.UserGroup
         {
             //Do domain specific validation here
 
-            aggregate.Create(cmd.Payload.Name);
+            aggregate.Create(cmd.Payload.Name, cmd.Payload.GroupCounterId);
         }
     }
 }

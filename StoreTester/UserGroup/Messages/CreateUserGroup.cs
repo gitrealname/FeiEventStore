@@ -7,15 +7,16 @@ namespace EventStoreIntegrationTester.UserGroup.Messages
     public class CreateUserGroupPayload : IState
     {
         public string Name { get; set; }
+        public Guid? GroupCounterId { get; set; }
     }
 
     public class CreateUserGroup : BaseCommand<CreateUserGroupPayload>
     {
-        public CreateUserGroup(Guid aggregateId, string name)
+        public CreateUserGroup(Guid aggregateId, string name, Guid? counterId = null)
         {
             TargetAggregateId = aggregateId;
             Origin = new MessageOrigin();
-            Payload = new CreateUserGroupPayload {Name = name};
+            Payload = new CreateUserGroupPayload {Name = name, GroupCounterId = counterId};
         }
     }
 

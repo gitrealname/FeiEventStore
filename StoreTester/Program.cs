@@ -43,6 +43,11 @@ namespace EventStoreIntegrationTester
             Bootstrap(container);
 
             var tests = container.GetAllInstances<ITest>().ToList();
+            var onlyTests = tests.Where(t => t.GetType().GetCustomAttributes(typeof(OnlyAttribute), false).Any()).ToList();
+            if(onlyTests.Count > 0)
+            {
+                tests = onlyTests;
+            }
             var persistenceEngine = container.GetInstance<IPersistenceEngine>();
             var defaultColor = Console.ForegroundColor;
             var i = 0;
@@ -60,7 +65,8 @@ namespace EventStoreIntegrationTester
                     {
                         persistenceEngine.Purge();
                         success = t.Run();
-                    } catch(Exception e)
+                    }
+                    catch(Exception e)
                     {
                         exception = e;
                         success = false;
