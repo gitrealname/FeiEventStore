@@ -241,8 +241,7 @@
 
             return result;
         }
-
-        public IAggregate LoadAggregate(Type aggregateType, Guid aggregateId)
+        public IAggregate LoadAggregate(Guid aggregateId, Type aggregateType = null)
         {
             IAggregate aggregate;
             long startingEventVersion = 0;
@@ -252,7 +251,7 @@
             {
                 var snapshotRecord = _engine.GetSnapshot(aggregateId);
                 var persistedAggregateType = _service.LookupTypeByPermanentTypeId(snapshotRecord.AggregateTypeId);
-                if(persistedAggregateType != aggregateType)
+                if(aggregateType != null && persistedAggregateType != aggregateType)
                 {
                     var ex = new Exception(string.Format("Aggregate id {0} persisted type '{1}' doesn't match requested type '{2}'.",
                         aggregateId, persistedAggregateType.FullName, aggregateType.FullName));
@@ -275,6 +274,10 @@
             }
             catch (SnapshotNotFoundException)
             {
+                if(aggregateType == null)
+                {
+                    throw;
+                }
                 aggregate = _service.GetSingleInstanceForConcreteType<IAggregate>(aggregateType, typeof(IAggregate<>));
                 aggregate.TypeId = _service.GetPermanentTypeIdForType(aggregateType);
                 aggregate.Id = aggregateId;
@@ -371,29 +374,31 @@
                 //determine payload type and payload upgrade path
                 var payloadType = _service.LookupTypeByPermanentTypeId(er.EventPayloadTypeId);
                 var payload = (IState)_engine.DeserializePayload(er.Payload, payloadType);
-                var upgradeChain = _service.BuildUpgradeTypeChain(payloadType).Reverse().ToList();
                 //starting search for implementation of the IEvent<> starting from most recent
-                IEvent @event = null;
-                Type eventPayloadType = null;
-                foreach (var t in upgradeChain)
-                {
-                    try
-                    {
-                        @event = _service.GetSingleInstanceForGenericType<IEvent>(typeof(IEvent<>), t);
-                        break;
-                    }
-                    catch(RuntimeTypeInstancesNotFoundException) { }
-                }
-                //check if implementation is found
+                IEvent @event = _service.GetSingleInstanceForGenericType<IEvent>(typeof(IEvent<>), payloadType); ;
                 if(@event == null)
                 {
-                    var ex = new Exception(string.Format("No runtime implementation of type IEvent<{0}> nor its {1} replacer(s) were found.",
-                        payloadType.FullName, upgradeChain.Count - 1));
-                    Logger.Fatal(ex);
-                    throw ex;
+                    var upgradeChain = _service.BuildUpgradeTypeChain(payloadType).Skip(1).Reverse().ToList();
+                    foreach(var t in upgradeChain)
+                    {
+                        try
+                        {
+                            @event = _service.GetSingleInstanceForGenericType<IEvent>(typeof(IEvent<>), t);
+                            break;
+                        }
+                        catch(RuntimeTypeInstancesNotFoundException) { }
+                    }
+                    //check if implementation is found
+                    if(@event == null)
+                    {
+                        var ex = new Exception(string.Format("No runtime implementation of type IEvent<{0}> nor its {1} replacer(s) were found.",
+                            payloadType.FullName, upgradeChain.Count));
+                        Logger.Fatal(ex);
+                        throw ex;
+                    }
                 }
                 //upgrade payload
-                eventPayloadType = @event.GetType().GetGenericInterfaceArgumentTypes(typeof(IEvent<>), 0).FirstOrDefault();
+                var eventPayloadType = @event.GetType().GetGenericInterfaceArgumentTypes(typeof(IEvent<>), 0).FirstOrDefault();
                 payload = _service.UpgradeObject(payload, eventPayloadType);
                 @event.Payload = payload;
                 InitEventFromEventRecord(@event, er);

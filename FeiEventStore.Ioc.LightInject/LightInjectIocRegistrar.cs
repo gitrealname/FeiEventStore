@@ -19,13 +19,13 @@ namespace FeiEventStore.Ioc.LightInject
         {
             switch(lifetime)
             {
-                case IocRegistrationLifetime.Transient:
+                case IocRegistrationLifetime.ServiceTransient:
                     _container.Register(serviceType, implementationType);
                     break;
-                case IocRegistrationLifetime.PerContainer:
+                case IocRegistrationLifetime.ServicePerContainer:
                     _container.Register(serviceType, implementationType, new PerContainerLifetime());
                     break;
-                case IocRegistrationLifetime.PerScope:
+                case IocRegistrationLifetime.ServicePerScope:
                     if(implementationType.IsAssignableFrom(typeof(IDisposable)))
                     {
                         _container.Register(serviceType, implementationType, new PerRequestLifeTime());
@@ -33,6 +33,22 @@ namespace FeiEventStore.Ioc.LightInject
                     else
                     {
                         _container.Register(serviceType, implementationType, new PerScopeLifetime());
+                    }
+                    break;
+                case IocRegistrationLifetime.TypeTransient:
+                    _container.Register(implementationType);
+                    break;
+                case IocRegistrationLifetime.TypePerContainer:
+                    _container.Register(implementationType, new PerContainerLifetime());
+                    break;
+                case IocRegistrationLifetime.TypePerScope:
+                    if(implementationType.IsAssignableFrom(typeof(IDisposable)))
+                    {
+                        _container.Register(implementationType, new PerRequestLifeTime());
+                    }
+                    else
+                    {
+                        _container.Register(implementationType, new PerScopeLifetime());
                     }
                     break;
                 default:

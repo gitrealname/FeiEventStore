@@ -56,12 +56,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseTest.cs" />
+    <Compile Include="TestConst.cs" />
+    <Compile Include="UserGroupTest.cs" />
+    <Compile Include="UserGroup\CreateUserGroupCounterProcessManager.cs" />
+    <Compile Include="UserGroup\UserGroupAggregate.cs" />
+    <Compile Include="UserGroup\Messages\CreateUserGroup.cs" />
     <Compile Include="CounterTest.cs" />
-    <Compile Include="Counter\Counter.cs" />
+    <Compile Include="Counter\CounterAggregate.cs" />
+    <Compile Include="Counter\Messages\Decrement.cs" />
     <Compile Include="Counter\Messages\Increment.cs" />
-    <Compile Include="ITest.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UserGroup\UserGroupCommandHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -22,7 +22,7 @@ namespace FeiEventStore.Domain
         /// <value>
         /// The next event version.
         /// </value>
-        protected long NextEventVersion => Version + Changes.Count + 1;
+        protected long NextEventVersion => Version + 1;
 
         public IList<IEvent> FlushUncommitedMessages()
         {
@@ -35,7 +35,7 @@ namespace FeiEventStore.Domain
         {
             foreach(var e in history)
             {
-                if(e.SourceAggregateVersion != Version + 1)
+                if(e.SourceAggregateVersion != (Version + 1))
                 {
                     throw new Exception(string.Format("Events are out of order for aggregate id {0}; Aggregate version: {1}, Event version: {2}",
                         e.SourceAggregateId, Version, e.SourceAggregateVersion));
@@ -55,8 +55,8 @@ namespace FeiEventStore.Domain
             {
                 @event.SourceAggregateId = Id;
                 @event.SourceAggregateVersion = NextEventVersion;
-                Version = NextEventVersion;
             }
+            Version = NextEventVersion;
             //TODO: allow call to apply fail when loading from history. Because historic event may not be used anymore by current aggregate Version
             //Also consider AbsoleteAttribute on the event to make it deleted from the stream!!!!
             this.AsDynamic().Apply(@event);

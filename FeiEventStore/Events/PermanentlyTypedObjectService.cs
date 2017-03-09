@@ -71,8 +71,12 @@ namespace FeiEventStore.Events
 
         public TypeId GetPermanentTypeIdForType(Type type)
         {
-            var permanentTypeAttribute =  GetTypePermanentTypeAttribute(type);
-            return permanentTypeAttribute.PermanentTypeId;
+            var typeId = type.GetPermanentTypeId();
+            if(typeId == null)
+            {
+                throw new MustHavePermanentTypeAttributeException(type);
+            }
+            return typeId;
         }
 
         public Type LookupTypeByPermanentTypeId(TypeId permanentTypeId)
@@ -136,21 +140,6 @@ namespace FeiEventStore.Events
                 chain.Add(replacerType);
                 baseType = replacerType;
             }
-        }
-
-        private PermanentTypeAttribute GetTypePermanentTypeAttribute(Type type)
-        {
-            var permanentTypeAttribute = type.GetCustomAttributes(typeof(PermanentTypeAttribute), false).FirstOrDefault() as PermanentTypeAttribute;
-            if(permanentTypeAttribute == null)
-            {
-                var ex = new MustHavePermanentTypeAttributeException(type);
-                if(Logger.IsFatalEnabled)
-                {
-                    Logger.Fatal(ex);
-                }
-                throw ex;
-            }
-            return permanentTypeAttribute;
         }
     }
 }

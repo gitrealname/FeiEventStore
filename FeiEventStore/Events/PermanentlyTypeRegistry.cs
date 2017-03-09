@@ -34,17 +34,16 @@ namespace FeiEventStore.Events
 
             //We need to create a temporary scope, to prevent failure of loading objects with scoped dependencies.
             _scopeFactory.ExecuteInScope<IPermanentlyTypedRegistry, bool>((r) => {
-                //var permanentlyTypedCollection = _objectFactory.GetAllInstances(typeof(IEnumerable<IPermanentlyTyped>)); 
                 var permanentlyTypedCollection = _objectFactory.GetAllInstances(typeof(IPermanentlyTyped));
                 foreach(var o in permanentlyTypedCollection)
                 {
                     var objectType = o.GetType();
-                    var attr = objectType.GetCustomAttributes(typeof(PermanentTypeAttribute), false).FirstOrDefault() as PermanentTypeAttribute;
-                    if(attr == null)
+                    var typeId = objectType.GetPermanentTypeId();
+                    if(typeId == null)
                     {
                         throw new Exception(string.Format("IPermanentlyTyped '{0}' must be have PermanentTypeAttribute defined.", objectType.FullName));
                     }
-                    _typeIdToType.Add(attr.PermanentTypeId, objectType);
+                    _typeIdToType.Add(typeId, objectType);
                 }
                 _initialized = true;
                 return true;

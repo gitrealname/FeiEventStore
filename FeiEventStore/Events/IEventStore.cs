@@ -73,14 +73,15 @@
         long GetProcessVersion(Guid processId);
 
         /// <summary>
-        /// Loads the latest aggregate. Create new instance of aggregate if given Id doesn't exists
+        /// Loads the latest aggregate. 
+        /// if aggregateType is not null, creates new instance of aggregate if given Id doesn't exists
         /// </summary>
-        /// <param name="aggregateType">Type of the aggregate.</param>
         /// <param name="aggregateId">The aggregate identifier.</param>
+        /// <param name="aggregateType">Type of the aggregate.</param>
         /// <returns></returns>
         /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
         /// <exception cref="MultipleTypeInstancesException"></exception>
-        IAggregate LoadAggregate(Type aggregateType, Guid aggregateId);
+        IAggregate LoadAggregate(Guid aggregateId, Type aggregateType = null);
 
         IProcess LoadProcess(Type processType, Guid aggregateId );
 

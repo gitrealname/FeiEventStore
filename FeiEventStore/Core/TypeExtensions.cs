@@ -1,5 +1,6 @@
 ﻿
 using System.Linq;
+using System.Security.Policy;
 
 namespace FeiEventStore.Core
 {
@@ -39,6 +40,12 @@ namespace FeiEventStore.Core
         {
             var result = type.GetGenericInterfaceArgumentTypes(genericInterfaceType, 0);
             return result;
+        }
+
+        public static TypeId GetPermanentTypeId(this Type type)
+        {
+            var attr = type.GetCustomAttributes(typeof(PermanentTypeAttribute), false).FirstOrDefault() as PermanentTypeAttribute;
+            return attr?.PermanentTypeId;
         }
     }
 }

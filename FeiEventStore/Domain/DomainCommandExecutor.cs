@@ -228,7 +228,7 @@ namespace FeiEventStore.Domain
             var aggregateType = iHandleCommandIterface.GenericTypeArguments[1];
             var handler = iHandlers[0];
 
-            //Try to find aggregate in the scope by it id
+            //Try to find aggregate in the scope by its id
             var aggregate = cache.LookupAggregate(cmd.TargetAggregateId);
 
             //ensure that found aggregate has the same type as expected by handler
@@ -241,7 +241,7 @@ namespace FeiEventStore.Domain
             //load or create new aggregate from the store
             if(aggregate == null)
             {
-                aggregate = _eventStore.LoadAggregate(aggregateType, cmd.TargetAggregateId);
+                aggregate = _eventStore.LoadAggregate(cmd.TargetAggregateId, aggregateType);
             }
 
             if(aggregate.GetType() == handler.GetType())

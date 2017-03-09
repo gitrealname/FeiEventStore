@@ -11,35 +11,32 @@ namespace FeiEventStore.Ioc
     {
         private readonly Dictionary<Tuple<Type,Type>, IocMappingAction> _explicitMap = new Dictionary<Tuple<Type, Type>, IocMappingAction>
         {
-            { new Tuple<Type, Type>(typeof(IPermanentlyTypedRegistry), typeof(PermanentlyTypeRegistry)), IocMappingAction.RegisterPerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IPermanentlyTypedObjectService), typeof(PermanentlyTypedObjectService)), IocMappingAction.RegisterPerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IEventStore), typeof(EventStore)), IocMappingAction.RegisterPerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocMappingAction.RegisterPerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocMappingAction.RegisterPerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IEventDispatcher), typeof(EventDispatcher)), IocMappingAction.RegisterPerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IPermanentlyTypedRegistry), typeof(PermanentlyTypeRegistry)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IPermanentlyTypedObjectService), typeof(PermanentlyTypedObjectService)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IEventStore), typeof(EventStore)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IEventDispatcher), typeof(EventDispatcher)), IocMappingAction.RegisterServicePerContainerLifetime },
 
             //per scope!
-            { new Tuple<Type, Type>(typeof(IDomainCommandExecutionContext), typeof(DomainCommandExecutionContext)), IocMappingAction.RegisterPerScopeLifetime },
+            { new Tuple<Type, Type>(typeof(IDomainCommandExecutionContext), typeof(DomainCommandExecutionContext)), IocMappingAction.RegisterServicePerScopeLifetime },
 
             //in production expected to be overridden/handled by in-fact persistent engine mapper
-            { new Tuple<Type, Type>(typeof(IPersistenceEngine), typeof(InMemoryPersistenceEngine)), IocMappingAction.RegisterPerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IPersistenceEngine), typeof(InMemoryPersistenceEngine)), IocMappingAction.RegisterServicePerContainerLifetime },
         };
 
         private readonly Dictionary<Type, IocMappingAction> _genericMap = new Dictionary<Type, IocMappingAction>
         {
-            { typeof(IPermanentlyTyped), IocMappingAction.RegisterTransientLifetime },
-            { typeof(IReplace<>), IocMappingAction.RegisterTransientLifetime },
-            { typeof(IHandleCommand<,>), IocMappingAction.RegisterTransientLifetime },
-            { typeof(IHandleEvent<>), IocMappingAction.RegisterTransientLifetime },
-            { typeof(ICreatedByCommand<>), IocMappingAction.RegisterTransientLifetime },
-            { typeof(IStartedByEvent<>), IocMappingAction.RegisterTransientLifetime },
-            { typeof(IAggregate<>), IocMappingAction.RegisterTransientLifetime },
-            { typeof(IProcess<>), IocMappingAction.RegisterTransientLifetime },
-            { typeof(IEvent<>), IocMappingAction.RegisterTransientLifetime },
-            
-            //swallow types with helper interfaces
-            { typeof(IErrorTranslator), IocMappingAction.Swallow },
-            { typeof(IHandle<>), IocMappingAction.Swallow },
+            { typeof(IPermanentlyTyped), IocMappingAction.RegisterTypeTransientLifetime },
+            { typeof(IReplace<>), IocMappingAction.RegisterTypeTransientLifetime },
+            { typeof(IHandleCommand<,>), IocMappingAction.RegisterTypeTransientLifetime },
+            { typeof(IHandleEvent<>), IocMappingAction.RegisterTypeTransientLifetime },
+            { typeof(ICreatedByCommand<>), IocMappingAction.RegisterTypeTransientLifetime },
+            { typeof(IStartedByEvent<>), IocMappingAction.RegisterTypeTransientLifetime },
+            { typeof(IAggregate<>), IocMappingAction.RegisterTypeTransientLifetime },
+            { typeof(IProcess<>), IocMappingAction.RegisterTypeTransientLifetime },
+            { typeof(IEvent<>), IocMappingAction.RegisterTypeTransientLifetime },
+           
         };
 
         public IocMappingAction Map(Type serviceType, Type implementationType)
@@ -56,7 +53,20 @@ namespace FeiEventStore.Ioc
             }
             if(_genericMap.TryGetValue(serviceType, out action))
             {
-                Console.WriteLine("Registering type {0} for {1}", implementationType.Name, serviceType.Name);
+                //DEBUG:
+                //if(serviceType == typeof(IPermanentlyTyped))
+                //{
+                //    var typeId = implementationType.GetPermanentTypeId();
+                //    if(typeId != null)
+                //    {
+                //        Console.WriteLine("Registering Permanent type '{0}' of type '{1}' for '{2}'", typeId, implementationType.Name, serviceType.Name);
+                //    }
+                //} 
+                //else
+                //{
+                //    Console.WriteLine("Registering type {0} for {1}", implementationType.Name, serviceType.Name);
+                //}
+
                 return action;
             }
 

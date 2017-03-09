@@ -14,19 +14,34 @@ namespace FeiEventStore.Ioc
     public enum IocMappingAction
     {
         /// <summary>
-        /// Register transient type 
+        /// Register as service transient type 
         /// </summary>
-        RegisterTransientLifetime = 0,
+        RegisterServiceTransientLifetime = 0,
 
         /// <summary>
-        /// Register per container lifetime
+        /// Register as service per container lifetime
         /// </summary>
-        RegisterPerContainerLifetime,
+        RegisterServicePerContainerLifetime,
 
         /// <summary>
-        /// Register per scope lifetime
+        /// Register as service per scope lifetime
         /// </summary>
-        RegisterPerScopeLifetime,
+        RegisterServicePerScopeLifetime,
+
+        /// <summary>
+        /// Register as service transient type 
+        /// </summary>
+        RegisterTypeTransientLifetime,
+
+        /// <summary>
+        /// Register as service per container lifetime
+        /// </summary>
+        RegisterTypePerContainerLifetime,
+
+        /// <summary>
+        /// Register as service per scope lifetime
+        /// </summary>
+        RegisterTypePerScopeLifetime,
 
         //Todo: RegisterAutoFactory,
 
@@ -47,16 +62,30 @@ namespace FeiEventStore.Ioc
         /// <summary>
         /// The transient
         /// </summary>
-        Transient = 0,
+        ServiceTransient = 0,
         /// <summary>
         /// The per container
         /// </summary>
-        PerContainer,
+        ServicePerContainer,
         /// <summary>
         /// The per scope. 
         /// IMPORTANT: if registering type is IDisposable, container must call Dispose method when scope gets deleted
         /// </summary>
-        PerScope
+        ServicePerScope,
+
+        /// <summary>
+        /// The transient
+        /// </summary>
+        TypeTransient,
+        /// <summary>
+        /// The per container
+        /// </summary>
+        TypePerContainer,
+        /// <summary>
+        /// The per scope. 
+        /// IMPORTANT: if registering type is IDisposable, container must call Dispose method when scope gets deleted
+        /// </summary>
+        TypePerScope
     }
 
     /// <summary>
@@ -185,7 +214,12 @@ namespace FeiEventStore.Ioc
                             }
                             //Console.WriteLine("Service type '{0}'.", i.FullName);
                             var ignoreSubTypes = ProcessType(i, t);
-                            if(ignoreSubTypes)
+                            if(ignoreSubTypes == 2)
+                            {
+                                //whole type has been registered, stop service processing
+                                break;
+                            }
+                            if(ignoreSubTypes == 1)
                             {
                                 foreach(var subTypeInterface in i.GetInterfaces())
                                 {
@@ -199,9 +233,9 @@ namespace FeiEventStore.Ioc
 
         }
 
-        private bool ProcessType(Type serviceType, Type type)
+        private int ProcessType(Type serviceType, Type type)
         {
-            var ignoreSubTypes = false;
+            var ignoreSubTypes = 0;
             foreach(var mapper in _mappers)
             {
                 var action = mapper.Map(serviceType, type);
@@ -214,13 +248,20 @@ namespace FeiEventStore.Ioc
                     //convert to Registration lifetime
                     var lifetime = (IocRegistrationLifetime)(int)action;
                     _registrar.Register(serviceType, type, lifetime);
-                    Logger.Debug("Registered type '{0}' as service of type '{1}' with lifetime {2}.", type.FullName, serviceType.FullName, lifetime.ToString());
-                    ignoreSubTypes = true;
+                    if(lifetime == IocRegistrationLifetime.TypeTransient || lifetime == IocRegistrationLifetime.TypePerContainer || lifetime == IocRegistrationLifetime.TypePerScope)
+                    {
+                        Logger.Debug("Registered type '{0}' with lifetime {1}.", type.FullName, lifetime.ToString());
+                        ignoreSubTypes = 2;
+                    } else
+                    {
+                        Logger.Debug("Registered type '{0}' as service of type '{1}' with lifetime {2}.", type.FullName, serviceType.FullName, lifetime.ToString());
+                        ignoreSubTypes = 1;
+                    }
                 }
                 else
                 {
                     Logger.Debug("Swallowed type '{0}' of service type '{1}.", type.FullName, serviceType.FullName);
-
+                    ignoreSubTypes = 2;
                 }
                 break;
             }

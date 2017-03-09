@@ -5,19 +5,27 @@ using FeiEventStore.Domain;
 namespace EventStoreIntegrationTester.Counter
 {
     [PermanentType("counter.aggregate")]
-    public class Counter : BaseAggregate<CounterAggregateState>
+    public class CounterAggregate : BaseAggregate<CounterAggregateState>
         , ICreatedByCommand<Increment>
-        , IHandleCommand<Increment, Counter>
+        , IHandleCommand<Increment, CounterAggregate>
+        , IHandleCommand<Decrement, CounterAggregate>
     {
         private readonly IDomainCommandExecutionContext _ctx;
 
-        public Counter(IDomainCommandExecutionContext ctx)
+        public CounterAggregate(IDomainCommandExecutionContext ctx)
         {
             _ctx = ctx;
         }
-        public void HandleCommand(Increment cmd, Counter aggregate)
+        public void HandleCommand(Increment cmd, CounterAggregate aggregate)
         {
             var e = new Incremented();
+            e.Payload = cmd.Payload;
+            RaiseEvent(e);
+        }
+
+        public void HandleCommand(Decrement cmd, CounterAggregate aggregate)
+        {
+            var e = new Decremented();
             e.Payload = cmd.Payload;
             RaiseEvent(e);
         }
@@ -26,6 +34,11 @@ namespace EventStoreIntegrationTester.Counter
         {
             State.Value += @event.Payload.By;
         }
+        private void Apply(Decremented @event)
+        {
+            State.Value -= @event.Payload.By;
+        }
+
     }
 
     [PermanentType("counter.aggregate.state")]

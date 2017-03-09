@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using EventStoreIntegrationTester.Counter;
+using EventStoreIntegrationTester.Counter.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
@@ -16,7 +17,7 @@ using NLog;
 
 namespace EventStoreIntegrationTester
 {
-    public class IocMapper : IIocRegistrationMapper
+    public class TestAppMapper : IIocRegistrationMapper
     {
         public IocMappingAction Map(Type serviceType, Type implementationType)
         {
@@ -25,7 +26,7 @@ namespace EventStoreIntegrationTester
                 serviceType = serviceType.GetGenericTypeDefinition();
                 if(serviceType == typeof(ITest<>))
                 {
-                    return IocMappingAction.RegisterPerContainerLifetime;
+                    return IocMappingAction.RegisterServicePerContainerLifetime;
                 }
             }
             return IocMappingAction.PassToNext;
@@ -46,41 +47,45 @@ namespace EventStoreIntegrationTester
             var defaultColor = Console.ForegroundColor;
             var i = 0;
             var sw = new Stopwatch();
-            foreach(var t in tests)
+            //make default scope
+            using(var s = container.BeginScope())
             {
-                i++;
-                Exception exception = null;
-                var success = true;
-                sw.Restart();
-                try
+                foreach(var t in tests.OrderBy(test => test.Name))
                 {
-                    persistenceEngine.Purge();
-                    success = t.Run();
-                } catch(Exception e)
-                {
-                    exception = e;
-                    success = false;
-                }
-                sw.Stop();
+                    i++;
+                    Exception exception = null;
+                    var success = true;
+                    sw.Restart();
+                    try
+                    {
+                        persistenceEngine.Purge();
+                        success = t.Run();
+                    } catch(Exception e)
+                    {
+                        exception = e;
+                        success = false;
+                    }
+                    sw.Stop();
                 
-                //print result
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write("{0}. {1}: ", i, t.Name);
-                if(success)
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkGreen;
-                    Console.WriteLine("OK ({0})", sw.ElapsedMilliseconds);
-                } else
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.WriteLine("FAILED ({0})", sw.ElapsedMilliseconds);
+                    //print result
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.Write("{0}. {1}: ", i, t.Name);
+                    if(success)
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkGreen;
+                        Console.WriteLine("OK ({0})", sw.ElapsedMilliseconds);
+                    } else
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkRed;
+                        Console.WriteLine("FAILED ({0})", sw.ElapsedMilliseconds);
+                    }
+                    if(exception != null)
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Console.WriteLine("{0}", exception.ToString());
+                    }
+                    Console.ForegroundColor = defaultColor;
                 }
-                if(exception != null)
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    Console.WriteLine("{0}", exception.ToString());
-                }
-                Console.ForegroundColor = defaultColor;
             }
         }
 
@@ -89,8 +94,8 @@ namespace EventStoreIntegrationTester
             IocRegistrationScanner
                 .WithRegistrar(new LightInjectIocRegistrar(container))
                 .ScanAssembly("FeiEventStore*dll")
-                .ScanAssembly(typeof(Counter.Counter))
-                .UseMapper( new IocMapper()) //register tests
+                .ScanAssembly(typeof(Counter.CounterAggregate))
+                .UseMapper( new TestAppMapper()) //register tests
                 .UseMapper(new FeiEventStore.Ioc.LightInject.IocRegistrationMapper())
                 .UseMapper( new FeiEventStore.Ioc.IocRegistrationMapper())
                 .Register();
