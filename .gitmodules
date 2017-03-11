@@ -1,0 +1,3 @@
+[submodule "SqlFu"]
+	path = SqlFu
+	url = https://github.com/gitrealname/SqlFu
