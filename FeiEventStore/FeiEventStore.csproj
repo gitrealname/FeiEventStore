@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="Core\BaseCommand.cs" />
     <Compile Include="Core\IMessageEmitter.cs" />
+    <Compile Include="Core\IStateHolder.cs" />
     <Compile Include="Core\TypeId.cs" />
     <Compile Include="Domain\BaseAggregateException.cs" />
     <Compile Include="Domain\BaseProcess.cs" />

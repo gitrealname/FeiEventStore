@@ -2,7 +2,7 @@
 {
     using System;
 
-    public interface IEvent : IMessage
+    public interface IEvent : IMessage, IStateHolder
     {
         long StoreVersion { get; set; }
 
@@ -31,5 +31,9 @@
     public interface IEvent<T> : IEvent where T : IState, new ()
     {
         new T Payload { get; set; }
+
+        new T GetState();
+
+        void RestoreFromState(T state);
     }
 }

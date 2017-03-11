@@ -52,8 +52,9 @@
                     sr.AggregateVersion = aggregate.Version;
                     sr.AggregateId = aggregate.Id;
                     sr.AggregateTypeId = _service.GetPermanentTypeIdForType(aggregate.GetType());
-                    sr.AggregateStateTypeId = _service.GetPermanentTypeIdForType(aggregate.State.GetType());
-                    var payload = _engine.SerializePayload(aggregate.State);
+                    var state = aggregate.GetState();
+                    sr.AggregateStateTypeId = _service.GetPermanentTypeIdForType(state.GetType());
+                    var payload = _engine.SerializePayload(state);
                     sr.State = payload;
                     snapshotRecords.Add(sr);
 
@@ -104,8 +105,9 @@
                             if(head)
                             {
                                 head = false;
-                                pr.ProcessStateTypeId = _service.GetPermanentTypeIdForType(p.State.GetType());
-                                var payload = _engine.SerializePayload(p.State);
+                                var state = p.GetState();
+                                pr.ProcessStateTypeId = _service.GetPermanentTypeIdForType(state.GetType());
+                                var payload = _engine.SerializePayload(state);
                                 pr.State = payload;
                                 processPersistedCount++;
 
@@ -265,7 +267,7 @@
                 var finalStateType = persistedAggregateType.GetGenericInterfaceArgumentTypes(typeof(IAggregate<>), 0).FirstOrDefault();
                 //upgrade state to desired level
                 state = _service.UpgradeObject(state, finalStateType);
-                aggregate.State = state;
+                aggregate.RestoreFromState(state);
                 aggregate.Id = aggregateId;
                 aggregate.TypeId = snapshotRecord.AggregateTypeId;
                 aggregate.Version = snapshotRecord.AggregateVersion;
@@ -343,7 +345,7 @@
 
                 process.Id = processId;
                 process.LatestPersistedVersion = processVersion;
-                process.State = state;
+                process.RestoreFromState(state);
                 process.Version = processVersion;
                 process.InvolvedAggregateIds = involvedAggregateIds;
             }
@@ -399,7 +401,7 @@
                 //upgrade payload
                 var eventPayloadType = @event.GetType().GetGenericInterfaceArgumentTypes(typeof(IEvent<>), 0).FirstOrDefault();
                 payload = _service.UpgradeObject(payload, eventPayloadType);
-                @event.Payload = payload;
+                @event.RestoreFromState(payload);
                 InitEventFromEventRecord(@event, er);
                 result.Add(@event);
             }
@@ -416,8 +418,9 @@
             er.OriginSystemId = @event.Origin.SystemId;
             er.OriginUserId = @event.Origin.UserId;
             er.StoreVersion = 0; //will be set during commit()
-            er.EventPayloadTypeId = _service.GetPermanentTypeIdForType(@event.Payload.GetType());
-            er.Payload = _engine.SerializePayload(@event.Payload);
+            var payload = @event.GetState();
+            er.EventPayloadTypeId = _service.GetPermanentTypeIdForType(payload.GetType());
+            er.Payload = _engine.SerializePayload(payload);
             er.AggregateId = @event.SourceAggregateId;
             er.AggregateVersion = @event.SourceAggregateVersion;
             er.AggregateTypeId = @event.SourceAggregateTypeId;

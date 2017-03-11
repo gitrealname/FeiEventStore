@@ -39,7 +39,8 @@ namespace EventStoreIntegrationTester
             Guard.EqualTo(() => group.Version, group.Version, 1);
 
             var counter = (CounterAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
-            Guard.EqualTo(() => counter.State.Value, counter.State.Value, 1);
+            var state = counter.GetState();
+            Guard.EqualTo(() => state.Value, state.Value, 1);
             Guard.EqualTo(() => counter.Version, counter.Version, 1);
 
 
@@ -61,11 +62,13 @@ namespace EventStoreIntegrationTester
 
             //Process manager state should be stored in event store for both UserGroupAggregate and CounterAggregate
             var pm = (CreateUserGroupCounterProcessManager)EventStore.LoadProcess(typeof(CreateUserGroupCounterProcessManager), Const.DefaultUserGroup);
-            Guard.EqualTo(() => pm.State.LongRunning, pm.State.LongRunning, true);
-            Guard.EqualTo(() => pm.State.ProcessedEventCount, pm.State.ProcessedEventCount, 4);
+            var state = pm.GetState();
+            Guard.EqualTo(() => state.LongRunning, state.LongRunning, true);
+            Guard.EqualTo(() => state.ProcessedEventCount, state.ProcessedEventCount, 4);
 
             pm = (CreateUserGroupCounterProcessManager)EventStore.LoadProcess(typeof(CreateUserGroupCounterProcessManager), Const.FirstCounterId);
-            Guard.EqualTo(() => pm.State.ProcessedEventCount, pm.State.ProcessedEventCount, 4);
+            state = pm.GetState();
+            Guard.EqualTo(() => state.ProcessedEventCount, state.ProcessedEventCount, 4);
 
             //terminate process by incrementing counter by 100 (see CreateUserGroupCounterProcessManager)
             CommandExecutor.ExecuteCommand(new Increment(Const.FirstCounterId, 100));

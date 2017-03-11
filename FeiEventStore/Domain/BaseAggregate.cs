@@ -63,17 +63,31 @@ namespace FeiEventStore.Domain
             Changes.Add(@event);
         }
 
-        object IAggregate.State
-        {
-            get { return State; }
-            set { State = (TState)value; }
-        }
-
-        public TState State { get; set; }
+        protected TState State { get; set; }
 
         protected BaseAggregate()
         {
             State = new TState();
+        }
+
+        object IStateHolder.GetState()
+        {
+            return GetState();
+        }
+
+        public void RestoreFromState(object state)
+        {
+            RestoreFromState((TState)state);
+        }
+
+        public virtual TState GetState()
+        {
+            return State;
+        }
+
+        public virtual void RestoreFromState(TState state)
+        {
+            State = state;
         }
     }
 }

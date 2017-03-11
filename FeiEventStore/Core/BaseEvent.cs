@@ -23,5 +23,24 @@
             Payload = new TState();
         }
 
+        object IStateHolder.GetState()
+        {
+            return GetState();
+        }
+
+        public void RestoreFromState(object state)
+        {
+            RestoreFromState((TState)state);
+        }
+
+        public TState GetState()
+        {
+            return Payload;
+        }
+
+        public void RestoreFromState(TState state)
+        {
+            Payload = state;
+        }
     }
 }

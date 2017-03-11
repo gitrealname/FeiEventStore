@@ -30,13 +30,7 @@
             InvolvedAggregateIds.Add(cmd.TargetAggregateId);
         }
 
-        object IProcess.State
-        {
-            get { return State; }
-            set { State = (TState)value; }
-        }
-
-        public TState State { get; set; }
+        protected TState State { get; set; }
 
         protected BaseProcess()
         {
@@ -44,6 +38,26 @@
             InvolvedAggregateIds = new HashSet<Guid>();
             PendingCommands = new List<ICommand>();
             IsComplete = true; /*make is complete by default, as we expect that majority of process managers to be of non-long running kind*/
+        }
+
+        object IStateHolder.GetState()
+        {
+            return GetState();
+        }
+
+        public void RestoreFromState(object state)
+        {
+            RestoreFromState((TState) state);
+        }
+
+        public virtual TState GetState()
+        {
+            return (TState)State;
+        }
+
+        public virtual void RestoreFromState(TState state)
+        {
+            State = state;
         }
     }
 }

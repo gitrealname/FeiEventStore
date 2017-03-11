@@ -4,7 +4,7 @@ namespace FeiEventStore.Core
     using System;
     using System.Collections.Generic;
 
-    public interface IAggregate : IMessageEmitter<IEvent>, IPermanentlyTyped
+    public interface IAggregate : IMessageEmitter<IEvent>, IStateHolder, IPermanentlyTyped
     {
         long LatestPersistedVersion { get; set; }
 
@@ -12,13 +12,15 @@ namespace FeiEventStore.Core
 
         Guid Id { get; set; }
         long Version { get; set; }
-        object State { get; set; }
+
         void LoadFromHistory(IList<IEvent> history);
 
     }
 
     public interface IAggregate<TState> : IAggregate where TState : IState, new()
     {
-        new TState State { get; set; }
+        new TState GetState();
+
+        void RestoreFromState(TState state);
     }
 }

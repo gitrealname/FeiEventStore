@@ -5,7 +5,7 @@ namespace FeiEventStore.Core
 {
     using FeiEventStore.Core;
 
-    public interface IProcess : IMessageEmitter<ICommand>, IPermanentlyTyped
+    public interface IProcess : IMessageEmitter<ICommand>, IStateHolder, IPermanentlyTyped
     {
         Guid Id { get; set; }
 
@@ -18,8 +18,6 @@ namespace FeiEventStore.Core
         /// The version.
         /// </value>
         long Version { get; set; }
-
-        object State { get; set; }
 
         bool IsComplete { get; }
 
@@ -35,6 +33,8 @@ namespace FeiEventStore.Core
 
     public interface IProcess<TState> : IProcess where TState : IState, new()
     {
-        new TState State { get; set; }
+        new TState GetState();
+
+        void RestoreFromState(TState state);
     }
 }

@@ -22,7 +22,8 @@ namespace EventStoreIntegrationTester
             Guard.EqualTo(() => events.Count, events.Count, 1);
 
             var counter = (CounterAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
-            Guard.EqualTo(() => counter.State.Value, counter.State.Value, 1);
+            var state = counter.GetState();
+            Guard.EqualTo(() => state.Value, state.Value, 1);
             
             return !result.CommandHasFailed;
         }
@@ -46,7 +47,8 @@ namespace EventStoreIntegrationTester
             Guard.EqualTo(() => events.Count, events.Count, 3);
 
             var counter = (CounterAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
-            Guard.EqualTo(() => counter.State.Value, counter.State.Value, 0);
+            var state = counter.GetState();
+            Guard.EqualTo(() => state.Value, state.Value, 0);
 
             return !result.CommandHasFailed;
         }
