@@ -48,7 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\BaseCommand.cs" />
-    <Compile Include="Core\Guard.cs" />
+    <Compile Include="Core\IMessageEmitter.cs" />
     <Compile Include="Core\TypeId.cs" />
     <Compile Include="Domain\BaseAggregateException.cs" />
     <Compile Include="Domain\BaseProcess.cs" />
@@ -117,9 +117,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Notes.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Core\IMessageEmitter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Events\IPermanentlyTypedRegistry.cs" />
