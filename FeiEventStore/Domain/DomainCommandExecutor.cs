@@ -282,6 +282,15 @@ namespace FeiEventStore.Domain
 
             var events = aggregate.FlushUncommitedMessages();
 
+            //each command must produce at least one event unless it failed
+            if(events.Count == 0 && !execContext.CommandHasFailed)
+            {
+                var e = new Exception(string.Format("Each command must produce at least one event. Aggregate type: '{0}'; Command Type: '{1}'.",
+                    aggregate.GetType().FullName, cmd.GetType().FullName));
+                Logger.Fatal(e);
+                throw e;
+            }
+
             //process events, transfer info from command
             foreach(var e in events)
             {
