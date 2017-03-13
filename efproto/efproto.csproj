@@ -137,8 +137,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MessageOwner.cs" />
-    <Compile Include="MessageOwnerTemplate.cs" />
+    <Compile Include="Query\MessageOwner.cs" />
+    <Compile Include="Query\MessageOwnerTemplate.cs" />
     <Compile Include="Model\Message.cs" />
     <Compile Include="Model\Recipient.cs" />
     <Compile Include="Program.cs" />

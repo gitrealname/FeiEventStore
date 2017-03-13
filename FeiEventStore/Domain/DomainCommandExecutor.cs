@@ -324,15 +324,15 @@ namespace FeiEventStore.Domain
             }
         }
 
-        public async Task<DomainCommandResult> ExecuteCommandBatchAsync(IList<ICommand> commandBatch)
+        public Task<DomainCommandResult> ExecuteCommandBatchAsync(IList<ICommand> commandBatch)
         {
-            var result =  await Task.Run(() => ExecuteCommandBatch(commandBatch));
+            var result =  Task.FromResult<DomainCommandResult>(this.ExecuteCommandBatch(commandBatch));
             return result;
         }
 
-        public async Task<DomainCommandResult> ExecuteCommandAsync(ICommand command)
+        public Task<DomainCommandResult> ExecuteCommandAsync(ICommand command)
         {
-            var result = await ExecuteCommandBatchAsync(new List<ICommand>() { command });
+            var result = ExecuteCommandBatchAsync(new List<ICommand>() { command });
             return result;
         }
 

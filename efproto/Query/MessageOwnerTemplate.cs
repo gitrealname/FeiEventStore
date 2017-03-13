@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SqlFu.Builders;
+﻿using SqlFu.Builders;
 
-namespace efproto
+namespace efproto.Query
 {
     public class MessageOwnerTemplate : IQueryTemplate<MessageOwner>
     {
