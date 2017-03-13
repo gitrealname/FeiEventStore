@@ -56,7 +56,9 @@ namespace efproto
                     Console.WriteLine("Message: {0}, Owner: {1}", r.Subject, r.FirstName);
                 });
 
-                var r3 = db.WithSql(q => q.FromTemplate(new MessageOwnerTemplate()).Where(mo => mo.FirstName.Contains("2")).SelectAll()).GetRows();
+                var r3 = db.QueryAs(q => q.FromTemplate(new MessageOwnerTemplate())
+                    .Where(mo => mo.FirstName.Contains("2"))
+                    .SelectAll());
                 r3.ForEach(r => {
                     Console.WriteLine("Message: {0}, Owner: {1}", r.Subject, r.FirstName);
                 });

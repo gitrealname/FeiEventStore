@@ -74,7 +74,7 @@ namespace EventStoreIntegrationTester
         }
     }
 
-    //[Only]
+    [Only]
     public class LongRunningProcessManagerTest : BaseTest<LongRunningProcessManagerTest>
     {
         public LongRunningProcessManagerTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore) : base(commandExecutor, eventStore, "Process Manager Long running") { }

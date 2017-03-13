@@ -88,6 +88,11 @@
     <Compile Include="Domain\IHandleEvent.cs" />
     <Compile Include="Domain\IHandleCommand.cs" />
     <Compile Include="Domain\DomainCommandResult.cs" />
+    <Compile Include="EventQueue\BaseEventQueue.cs" />
+    <Compile Include="EventQueue\IEventQueue.cs" />
+    <Compile Include="EventQueue\IEventQueueConfiguration.cs" />
+    <Compile Include="EventQueue\InMemoryVersionTrackingStore.cs" />
+    <Compile Include="EventQueue\IVersionTrackingStore.cs" />
     <Compile Include="Events\IPermanentlyTypedObjectService.cs" />
     <Compile Include="Events\MultipleTypeInstancesException.cs" />
     <Compile Include="Events\PermanentlyTypedObjectService.cs" />
