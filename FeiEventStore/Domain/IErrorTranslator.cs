@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FeiEventStore.Core;
+using FeiEventStore.Events;
 using FeiEventStore.Persistence;
 
 namespace FeiEventStore.Domain
@@ -36,6 +38,6 @@ namespace FeiEventStore.Domain
         /// </summary>
         /// <param name="exception">The exception.</param>
         /// <returns></returns>
-        string Translate(AggregateDoesnotExistsException exception);
+        string Translate(AggregateNotFoundException exception);
     }
 }

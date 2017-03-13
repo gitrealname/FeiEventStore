@@ -310,7 +310,7 @@ namespace FeiEventStore.Domain
                 var cmdType = cmd.GetType();
                 if(!canBeCreateByTypes.Any(t => t.GenericTypeArguments.Any(tt => tt == cmdType)))
                 {
-                    throw new AggregateDoesnotExistsException(aggregate.Id);
+                    throw new AggregateNotFoundException(aggregate.Id);
                 }
             }
         }

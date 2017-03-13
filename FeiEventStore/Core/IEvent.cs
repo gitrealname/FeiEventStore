@@ -23,6 +23,14 @@
         /// </value>
         string AggregateKey { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether [aggregate key changed].
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [aggregate key changed]; otherwise, <c>false</c>.
+        /// </value>
+        bool AggregateKeyChanged { get; }
+
         DateTimeOffset Timestapm { get; set; }
 
         object Payload { get; set; }

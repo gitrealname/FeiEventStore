@@ -78,7 +78,6 @@ namespace FeiEventStore.Persistence
             IList<ProcessRecord> processes = null,
             HashSet<Guid> processIdsToBeDeleted = null)
         {
-            var commitId = Guid.NewGuid();
             var stats_events = 0;
             var stats_snapshots = 0;
             var stats_processes = 0;
@@ -102,6 +101,10 @@ namespace FeiEventStore.Persistence
                 //check constraints
                 foreach(var e in events)
                 {
+                    if(!e.Header.ProcessPrimaryKey)
+                    {
+                        continue;
+                    }
                     string key;
                     //delete primary key
                     if(e.AggregateTypeUniqueKey == null)

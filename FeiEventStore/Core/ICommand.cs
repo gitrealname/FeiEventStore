@@ -27,8 +27,8 @@ namespace FeiEventStore.Core
         object Payload { get; set; }
     }
 
-    public interface ICommand<TState> : ICommand where TState : IState, new()
+    public interface ICommand<TPayload> : ICommand where TPayload : class, new()
     {
-        new TState Payload { get; set; }
+        new TPayload Payload { get; set; }
     }
 }

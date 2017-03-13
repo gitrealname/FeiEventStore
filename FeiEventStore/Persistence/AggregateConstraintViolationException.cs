@@ -1,4 +1,5 @@
 ﻿using System;
+using FeiEventStore.Core;
 using FeiEventStore.Domain;
 
 namespace FeiEventStore.Persistence

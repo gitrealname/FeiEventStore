@@ -1,4 +1,6 @@
-﻿namespace FeiEventStore.Events
+﻿using FeiEventStore.Domain;
+
+namespace FeiEventStore.Events
 {
     using System;
     using System.Collections.Generic;
@@ -245,7 +247,7 @@
         }
         public IAggregate LoadAggregate(Guid aggregateId, Type aggregateType = null)
         {
-            IAggregate aggregate;
+            IAggregate aggregate = null;
             long startingEventVersion = 0;
 //            var aggregateStateType = aggregateType.GetGenericInterfaceArgumentTypes(typeof(IAggregate<>), 0).FirstOrDefault();
             //try to get snapshot
@@ -276,18 +278,40 @@
             }
             catch (SnapshotNotFoundException)
             {
-                if(aggregateType == null)
+                //if(aggregateType == null)
+                //{
+                //    throw;
+                //}
+                //aggregate = _service.GetSingleInstanceForConcreteType<IAggregate>(aggregateType, typeof(IAggregate<>));
+                //aggregate.TypeId = _service.GetPermanentTypeIdForType(aggregateType);
+                //aggregate.Id = aggregateId;
+                //aggregate.Version = 0;
+                //aggregate.LatestPersistedVersion = 0;
+            }
+            //load events
+            var events = GetEvents(aggregateId, startingEventVersion);
+            if(events.Count == 0)
+            {
+                if(aggregateType == null && aggregate == null)
                 {
-                    throw;
+                    var e = new AggregateNotFoundException(aggregateId);
+                    Logger.Warn(e);
+                    throw e;
                 }
+            }
+            if(aggregateType == null && aggregate == null)
+            {
+                var mostRecentAggregateTypeId = @events.Last().SourceAggregateTypeId;
+                aggregateType = _service.LookupTypeByPermanentTypeId(mostRecentAggregateTypeId);
+            }
+            if(aggregate == null)
+            {
                 aggregate = _service.GetSingleInstanceForConcreteType<IAggregate>(aggregateType, typeof(IAggregate<>));
                 aggregate.TypeId = _service.GetPermanentTypeIdForType(aggregateType);
                 aggregate.Id = aggregateId;
                 aggregate.Version = 0;
                 aggregate.LatestPersistedVersion = 0;
             }
-            //load events
-            var events = GetEvents(aggregateId, startingEventVersion);
             aggregate.LoadFromHistory(events);
             if(Logger.IsDebugEnabled)
             {
@@ -415,6 +439,7 @@
         private EventRecord CreateEventRecordFromEvent ( IEvent @event )
         {
             var er = new EventRecord();
+            er.Header.ProcessPrimaryKey = @event.AggregateKeyChanged;
             er.OriginSystemId = @event.Origin.SystemId;
             er.OriginUserId = @event.Origin.UserId;
             er.StoreVersion = 0; //will be set during commit()

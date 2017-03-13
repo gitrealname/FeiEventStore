@@ -2,21 +2,16 @@
 using EventStoreIntegrationTester.UserGroup.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
+using FeiEventStore.Events;
 using FeiEventStore.Persistence;
 using NLog.Config;
 
 namespace EventStoreIntegrationTester.UserGroup
 {
-    [PermanentType("user.group.aggregate.state")]
-    public class UserGroupAggregateState : IState
-    {
-        public string Name { get; set; }
-    }
-
     [PermanentType("user.group.aggregate")]
-    public class UserGroupAggregate : BaseAggregate<UserGroupAggregateState>
+    public class UserGroupAggregate : BaseAggregate<UserGroup>
         , IErrorTranslator
-        , ICreatedByCommand<CreateUserGroup>
+        , ICreatedByCommand<CreateUserGroupCommand>
 
     {
         private readonly IDomainCommandExecutionContext _ctx;
@@ -27,12 +22,12 @@ namespace EventStoreIntegrationTester.UserGroup
         }
         public void Create(string name, Guid? groupCounterId = null)
         {
-            var e = new UserGroupCreated {Payload = {Name = name, GroupCounterId = groupCounterId}};
+            var e = new UserGroupCreatedEvent {Payload = {Name = name, GroupCounterId = groupCounterId}};
             e.AggregateKey = name;
             RaiseEvent(e);
 
         }
-        private void Apply(UserGroupCreated @event)
+        private void Apply(UserGroupCreatedEvent @event)
         {
             State.Name = @event.Payload.Name;
         }
@@ -47,7 +42,7 @@ namespace EventStoreIntegrationTester.UserGroup
             return string.Format("User Group with name '{0}' already exists.", State.Name);
         }
 
-        public string Translate(AggregateDoesnotExistsException exception)
+        public string Translate(AggregateNotFoundException exception)
         {
             return string.Format("Invalid User Group Id '{0}'.", Id);
         }

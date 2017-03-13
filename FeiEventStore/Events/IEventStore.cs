@@ -1,4 +1,6 @@
-﻿namespace FeiEventStore.Events
+﻿using FeiEventStore.Domain;
+
+namespace FeiEventStore.Events
 {
     using System;
     using System.Collections.Generic;
@@ -81,6 +83,7 @@
         /// <returns></returns>
         /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
         /// <exception cref="MultipleTypeInstancesException"></exception>
+        /// <exception cref="AggregateNotFoundException"></exception>
         IAggregate LoadAggregate(Guid aggregateId, Type aggregateType = null);
 
         IProcess LoadProcess(Type processType, Guid aggregateId );

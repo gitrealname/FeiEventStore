@@ -8,9 +8,9 @@ using FeiEventStore.Domain;
 
 namespace EventStoreIntegrationTester.UserGroup
 {
-    public class UserGroupCommandHandler : IHandleCommand<CreateUserGroup, UserGroupAggregate>
+    public class UserGroupCommandHandler : IHandleCommand<CreateUserGroupCommand, UserGroupAggregate>
     {
-        public void HandleCommand(CreateUserGroup cmd, UserGroupAggregate aggregate)
+        public void HandleCommand(CreateUserGroupCommand cmd, UserGroupAggregate aggregate)
         {
             //Do domain specific validation here
 

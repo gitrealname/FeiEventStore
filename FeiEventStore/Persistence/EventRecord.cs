@@ -3,8 +3,32 @@
     using System;
     using FeiEventStore.Core;
 
+    /// <summary>
+    /// member of this class MUST not be serialized, it is used for EventStore to PersistenceEngine communication only!!!
+    /// </summary>
+    public class EventRecordHeader
+    {
+        /// <summary>
+        /// Gets or sets a value indicating whether to process primary key.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [process primary key]; otherwise, <c>false</c>.
+        /// </value>
+        public bool ProcessPrimaryKey { get; set; }
+
+    }
     public class EventRecord
     {
+
+        /// <summary>
+        /// Gets or sets the header.
+        /// IMPORTANT: is not to be persisted!!!
+        /// </summary>
+        /// <value>
+        /// The header.
+        /// </value>
+        public EventRecordHeader Header { get; set; } = new EventRecordHeader();
+
         /// <summary>
         /// Set by the engine
         /// </summary>
@@ -33,6 +57,7 @@
         /// The aggregate key.
         /// </value>
         public string AggregateTypeUniqueKey { get; set; }
+
 
         /// <summary>
         /// Gets or sets the event type identifier.

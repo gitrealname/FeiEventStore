@@ -33,6 +33,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FluentAssertions, Version=4.19.2.0, Culture=neutral, PublicKeyToken=33f2691a05b67b6a, processorArchitecture=MSIL">
+      <HintPath>..\packages\FluentAssertions.4.19.2\lib\net45\FluentAssertions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FluentAssertions.Core, Version=4.19.2.0, Culture=neutral, PublicKeyToken=33f2691a05b67b6a, processorArchitecture=MSIL">
+      <HintPath>..\packages\FluentAssertions.4.19.2\lib\net45\FluentAssertions.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="LightInject, Version=5.0.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\LightInject.5.0.2\lib\net46\LightInject.dll</HintPath>
       <Private>True</Private>
@@ -58,19 +66,23 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseTest.cs" />
-    <Compile Include="Guard.cs" />
+    <Compile Include="Counter\Counter.cs" />
+    <Compile Include="Counter\Messages\Decremented.cs" />
+    <Compile Include="Counter\Messages\Incremented.cs" />
     <Compile Include="OnlyAttribute.cs" />
     <Compile Include="TestConst.cs" />
-    <Compile Include="UserGroupTest.cs" />
-    <Compile Include="UserGroup\CreateUserGroupCounterProcessManager.cs" />
+    <Compile Include="TestUserGroup.cs" />
+    <Compile Include="UserGroup\UserGroupCounterProcessManager.cs" />
+    <Compile Include="UserGroup\Messages\UserGroupCreated.cs" />
     <Compile Include="UserGroup\UserGroupAggregate.cs" />
     <Compile Include="UserGroup\Messages\CreateUserGroup.cs" />
-    <Compile Include="CounterTest.cs" />
+    <Compile Include="TestCounter.cs" />
     <Compile Include="Counter\CounterAggregate.cs" />
     <Compile Include="Counter\Messages\Decrement.cs" />
     <Compile Include="Counter\Messages\Increment.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UserGroup\UserGroup.cs" />
     <Compile Include="UserGroup\UserGroupCommandHandler.cs" />
   </ItemGroup>
   <ItemGroup>

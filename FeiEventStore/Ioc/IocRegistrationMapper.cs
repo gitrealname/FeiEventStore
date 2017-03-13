@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using FeiEventStore.AggregateStateRepository;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
@@ -17,6 +18,7 @@ namespace FeiEventStore.Ioc
             { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocMappingAction.RegisterServicePerContainerLifetime },
             { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocMappingAction.RegisterServicePerContainerLifetime },
             { new Tuple<Type, Type>(typeof(IEventDispatcher), typeof(EventDispatcher)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IAggregateStateRepository), typeof(AggregateStateRepository.AggregateStateRepository)), IocMappingAction.RegisterServicePerContainerLifetime },
 
             //per scope!
             { new Tuple<Type, Type>(typeof(IDomainCommandExecutionContext), typeof(DomainCommandExecutionContext)), IocMappingAction.RegisterServicePerScopeLifetime },

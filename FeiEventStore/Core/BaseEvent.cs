@@ -9,7 +9,15 @@
         public Guid SourceAggregateId { get; set; }
         public long SourceAggregateVersion { get; set; }
         public TypeId SourceAggregateTypeId { get; set; }
-        public string AggregateKey { get; set; }
+
+        private string _aggregateKey;
+        public string AggregateKey
+        {
+            get { return _aggregateKey; }
+            set { AggregateKeyChanged = _aggregateKey != value; _aggregateKey = value; }
+        }
+
+        public bool AggregateKeyChanged { get; protected set; }
         public DateTimeOffset Timestapm { get; set; }
         object IEvent.Payload
         {

@@ -5,10 +5,10 @@ using FeiEventStore.Domain;
 namespace EventStoreIntegrationTester.Counter
 {
     [PermanentType("counter.aggregate")]
-    public class CounterAggregate : BaseAggregate<CounterAggregateState>
-        , ICreatedByCommand<Increment>
-        , IHandleCommand<Increment, CounterAggregate>
-        , IHandleCommand<Decrement, CounterAggregate>
+    public class CounterAggregate : BaseAggregate<Counter>
+        , ICreatedByCommand<IncrementCommand>
+        , IHandleCommand<IncrementCommand, CounterAggregate>
+        , IHandleCommand<DecrementCommand, CounterAggregate>
     {
         private readonly IDomainCommandExecutionContext _ctx;
 
@@ -16,34 +16,28 @@ namespace EventStoreIntegrationTester.Counter
         {
             _ctx = ctx;
         }
-        public void HandleCommand(Increment cmd, CounterAggregate aggregate)
+        public void HandleCommand(IncrementCommand cmd, CounterAggregate aggregate)
         {
-            var e = new Incremented();
-            e.Payload = cmd.Payload;
+            var e = new IncrementedEvent();
+            e.Payload = new Incremented() { By = cmd.Payload.By };
             RaiseEvent(e);
         }
 
-        public void HandleCommand(Decrement cmd, CounterAggregate aggregate)
+        public void HandleCommand(DecrementCommand cmd, CounterAggregate aggregate)
         {
-            var e = new Decremented();
-            e.Payload = cmd.Payload;
+            var e = new DecrementedEvent();
+            e.Payload = new Decremented() { By = cmd.Payload.By };
             RaiseEvent(e);
         }
 
-        private void Apply(Incremented @event)
+        private void Apply(IncrementedEvent @event)
         {
             State.Value += @event.Payload.By;
         }
-        private void Apply(Decremented @event)
+        private void Apply(DecrementedEvent @event)
         {
             State.Value -= @event.Payload.By;
         }
 
-    }
-
-    [PermanentType("counter.aggregate.state")]
-    public class CounterAggregateState : IState
-    {
-        public int Value { get; set; }
     }
 }

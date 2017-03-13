@@ -11,19 +11,19 @@ using FeiEventStore.Domain;
 
 namespace EventStoreIntegrationTester.UserGroup
 {
-    [PermanentType("user.group.counter.state")]
-    public class CreateUserGroupCounterProcessManagerState : IState
+    [PermanentType("user.group.counter")]
+    public class UserGroupCounter : IState
     {
         public bool LongRunning { get; set; }
         public int ProcessedEventCount { get; set; }
     }
 
-    [PermanentType("user.group.counter")]
-    public class CreateUserGroupCounterProcessManager : BaseProcess<CreateUserGroupCounterProcessManagerState>
-        ,IStartedByEvent<UserGroupCreated>
-        ,IHandleEvent<Incremented>
+    [PermanentType("user.group.counter.pm")]
+    public class UserGroupCounterProcessManager : BaseProcess<UserGroupCounter>
+        ,IStartedByEvent<UserGroupCreatedEvent>
+        ,IHandleEvent<IncrementedEvent>
     {
-        public void StartByEvent(UserGroupCreated @event)
+        public void StartByEvent(UserGroupCreatedEvent @event)
         {
             if(@event.Payload.GroupCounterId != null)
             {
@@ -32,7 +32,7 @@ namespace EventStoreIntegrationTester.UserGroup
                     State.LongRunning = true;
                 }
                 State.ProcessedEventCount++;
-                var increment = new Increment(@event.Payload.GroupCounterId.Value, 1);
+                var increment = new IncrementCommand(@event.Payload.GroupCounterId.Value, 1);
 
                 ScheduleCommand(increment);
 
@@ -40,7 +40,7 @@ namespace EventStoreIntegrationTester.UserGroup
             }
         }
 
-        public void HandleEvent(Incremented @event)
+        public void HandleEvent(IncrementedEvent @event)
         {
             State.ProcessedEventCount++;
             //long running process ends when counter incremented by 100

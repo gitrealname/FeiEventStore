@@ -8,6 +8,7 @@ using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
 using FeiEventStore.Persistence;
+using FluentAssertions;
 
 namespace EventStoreIntegrationTester
 {
@@ -16,14 +17,14 @@ namespace EventStoreIntegrationTester
         public SingleEventTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore):base(commandExecutor, eventStore, "Single command"){}
         public override bool Run()
         {
-            var result = CommandExecutor.ExecuteCommand(new Increment(Const.FirstCounterId, 1));
-            Guard.EqualTo(() => result.EventStoreVersion, result.EventStoreVersion, 1);
+            var result = CommandExecutor.ExecuteCommand(new IncrementCommand(Const.FirstCounterId, 1));
             var events = EventStore.GetEvents(Const.FirstCounterId, 0);
-            Guard.EqualTo(() => events.Count, events.Count, 1);
-
             var counter = (CounterAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
+
+            result.EventStoreVersion.ShouldBeEquivalentTo(1);
+            events.Count.ShouldBeEquivalentTo(1);
             var state = counter.GetState();
-            Guard.EqualTo(() => state.Value, state.Value, 1);
+            state.Value.ShouldBeEquivalentTo(1);
             
             return !result.CommandHasFailed;
         }
@@ -36,19 +37,19 @@ namespace EventStoreIntegrationTester
         {
             var batch = new List<ICommand>()
             {
-                new Increment(Const.FirstCounterId, 1),
-                new Increment(Const.FirstCounterId, 1),
-                new Decrement(Const.FirstCounterId, 2),
+                new IncrementCommand(Const.FirstCounterId, 1),
+                new IncrementCommand(Const.FirstCounterId, 1),
+                new DecrementCommand(Const.FirstCounterId, 2),
             };
+
             var result = CommandExecutor.ExecuteCommandBatch(batch);
-            Guard.EqualTo(() => result.EventStoreVersion, result.EventStoreVersion, 3);
-
             var events = EventStore.GetEvents(Const.FirstCounterId, 0);
-            Guard.EqualTo(() => events.Count, events.Count, 3);
-
             var counter = (CounterAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
+
+            result.EventStoreVersion.ShouldBeEquivalentTo(3);
+            events.Count.ShouldBeEquivalentTo(3);
             var state = counter.GetState();
-            Guard.EqualTo(() => state.Value, state.Value, 0);
+            state.Value.ShouldBeEquivalentTo(0);
 
             return !result.CommandHasFailed;
         }
@@ -68,16 +69,16 @@ namespace EventStoreIntegrationTester
             var batch = new List<ICommand>();
             for(var i = 0; i < 199; i++)
             {
-                var cmd = new Increment(Const.FirstCounterId, 1);
+                var cmd = new IncrementCommand(Const.FirstCounterId, 1);
                 batch.Add(cmd);
             }
+
             var result = CommandExecutor.ExecuteCommandBatch(batch);
-
             var events = EventStore.GetEvents(Const.FirstCounterId, 0, 10);
-            Guard.EqualTo(() => events.Count, events.Count, 10);
-
             var snapshotVersion = EventStore.GetSnapshotVersion(Const.FirstCounterId);
-            Guard.EqualTo(() => snapshotVersion, snapshotVersion, 199);
+
+            events.Count.ShouldBeEquivalentTo(10);
+            snapshotVersion.ShouldBeEquivalentTo(199);
 
             return !result.CommandHasFailed;
         }

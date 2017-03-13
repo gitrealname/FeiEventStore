@@ -3,26 +3,19 @@ using FeiEventStore.Core;
 
 namespace EventStoreIntegrationTester.UserGroup.Messages
 {
-    [PermanentType("user.group.created")]
-    public class CreateUserGroupPayload : IState
+    public class CreateUserGroup
     {
         public string Name { get; set; }
         public Guid? GroupCounterId { get; set; }
     }
 
-    public class CreateUserGroup : BaseCommand<CreateUserGroupPayload>
+    public class CreateUserGroupCommand : BaseCommand<CreateUserGroup>
     {
-        public CreateUserGroup(Guid aggregateId, string name, Guid? counterId = null)
+        public CreateUserGroupCommand(Guid aggregateId, string name, Guid? counterId = null)
         {
             TargetAggregateId = aggregateId;
             Origin = new MessageOrigin();
-            Payload = new CreateUserGroupPayload {Name = name, GroupCounterId = counterId};
+            Payload = new CreateUserGroup {Name = name, GroupCounterId = counterId};
         }
     }
-
-    public class UserGroupCreated : BaseEvent<CreateUserGroupPayload>
-    {
-    }
-
-
 }
