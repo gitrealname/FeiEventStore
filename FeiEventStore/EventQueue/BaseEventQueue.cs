@@ -18,29 +18,27 @@ namespace FeiEventStore.EventQueue
 
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly IEventQueueConfiguration _config;
+        private readonly IEventQueueConfiguration _baseConfig;
         private readonly IEventStore _eventStore;
-        private readonly IObjectFactory _objectFactory;
         private readonly IVersionTrackingStore _verstionStore;
         private readonly BlockingCollection<IEvent> _blockingQueue;
         private readonly TypeId _typeId;
         private Thread _thread;
         private long _version; //last processed version
 
-        protected BaseEventQueue(IEventQueueConfiguration config, IEventStore eventStore, IObjectFactory objectFactory, IVersionTrackingStore verstionStore)
+        protected BaseEventQueue(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore)
         {
-            _config = config;
+            _baseConfig = baseConfig;
             _eventStore = eventStore;
-            _objectFactory = objectFactory;
             _verstionStore = verstionStore;
             _version = 0;
             _typeId = this.GetType().GetPermanentTypeId();
             _version = _verstionStore.Get(_typeId);
-            _blockingQueue = new BlockingCollection<IEvent>(_config.MaxQueueCapacity);
+            _blockingQueue = new BlockingCollection<IEvent>(_baseConfig.MaxQueueCapacity);
         }
         public void Enqueue(ICollection<IEvent> eventBatch)
         {
-            if((_blockingQueue.Count + eventBatch.Count) > _config.MaxQueueCapacity)
+            if((_blockingQueue.Count + eventBatch.Count) > _baseConfig.MaxQueueCapacity)
             {
                 Logger.Warn("Event Queue Processing or type id '{0}' is getting behind. New Events are dropped as outstanding queue size reached {1} events.",
                     _typeId, _blockingQueue.Count);
@@ -68,14 +66,14 @@ namespace FeiEventStore.EventQueue
             RecoverFromEventStore();
 
             List<IEvent> events = new List<IEvent>();
-            while(!_config.CancellationToken.IsCancellationRequested)
+            while(!_baseConfig.CancellationToken.IsCancellationRequested)
             {
-                while(events.Count < _config.MaxEventsPerTransaction && (_blockingQueue.Count > 0 || events.Count == 0))
+                while(events.Count < _baseConfig.MaxEventsPerTransaction && (_blockingQueue.Count > 0 || events.Count == 0))
                 {
                     try
                     {
                         IEvent e;
-                        _blockingQueue.TryTake(out e, -1, _config.CancellationToken);
+                        _blockingQueue.TryTake(out e, -1, _baseConfig.CancellationToken);
                         events.Add(e);
                     }
                     catch(OperationCanceledException)
@@ -105,7 +103,7 @@ namespace FeiEventStore.EventQueue
 
         protected virtual void StartProcessingTransaction(ICollection<IEvent> events)
         {
-            while(!_config.CancellationToken.IsCancellationRequested)
+            while(!_baseConfig.CancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -125,16 +123,18 @@ namespace FeiEventStore.EventQueue
             }
         }
 
-        protected virtual void HandleEvents(ICollection<IEvent> events)
-        {
-            
-        }
+        /// <summary>
+        /// Handles the events. 
+        /// IMPORTANT: Implementation should enlist to external transaction scope!
+        /// </summary>
+        /// <param name="events">The events.</param>
+        protected abstract void HandleEvents(ICollection<IEvent> events);
 
         protected virtual void RecoverFromEventStore(long? untilVersion = null)
         {
-            while(!_config.CancellationToken.IsCancellationRequested)
+            while(!_baseConfig.CancellationToken.IsCancellationRequested)
             {
-                var count = _config.MaxEventsPerTransaction;
+                var count = _baseConfig.MaxEventsPerTransaction;
                 if(untilVersion.HasValue)
                 {
                     var c = untilVersion.Value - _version;

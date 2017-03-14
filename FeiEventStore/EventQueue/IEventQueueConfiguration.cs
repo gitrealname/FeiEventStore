@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace FeiEventStore.EventQueue
 {
     /// <summary>
-    /// Event queue configuration 
+    /// Base Event queue configuration. 
     /// </summary>
     public interface IEventQueueConfiguration
     {

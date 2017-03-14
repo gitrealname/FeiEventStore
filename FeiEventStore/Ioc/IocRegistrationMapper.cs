@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using FeiEventStore.AggregateStateRepository;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
+using FeiEventStore.EventQueue;
 using FeiEventStore.Events;
 using FeiEventStore.Persistence;
 
@@ -25,6 +26,7 @@ namespace FeiEventStore.Ioc
 
             //in production expected to be overridden/handled by in-fact persistent engine mapper
             { new Tuple<Type, Type>(typeof(IPersistenceEngine), typeof(InMemoryPersistenceEngine)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IVersionTrackingStore), typeof(InMemoryVersionTrackingStore)), IocMappingAction.RegisterServicePerContainerLifetime },
         };
 
         private readonly Dictionary<Type, IocMappingAction> _genericMap = new Dictionary<Type, IocMappingAction>
