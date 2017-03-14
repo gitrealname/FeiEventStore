@@ -29,11 +29,28 @@ namespace FeiEventStore.Events
 
         public long StoreVersion => _engine.StoreVersion;
 
-        public void Commit(IList<IEvent> events,
+        public void Commit(IList<IEventEnvelope> events,
             //IList<Constraint> aggregateConstraints = null,
             IList<IAggregate> snapshots = null,
-            IList<IProcess> processes = null)
+            IList<IProcessManager> processes = null,
+            IList<Tuple<Guid, TypeId, string>> primaryKeyChanges = null)
         {
+
+            //prepare primary key changes
+            var keyRecords = new List<StreamPrimaryKeyRecord>();
+            if(primaryKeyChanges != null)
+            {
+                foreach(var tuple in primaryKeyChanges)
+                {
+                    var pk = new StreamPrimaryKeyRecord() {
+                        StreamId = tuple.Item1,
+                        StreamTypeId = tuple.Item2,
+                        PrimaryKey = tuple.Item3
+                    };
+                    keyRecords.Add(pk);
+                }
+            }
+            
             //prepare events
             var eventRecords = new List<EventRecord>();
             foreach(var @event in events)
@@ -136,7 +153,7 @@ namespace FeiEventStore.Events
                 //call persistence layer
                 try
                 {
-                    _engine.Commit(eventRecords, /*aggregateConstraints, processConstaints,*/ snapshotRecords, processRecords, completeProcessIds);
+                    _engine.Commit(eventRecords, snapshotRecords, processRecords, completeProcessIds, keyRecords);
                 }
                 catch(EventStoreConcurrencyViolationException ex)
                 {
@@ -165,14 +182,6 @@ namespace FeiEventStore.Events
                 {
                     if(Logger.IsInfoEnabled)
                     {
-                        //Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes persisted: {2}, Processes deleted: {3},  Aggregate constraints validated: {4}, Process constraints validated: {5}. Final store version: {6}",
-                        //    eventRecords.Count, 
-                        //    snapshotRecords.Count, 
-                        //    processPersistedCount, 
-                        //    completeProcessIds.Count,  
-                        //    aggregateConstraints?.Count ?? 0,
-                        //    processConstaints.Count, 
-                        //    initialStoreVersion);
                         Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes persisted: {2}, Processes deleted: {3}. Final store version: {4}",
                             eventRecords.Count,
                             snapshotRecords.Count,
@@ -200,7 +209,7 @@ namespace FeiEventStore.Events
             return _engine.GetProcessVersion(processId);
         }
 
-        public IList<IEvent> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion = null)
+        public IList<IEventEnvelope> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion = null)
         {
             var eventRecords = _engine.GetEvents(aggregateId, fromAggregateVersion, toAggregateVersion);
             var result = LoadEventRecords(eventRecords);
@@ -210,13 +219,13 @@ namespace FeiEventStore.Events
                 Logger.Debug("Loaded {0} events for aggregate id {1} up until version {2}", 
                     result.Count, 
                     aggregateId, 
-                    result.Last().SourceAggregateVersion);
+                    result.Last().StreamVersion);
             }
 
             return result;
         }
 
-        public IList<IEvent> GetEventsByTimeRange(DateTimeOffset from, DateTimeOffset? to)
+        public IList<IEventEnvelope> GetEventsByTimeRange(DateTimeOffset from, DateTimeOffset? to)
         {
             var eventRecords = _engine.GetEventsByTimeRange(from, to);
             var result = LoadEventRecords(eventRecords);
@@ -231,7 +240,7 @@ namespace FeiEventStore.Events
             return result;
         }
 
-        public IList<IEvent> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount)
+        public IList<IEventEnvelope> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount)
         {
             var eventRecords = _engine.GetEventsSinceStoreVersion(startingStoreVersion, takeEventsCount);
             var result = LoadEventRecords(eventRecords);
@@ -240,7 +249,7 @@ namespace FeiEventStore.Events
                 Logger.Debug("Loaded {0} events starting with event store version {1} up until {2}",
                     result.Count,
                     startingStoreVersion,
-                    result.Last().SourceAggregateVersion);
+                    result.Last().StreamVersion);
             }
 
             return result;
@@ -301,7 +310,7 @@ namespace FeiEventStore.Events
             }
             if(aggregateType == null && aggregate == null)
             {
-                var mostRecentAggregateTypeId = @events.Last().SourceAggregateTypeId;
+                var mostRecentAggregateTypeId = @events.Last().StreamTypeId;
                 aggregateType = _service.LookupTypeByPermanentTypeId(mostRecentAggregateTypeId);
             }
             if(aggregate == null)
@@ -322,7 +331,7 @@ namespace FeiEventStore.Events
             return (IAggregate)aggregate;
         }
 
-        public IProcess LoadProcess(Type processType, Guid aggregateId)
+        public IProcessManager LoadProcess(Type processType, Guid aggregateId)
         {
             var result = LoadProcess(() => {
                 var processTypeId = _service.GetPermanentTypeIdForType(processType);
@@ -331,15 +340,15 @@ namespace FeiEventStore.Events
             return result;
         }
 
-        public IProcess LoadProcess(Guid processId)
+        public IProcessManager LoadProcess(Guid processId)
         {
             var result = LoadProcess(() => _engine.GetProcessRecords(processId));
             return result;
         }
 
-        private IProcess LoadProcess(Func<IList<ProcessRecord>> getRecords)
+        private IProcessManager LoadProcess(Func<IList<ProcessRecord>> getRecords)
         {
-            IProcess process;
+            IProcessManager process;
             Guid processId = Guid.Empty;
             //try to get process
             try
@@ -358,14 +367,14 @@ namespace FeiEventStore.Events
                         state = (IState)_engine.DeserializePayload(pr.State, stateType);
                         //determine what state type is expected by current implementation of the process
                         var processType = _service.LookupTypeByPermanentTypeId(pr.ProcessTypeId);
-                        var finalStateType = processType.GetGenericInterfaceArgumentTypes(typeof(IProcess<>)).FirstOrDefault();
+                        var finalStateType = processType.GetGenericInterfaceArgumentTypes(typeof(IProcessManager<>)).FirstOrDefault();
                         //upgrade state to desired level
                         state = _service.UpgradeObject(state, finalStateType);
                         processVersion = pr.ProcessVersion;
                     }
                 }
 
-                process = _service.GetSingleInstanceForGenericType<IProcess>(typeof(IProcess<>), state.GetType());
+                process = _service.GetSingleInstanceForGenericType<IProcessManager>(typeof(IProcessManager<>), state.GetType());
 
                 process.Id = processId;
                 process.LatestPersistedVersion = processVersion;
@@ -387,45 +396,28 @@ namespace FeiEventStore.Events
                 Logger.Debug("Loaded process id '{0}' runtime type '{1}'", processId, process.GetType().FullName);
             }
 
-            return (IProcess)process;
+            return (IProcessManager)process;
 
         }
 
-        private IList<IEvent> LoadEventRecords(IEnumerable<EventRecord> eventRecords)
+        private IList<IEventEnvelope> LoadEventRecords(IEnumerable<EventRecord> eventRecords)
         {
-            var result = new List<IEvent>();
+            var result = new List<IEventEnvelope>();
             foreach(var er in eventRecords)
             {
                 //determine payload type and payload upgrade path
                 var payloadType = _service.LookupTypeByPermanentTypeId(er.EventPayloadTypeId);
                 var payload = (IState)_engine.DeserializePayload(er.Payload, payloadType);
-                //starting search for implementation of the IEvent<> starting from most recent
-                IEvent @event = _service.GetSingleInstanceForGenericType<IEvent>(typeof(IEvent<>), payloadType); ;
-                if(@event == null)
+                //upgrade event
+                var finalType = _service.BuildUpgradeTypeChain(payloadType).Skip(1).Reverse().FirstOrDefault();
+                if(finalType != null)
                 {
-                    var upgradeChain = _service.BuildUpgradeTypeChain(payloadType).Skip(1).Reverse().ToList();
-                    foreach(var t in upgradeChain)
-                    {
-                        try
-                        {
-                            @event = _service.GetSingleInstanceForGenericType<IEvent>(typeof(IEvent<>), t);
-                            break;
-                        }
-                        catch(RuntimeTypeInstancesNotFoundException) { }
-                    }
-                    //check if implementation is found
-                    if(@event == null)
-                    {
-                        var ex = new Exception(string.Format("No runtime implementation of type IEvent<{0}> nor its {1} replacer(s) were found.",
-                            payloadType.FullName, upgradeChain.Count));
-                        Logger.Fatal(ex);
-                        throw ex;
-                    }
+                    payload = _service.UpgradeObject(payload, finalType);
                 }
-                //upgrade payload
-                var eventPayloadType = @event.GetType().GetGenericInterfaceArgumentTypes(typeof(IEvent<>), 0).FirstOrDefault();
-                payload = _service.UpgradeObject(payload, eventPayloadType);
-                @event.RestoreFromState(payload);
+                //build envelope
+                var envelopeType = typeof(EventEnvelope<>).MakeGenericType(payload.GetType());
+                var @event = (IEventEnvelope)Activator.CreateInstance(envelopeType);
+                @event.Payload = payload;
                 InitEventFromEventRecord(@event, er);
                 result.Add(@event);
             }
@@ -436,48 +428,32 @@ namespace FeiEventStore.Events
             return result;
         }
 
-        private EventRecord CreateEventRecordFromEvent ( IEvent @event )
+        private EventRecord CreateEventRecordFromEvent ( IEventEnvelope @event )
         {
             var er = new EventRecord();
-            er.Header.ProcessPrimaryKey = @event.AggregateKeyChanged;
-            er.OriginSystemId = @event.Origin.SystemId;
-            er.OriginUserId = @event.Origin.UserId;
+            er.OriginSystemId = @event.OriginSystemId;
+            er.OriginUserId = @event.OriginUserId;
             er.StoreVersion = 0; //will be set during commit()
-            var payload = @event.GetState();
+            var payload = @event.Payload;
             er.EventPayloadTypeId = _service.GetPermanentTypeIdForType(payload.GetType());
             er.Payload = _engine.SerializePayload(payload);
-            er.AggregateId = @event.SourceAggregateId;
-            er.AggregateVersion = @event.SourceAggregateVersion;
-            er.AggregateTypeId = @event.SourceAggregateTypeId;
+            er.StreamId = @event.StreamId;
+            er.StreamVersion = @event.StreamVersion;
+            er.StreamTypeId = @event.StreamTypeId;
             er.EventTimestamp = @event.Timestapm;
-
-            //setup key
-            //if(string.IsNullOrWhiteSpace(@event.AggregateKey))
-            //{
-            //    er.Key = Guid.NewGuid().ToString();
-            //}
-            //else
-            //{
-            //    er.Key = @event.AggregateKey + ':' + er.AggregateTypeId.ToString();
-            //}
-            er.AggregateTypeUniqueKey = @event.AggregateKey?.Trim();
 
             return er;
         }
 
-        private IEvent InitEventFromEventRecord(IEvent @event, EventRecord record) {
+        private IEventEnvelope InitEventFromEventRecord(IEventEnvelope @event, EventRecord record) {
 
-            @event.Origin = new MessageOrigin(record.OriginSystemId, record.OriginUserId);
+            @event.OriginSystemId = record.OriginSystemId;
+            @event.OriginUserId = record.OriginUserId;
             @event.StoreVersion = record.StoreVersion;
-            @event.SourceAggregateId = record.AggregateId;
-            @event.SourceAggregateVersion = record.AggregateVersion;
-            @event.SourceAggregateTypeId = record.AggregateTypeId;
+            @event.StreamId = record.StreamId;
+            @event.StreamVersion = record.StreamVersion;
+            @event.StreamTypeId = record.StreamTypeId;
             @event.Timestapm = record.EventTimestamp;
-
-            //restore aggregate key
-            //var pos = record.Key.LastIndexOf(":");
-            //@event.AggregateKey = pos < 0 ? null : record.Key.Substring(0, pos);
-            @event.AggregateKey = record.AggregateTypeUniqueKey;
 
             return @event;
         }

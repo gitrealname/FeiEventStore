@@ -7,19 +7,16 @@ using FeiEventStore.Core;
 
 namespace EventStoreIntegrationTester.Counter.Messages
 {
-    public class Decrement
+    public class Decrement : ICommand
     {
-        public int By { get; set; }
-    }
-
-    public class DecrementCommand: BaseCommand<Decrement>
-    {
-        public DecrementCommand(Guid aggregateId, int by)
+        public Decrement(Guid aggregateId, int by, long? targetAggregateVersion = null)
         {
             TargetAggregateId = aggregateId;
-            Payload = new Decrement();
-            Payload.By = by;
-            Origin = new MessageOrigin();
+            By = by;
+            TargetAggregateVersion = targetAggregateVersion;
         }
+        public int By { get; set; }
+        public Guid TargetAggregateId { get; set; }
+        public long? TargetAggregateVersion { get; set; }
     }
 }

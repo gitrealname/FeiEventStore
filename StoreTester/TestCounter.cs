@@ -17,7 +17,7 @@ namespace EventStoreIntegrationTester
         public SingleEventTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore):base(commandExecutor, eventStore, "Single command"){}
         public override bool Run()
         {
-            var result = CommandExecutor.ExecuteCommand(new IncrementCommand(Const.FirstCounterId, 1));
+            var result = CommandExecutor.ExecuteCommand(new Increment(Const.FirstCounterId, 1), Origin);
             var events = EventStore.GetEvents(Const.FirstCounterId, 0);
             var counter = (CounterAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
 
@@ -37,12 +37,12 @@ namespace EventStoreIntegrationTester
         {
             var batch = new List<ICommand>()
             {
-                new IncrementCommand(Const.FirstCounterId, 1),
-                new IncrementCommand(Const.FirstCounterId, 1),
-                new DecrementCommand(Const.FirstCounterId, 2),
+                new Increment(Const.FirstCounterId, 1),
+                new Increment(Const.FirstCounterId, 1),
+                new Decrement(Const.FirstCounterId, 2),
             };
 
-            var result = CommandExecutor.ExecuteCommandBatch(batch);
+            var result = CommandExecutor.ExecuteCommandBatch(batch, Origin);
             var events = EventStore.GetEvents(Const.FirstCounterId, 0);
             var counter = (CounterAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
 
@@ -69,11 +69,11 @@ namespace EventStoreIntegrationTester
             var batch = new List<ICommand>();
             for(var i = 0; i < 199; i++)
             {
-                var cmd = new IncrementCommand(Const.FirstCounterId, 1);
+                var cmd = new Increment(Const.FirstCounterId, 1);
                 batch.Add(cmd);
             }
 
-            var result = CommandExecutor.ExecuteCommandBatch(batch);
+            var result = CommandExecutor.ExecuteCommandBatch(batch, Origin);
             var events = EventStore.GetEvents(Const.FirstCounterId, 0, 10);
             var snapshotVersion = EventStore.GetSnapshotVersion(Const.FirstCounterId);
 

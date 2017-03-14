@@ -9,6 +9,6 @@ namespace FeiEventStore.Domain
 {
     public interface IEventDispatcher
     {
-        void Dispatch(IList<IEvent> eventBatch);
+        void Dispatch(IList<IEventEnvelope> eventBatch);
     }
 }

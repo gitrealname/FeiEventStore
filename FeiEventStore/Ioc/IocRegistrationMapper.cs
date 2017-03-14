@@ -43,8 +43,8 @@ namespace FeiEventStore.Ioc
             { typeof(ICreatedByCommand<>), IocRegistrationType.RegisterTypeTransientLifetime },
             { typeof(IStartedByEvent<>), IocRegistrationType.RegisterTypeTransientLifetime },
             { typeof(IAggregate<>), IocRegistrationType.RegisterTypeTransientLifetime },
-            { typeof(IProcess<>), IocRegistrationType.RegisterTypeTransientLifetime },
-            { typeof(IEvent<>), IocRegistrationType.RegisterTypeTransientLifetime },
+            { typeof(IProcessManager<>), IocRegistrationType.RegisterTypeTransientLifetime },
+            { typeof(IEventEnvelope<>), IocRegistrationType.RegisterTypeTransientLifetime },
            
         };
 

@@ -1,9 +1,10 @@
-﻿namespace FeiEventStore.Core
-{
-    using System;
-    using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using FeiEventStore.Core;
 
-    public abstract class BaseProcess<TState> : IProcess<TState> where TState : IState, new()
+namespace FeiEventStore.Domain
+{
+    public abstract class BaseProcessManager<TState> : IProcessManager<TState> where TState : IState, new()
     {
         protected readonly List<ICommand> PendingCommands;
 
@@ -17,7 +18,7 @@
 
         public HashSet<Guid> InvolvedAggregateIds { get; set; }
 
-        public IList<ICommand> FlushUncommitedMessages()
+        public IList<ICommand> FlushUncommitedCommands()
         {
             var changes = PendingCommands.ToArray();
             PendingCommands.Clear();
@@ -32,7 +33,7 @@
 
         protected TState State { get; set; }
 
-        protected BaseProcess()
+        protected BaseProcessManager()
         {
             State = new TState();
             InvolvedAggregateIds = new HashSet<Guid>();
@@ -40,12 +41,12 @@
             IsComplete = true; /*make is complete by default, as we expect that majority of process managers to be of non-long running kind*/
         }
 
-        object IStateHolder.GetState()
+        IState IStateHolder.GetState()
         {
             return GetState();
         }
 
-        public void RestoreFromState(object state)
+        public void RestoreFromState(IState state)
         {
             RestoreFromState((TState) state);
         }

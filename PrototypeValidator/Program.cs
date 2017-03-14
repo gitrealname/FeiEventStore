@@ -96,45 +96,6 @@ namespace PrototypeValidator
             return;
         }
 
-        class TestAggregate2 : BaseAggregate<AggregateState> { }
-        class TestCommand : BaseCommand<CommandPayload> {
-            public TestCommand() : base()
-            {
-            }
-        }
-        class TestHandler : IHandleCommand<TestCommand, TestAggregate>
-        {
-            public void HandleCommand(TestCommand cmd, TestAggregate aggregate) { }
-        }
-        class TestHandler2 : IHandleCommand<TestCommand, TestAggregate2>
-        {
-            public void HandleCommand(TestCommand cmd, TestAggregate2 aggregate) { }
-        }
-        private static void Prog4()
-        {
-            var containerOptions = new ContainerOptions();
-            var container = new LightInject.ServiceContainer(containerOptions);
-
-            var t = new TestHandler();
-            container.Register(typeof(IHandleCommand<TestCommand, TestAggregate>), typeof(TestHandler));
-            //container.Register(typeof(IHandleCommand<TestCommand, TestAggregate2>), typeof(TestHandler2));
-
-            var type = typeof(IHandle<>).MakeGenericType(typeof(TestCommand));
-
-            var handlers = container.GetAllInstances(type);
-            var handler = handlers.FirstOrDefault();
-            type = handler.GetType();
-            var interfaces = type.GetInterfaces();
-
-            var inter = interfaces.FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleCommand<,>));
-            Type aggregateType;
-            if (inter != null)
-            {
-                aggregateType = inter.GenericTypeArguments[1];
-            }
-
-            return;
-        }
         public interface ISomething { }
         public interface ISomething<T> : ISomething where T : class { }
 

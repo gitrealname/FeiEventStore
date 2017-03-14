@@ -21,6 +21,7 @@ namespace EventStoreIntegrationTester
     {
         protected readonly IDomainCommandExecutor CommandExecutor;
         protected readonly IEventStore EventStore;
+        protected readonly MessageOrigin Origin = new MessageOrigin(Const.OriginSystemId, null);
 
         protected BaseTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore, string name)
         {

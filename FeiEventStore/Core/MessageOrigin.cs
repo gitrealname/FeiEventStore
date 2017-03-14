@@ -7,16 +7,18 @@
         public Guid? SystemId { get; private set; }
         public Guid? UserId { get; private set; }
 
-        public MessageOrigin() : this(null, null)
-        {
-            
-        }
         public MessageOrigin(MessageOrigin other) : this(other.SystemId, other.UserId)
         {
+            
         }
 
         public MessageOrigin(Guid? systemId, Guid? userId)
         {
+            if(systemId == null && userId == null)
+            {
+                throw new ArgumentNullException(nameof(userId), "Either System Id or User id or both must be specified");                
+            }
+
             SystemId = systemId;
             UserId = userId;
         }

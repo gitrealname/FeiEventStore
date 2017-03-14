@@ -11,7 +11,7 @@ namespace FeiEventStore.Persistence
     ///         Violation of the this key should result in <see cref="EventStoreConcurrencyViolationException"/>,
     ///         which can be used by event store to re-try the commit.
     ///         
-    ///     2. It has to be an unique index on <see cref="EventRecord.AggregateId"/> and <see cref="EventRecord.AggregateVersion"/>,
+    ///     2. It has to be an unique index on <see cref="EventRecord.StreamId"/> and <see cref="EventRecord.StreamVersion"/>,
     ///         This is required to perform lookup and load an Aggregate. 
     ///         Violation of this index is not expected as all collisions are handled using #1.
     ///         
@@ -65,19 +65,17 @@ namespace FeiEventStore.Persistence
         /// <param name="events">The events.</param>
         /// <param name="snapshots">The snapshots.</param>
         /// <param name="processes">The processes.</param>
-        /// <param name="aggregateConstraints">The constraints.</param>
-        /// <param name="processConstraints">The process constraints.</param>
         /// <param name="processIdsToBeDeleted">The process ids to be deleted. because they completed.
         /// IMPORTANT: engine implementation must NOT fail if there are NO records for specified process id.</param>
+        /// <param name="primaryKeyChanges">The primary key changes.</param>
         /// <returns>
         /// Commit Final Store Version
         /// </returns>
         long Commit(IList<EventRecord> events,
-            //IList<Constraint> aggregateConstraints = null,
-            //IList<Constraint> processConstraints = null,
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
-            HashSet<Guid> processIdsToBeDeleted = null);
+            HashSet<Guid> processIdsToBeDeleted = null,
+            IList<StreamPrimaryKeyRecord> primaryKeyChanges = null);
 
         /// <summary>
         /// Serializes the payload.

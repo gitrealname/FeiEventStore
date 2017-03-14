@@ -26,7 +26,7 @@ namespace FeiEventStore.EventQueue
         {
         }
 
-        protected override void StartProcessingTransaction(ICollection<IEvent> events)
+        protected override void StartProcessingTransaction(ICollection<IEventEnvelope> events)
         {
             while(!_baseConfig.CancellationToken.IsCancellationRequested)
             {

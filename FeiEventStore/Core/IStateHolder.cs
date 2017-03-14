@@ -8,8 +8,8 @@ namespace FeiEventStore.Core
 {
     public interface IStateHolder
     {
-        object GetState();
+        IState GetState();
 
-        void RestoreFromState(object state);
+        void RestoreFromState(IState state);
     }
 }

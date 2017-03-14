@@ -9,7 +9,7 @@ namespace FeiEventStore.Domain
 {
     public class EventDispatcher : IEventDispatcher
     {
-        public void Dispatch(IList<IEvent> eventBatch)
+        public void Dispatch(IList<IEventEnvelope> eventBatch)
         {
             throw new NotImplementedException();
         }

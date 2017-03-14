@@ -1,47 +1,13 @@
-﻿namespace FeiEventStore.Core
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace FeiEventStore.Core
 {
-    using System;
-
-    public interface IEvent : IMessage, IStateHolder
+    public interface IEvent : IState
     {
-        long StoreVersion { get; set; }
-
-        long SourceAggregateVersion { get; set; }
-
-        Guid SourceAggregateId { get; set; }
-
-        TypeId SourceAggregateTypeId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Aggregate Key. 
-        /// AggregateKey in combination with Base Type Id of the Source Aggregate Type
-        /// Makes Globally Unique Key. 
-        /// NOTE: If null, Event store will set this value to Guid.NewGuid() right before commit.
-        /// </summary>
-        /// <value>
-        /// The aggregate key.
-        /// </value>
-        string AggregateKey { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether [aggregate key changed].
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if [aggregate key changed]; otherwise, <c>false</c>.
-        /// </value>
-        bool AggregateKeyChanged { get; }
-
-        DateTimeOffset Timestapm { get; set; }
-
-        object Payload { get; set; }
-    }
-
-    public interface IEvent<T> : IEvent where T : IState, new ()
-    {
-        new T Payload { get; set; }
-
-        new T GetState();
-
-        void RestoreFromState(T state);
+        
     }
 }

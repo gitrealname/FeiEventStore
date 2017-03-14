@@ -19,20 +19,20 @@ namespace EventStoreIntegrationTester.UserGroup
     }
 
     [PermanentType("user.group.counter.pm")]
-    public class UserGroupCounterProcessManager : BaseProcess<UserGroupCounter>
-        ,IStartedByEvent<UserGroupCreatedEvent>
-        ,IHandleEvent<IncrementedEvent>
+    public class UserGroupCounterProcessManagerManager : BaseProcessManager<UserGroupCounter>
+        ,IStartedByEvent<UserGroupCreated>
+        ,IHandleEvent<Incremented>
     {
-        public void StartByEvent(UserGroupCreatedEvent @event)
+        public void StartByEvent(UserGroupCreated e, IAggregate sourceAggregate)
         {
-            if(@event.Payload.GroupCounterId != null)
+            if(e.GroupCounterId != null)
             {
-                if(@event.Payload.Name.StartsWith("_"))
+                if(e.Name.StartsWith("_"))
                 {
                     State.LongRunning = true;
                 }
                 State.ProcessedEventCount++;
-                var increment = new IncrementCommand(@event.Payload.GroupCounterId.Value, 1);
+                var increment = new Increment(e.GroupCounterId.Value, 1);
 
                 ScheduleCommand(increment);
 
@@ -40,11 +40,11 @@ namespace EventStoreIntegrationTester.UserGroup
             }
         }
 
-        public void HandleEvent(IncrementedEvent @event)
+        public void HandleEvent(Incremented e, IAggregate sourceAggregate)
         {
             State.ProcessedEventCount++;
             //long running process ends when counter incremented by 100
-            if(!State.LongRunning || @event.Payload.By == 100)
+            if(!State.LongRunning || e.By == 100)
             {
                 IsComplete = true;
             } else

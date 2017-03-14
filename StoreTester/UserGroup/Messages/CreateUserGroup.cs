@@ -3,19 +3,21 @@ using FeiEventStore.Core;
 
 namespace EventStoreIntegrationTester.UserGroup.Messages
 {
-    public class CreateUserGroup
+    public class CreateUserGroup : ICommand
     {
-        public string Name { get; set; }
-        public Guid? GroupCounterId { get; set; }
-    }
-
-    public class CreateUserGroupCommand : BaseCommand<CreateUserGroup>
-    {
-        public CreateUserGroupCommand(Guid aggregateId, string name, Guid? counterId = null)
+        public CreateUserGroup(Guid aggregateId, string name, Guid? counterId = null, long? targetAggregateVersion = null)
         {
             TargetAggregateId = aggregateId;
-            Origin = new MessageOrigin();
-            Payload = new CreateUserGroup {Name = name, GroupCounterId = counterId};
+            Name = name;
+            GroupCounterId = counterId;
+            TargetAggregateVersion = targetAggregateVersion;
         }
+        public string Name { get; set; }
+
+        public Guid? GroupCounterId { get; set; }
+
+        public Guid TargetAggregateId { get; set; }
+
+        public long? TargetAggregateVersion { get; set; }
     }
 }

@@ -6,9 +6,9 @@ namespace EventStoreIntegrationTester.Counter
 {
     [PermanentType("counter.aggregate")]
     public class CounterAggregate : BaseAggregate<Counter>
-        , ICreatedByCommand<IncrementCommand>
-        , IHandleCommand<IncrementCommand, CounterAggregate>
-        , IHandleCommand<DecrementCommand, CounterAggregate>
+        , ICreatedByCommand<Increment>
+        , IHandleCommand<Increment, CounterAggregate>
+        , IHandleCommand<Decrement, CounterAggregate>
     {
         private readonly IDomainCommandExecutionContext _ctx;
 
@@ -16,27 +16,25 @@ namespace EventStoreIntegrationTester.Counter
         {
             _ctx = ctx;
         }
-        public void HandleCommand(IncrementCommand cmd, CounterAggregate aggregate)
+        public void HandleCommand(Increment cmd, CounterAggregate aggregate)
         {
-            var e = new IncrementedEvent();
-            e.Payload = new Incremented() { By = cmd.Payload.By };
+            var e = new Incremented() { By = cmd.By};
             RaiseEvent(e);
         }
 
-        public void HandleCommand(DecrementCommand cmd, CounterAggregate aggregate)
+        public void HandleCommand(Decrement cmd, CounterAggregate aggregate)
         {
-            var e = new DecrementedEvent();
-            e.Payload = new Decremented() { By = cmd.Payload.By };
+            var e = new Decremented() {By = cmd.By};
             RaiseEvent(e);
         }
 
-        private void Apply(IncrementedEvent @event)
+        private void Apply(Incremented e)
         {
-            State.Value += @event.Payload.By;
+            State.Value += e.By;
         }
-        private void Apply(DecrementedEvent @event)
+        private void Apply(Decremented e)
         {
-            State.Value -= @event.Payload.By;
+            State.Value -= e.By;
         }
 
     }

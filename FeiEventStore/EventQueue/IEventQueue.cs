@@ -13,7 +13,7 @@ namespace FeiEventStore.EventQueue
     /// </summary>
     public interface IEventQueue : IPermanentlyTyped
     {
-        void Enqueue(ICollection<IEvent> eventBatch);
+        void Enqueue(ICollection<IEventEnvelope> eventBatch);
 
         void Start();
     }

@@ -6,29 +6,8 @@
     /// <summary>
     /// member of this class MUST not be serialized, it is used for EventStore to PersistenceEngine communication only!!!
     /// </summary>
-    public class EventRecordHeader
-    {
-        /// <summary>
-        /// Gets or sets a value indicating whether to process primary key.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if [process primary key]; otherwise, <c>false</c>.
-        /// </value>
-        public bool ProcessPrimaryKey { get; set; }
-
-    }
     public class EventRecord
     {
-
-        /// <summary>
-        /// Gets or sets the header.
-        /// IMPORTANT: is not to be persisted!!!
-        /// </summary>
-        /// <value>
-        /// The header.
-        /// </value>
-        public EventRecordHeader Header { get; set; } = new EventRecordHeader();
-
         /// <summary>
         /// Set by the engine
         /// </summary>
@@ -44,11 +23,11 @@
 
         public Guid? OriginSystemId { get; set; }
 
-        public Guid AggregateId { get; set; }
+        public Guid StreamId { get; set; }
 
-        public long AggregateVersion { get; set; }
+        public long StreamVersion { get; set; }
 
-        public TypeId AggregateTypeId { get; set; }
+        public TypeId StreamTypeId { get; set; }
 
         /// <summary>
         /// Gets or sets the Unique Key per Aggregate Type. 

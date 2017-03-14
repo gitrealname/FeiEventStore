@@ -41,7 +41,7 @@ namespace FeiEventStore.Domain
             _validationProviders = validationProviders;
         }
 
-        private long Execute(IList<ICommand> commandBatch, IDomainCommandExecutionContext execContext)
+        private long Execute(IList<ICommand> commandBatch, IDomainCommandExecutionContext execContext, MessageOrigin origin)
         {
             var finalStoreVersion = -1L;
             var cache = new DomainObjectCache();
@@ -56,12 +56,12 @@ namespace FeiEventStore.Domain
                     var msg = cache.Queue.Dequeue();
                     if(msg is ICommand)
                     {
-                        ProcessCommand(msg as ICommand, execContext, cache);
+                        ProcessCommand(msg as ICommand, execContext, cache, origin);
                         externalCommandCount--;
                     }
-                    else if(msg is IEvent)
+                    else if(msg is IEventEnvelope)
                     {
-                        ProcessEvent(msg as IEvent, execContext, cache);
+                        ProcessEvent(msg as IEventEnvelope, execContext, cache, origin);
                     }
                     else
                     {
@@ -117,10 +117,11 @@ namespace FeiEventStore.Domain
             Logger.Fatal(exception);
         }
 
-        private void ProcessEvent(IEvent e, IDomainCommandExecutionContext execContext, DomainObjectCache cache)
+        private void ProcessEvent(IEventEnvelope e, IDomainCommandExecutionContext execContext, DomainObjectCache cache, MessageOrigin origin)
         {
-            var iHandleEventType = typeof(IHandleEvent<>).MakeGenericType(e.GetType());
-            var iStartByEventType = typeof(IStartedByEvent<>).MakeGenericType(e.GetType());
+            var eventPayload = e.Payload;
+            var iHandleEventType = typeof(IHandleEvent<>).MakeGenericType(eventPayload.GetType());
+            var iStartByEventType = typeof(IStartedByEvent<>).MakeGenericType(eventPayload.GetType());
 
             var handlers = _factory.GetAllInstances(iHandleEventType).ToList();
             var starters = _factory.GetAllInstances(iStartByEventType);
@@ -132,7 +133,7 @@ namespace FeiEventStore.Domain
             for(var i = 0;  i < handlers.Count; i++)
             {
                 var handler = handlers[i];
-                IProcess process = null;
+                IProcessManager process = null;
                 bool isCached = false;
                 //NOTE: commented out code should stand true. But enforcement will be done during bootstrap or governance test cases.
                 //if(!(handler is IProcess))
@@ -144,13 +145,13 @@ namespace FeiEventStore.Domain
                 if(i < handlersCount)
                 {
                     //search for cached process that handles the event for given aggregate
-                    process = cache.LookupRunningProcess(handler.GetType(), e.SourceAggregateId);
+                    process = cache.LookupRunningProcess(handler.GetType(), e.StreamId);
                     if(process == null)
                     {
                         //try loading process from the store
                         try
                         {
-                            process = _eventStore.LoadProcess(handler.GetType(), e.SourceAggregateId);
+                            process = _eventStore.LoadProcess(handler.GetType(), e.StreamId);
                             process.Version++;
                             cache.TrackProcessManager(process);
                         }
@@ -169,9 +170,9 @@ namespace FeiEventStore.Domain
                 }
                 if(process == null && iStartByEventType.IsInstanceOfType(handler))
                 {
-                    process = (IProcess)handler;
+                    process = (IProcessManager)handler;
                     process.Id = Guid.NewGuid();
-                    process.InvolvedAggregateIds.Add(e.SourceAggregateId);
+                    process.InvolvedAggregateIds.Add(e.StreamId);
                     process.AsDynamic().StartByEvent(e);
                     if(Logger.IsInfoEnabled)
                     {
@@ -179,18 +180,17 @@ namespace FeiEventStore.Domain
                             process.Id,
                             process.GetType(),
                             e.GetType(),
-                            e.SourceAggregateId);
+                            e.StreamId);
                     }
                 }
 
                 if(process != null)
                 {
-                    var commands = process.FlushUncommitedMessages();
+                    var commands = process.FlushUncommitedCommands();
 
                     //process events, transfer info from command
                     foreach(var cmd in commands)
                     {
-                        cmd.Origin = new MessageOrigin(e.Origin);
                         cache.Queue.Enqueue(cmd);
                         process.InvolvedAggregateIds.Add(cmd.TargetAggregateId);
                     }
@@ -205,7 +205,7 @@ namespace FeiEventStore.Domain
             }
         }
 
-        private void ProcessCommand(ICommand cmd, IDomainCommandExecutionContext execContext, DomainObjectCache cache)
+        private void ProcessCommand(ICommand cmd, IDomainCommandExecutionContext execContext, DomainObjectCache cache, MessageOrigin origin)
         {
             if(cmd.TargetAggregateId == Guid.Empty)
             {
@@ -269,7 +269,7 @@ namespace FeiEventStore.Domain
             //perform command validation
             foreach(var validationProvider in _validationProviders)
             {
-                validationProvider.ValidateCommand(cmd, aggregate, execContext);
+                validationProvider.ValidateCommand(cmd, aggregate, origin, execContext);
             }
 
             if(execContext.CommandHasFailed)
@@ -277,10 +277,15 @@ namespace FeiEventStore.Domain
                 return;
             }
 
+            //remember primary key before the command
+            var initialPrimaryKey = aggregate.PrimaryKey;
+            
             //execute command
             handler.AsDynamic().HandleCommand(cmd, aggregate);
 
-            var events = aggregate.FlushUncommitedMessages();
+            var events = aggregate.FlushUncommitedEvents();
+
+            var finalPrimaryKey = aggregate.PrimaryKey;
 
             //each command must produce at least one event unless it failed
             if(events.Count == 0 && !execContext.CommandHasFailed)
@@ -291,14 +296,32 @@ namespace FeiEventStore.Domain
                 throw e;
             }
 
+            //track primary key changes
+            if(initialPrimaryKey != finalPrimaryKey)
+            {
+                cache.TrackPrimaryKeyChange(aggregate.Id, finalPrimaryKey);
+            }
+
             //process events, transfer info from command
+            var envelopes = new List<IEventEnvelope>();
             foreach(var e in events)
             {
-                e.SourceAggregateTypeId = aggregate.TypeId;
-                e.Origin = new MessageOrigin(cmd.Origin);
-                cache.Queue.Enqueue(e);
+                var envelopeType =  typeof(EventEnvelope<>).MakeGenericType(e.GetType());
+                var envelope = (IEventEnvelope)Activator.CreateInstance(envelopeType);
+                envelope.OriginSystemId = origin.SystemId;
+                envelope.OriginUserId = origin.UserId;
+                envelope.StreamId = aggregate.Id;
+                envelope.StreamTypeId = aggregate.TypeId;
+                aggregate.LatestPersistedVersion++;
+                envelope.StreamVersion = aggregate.LatestPersistedVersion;
+                envelope.StoreVersion = 0; // it will be set by event store
+                envelope.Timestapm = DateTimeOffset.UtcNow;
+                envelope.Payload = e;
+
+                envelopes.Add(envelope);
+                cache.Queue.Enqueue(envelope);
             }
-            cache.RaisedEvents.AddRange(events);
+            cache.RaisedEvents.AddRange(envelopes);
         }
 
         private void StandardCommandValidation(ICommand cmd, IAggregate aggregate, DomainObjectCache cache)
@@ -324,24 +347,24 @@ namespace FeiEventStore.Domain
             }
         }
 
-        public Task<DomainCommandResult> ExecuteCommandBatchAsync(IList<ICommand> commandBatch)
+        public Task<DomainCommandResult> ExecuteCommandBatchAsync(IList<ICommand> commandBatch, MessageOrigin origin)
         {
-            var result =  Task.FromResult<DomainCommandResult>(this.ExecuteCommandBatch(commandBatch));
+            var result =  Task.FromResult<DomainCommandResult>(this.ExecuteCommandBatch(commandBatch, origin));
             return result;
         }
 
-        public Task<DomainCommandResult> ExecuteCommandAsync(ICommand command)
+        public Task<DomainCommandResult> ExecuteCommandAsync(ICommand command, MessageOrigin origin)
         {
-            var result = ExecuteCommandBatchAsync(new List<ICommand>() { command });
+            var result = ExecuteCommandBatchAsync(new List<ICommand>() { command }, origin);
             return result;
         }
 
-        public DomainCommandResult ExecuteCommand(ICommand command)
+        public DomainCommandResult ExecuteCommand(ICommand command, MessageOrigin origin)
         {
-            var result = ExecuteCommandBatch(new List<ICommand>() { command });
+            var result = ExecuteCommandBatch(new List<ICommand>() { command }, origin);
             return result;
         }
-        public DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch)
+        public DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch, MessageOrigin origin)
         {
             DomainCommandResult result = null;
             var reTry = true;
@@ -352,7 +375,7 @@ namespace FeiEventStore.Domain
                 _executorFactory.ExecuteInScope<IDomainCommandExecutionContext, DomainCommandResult>((execScope) => {
                     try
                     {
-                        finalStoreVersion = Execute(commandBatch, execScope);
+                        finalStoreVersion = Execute(commandBatch, execScope, origin);
                     }
                     catch(AggregateConcurrencyViolationException ex)
                     {

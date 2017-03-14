@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using FeiEventStore.Core;
 
-namespace FeiEventStore.Core
+namespace FeiEventStore.Domain
 {
     public abstract class BaseAggregate<TState> : IAggregate<TState> where TState : IState, new()
     {
@@ -15,6 +16,8 @@ namespace FeiEventStore.Core
 
         public TypeId TypeId { get; set; }
 
+        public virtual string PrimaryKey { get { return null; } }
+
         /// <summary>
         /// Helper method To Calculate new Event Version
         /// </summary>
@@ -23,38 +26,33 @@ namespace FeiEventStore.Core
         /// </value>
         protected long NextEventVersion => Version + 1;
 
-        public IList<IEvent> FlushUncommitedMessages()
+        public IList<IEvent> FlushUncommitedEvents()
         {
             var changes = Changes.ToArray();
             Changes.Clear();
             return changes;
         }
 
-        public void LoadFromHistory(IList<IEvent> history)
+        public void LoadFromHistory(IList<IEventEnvelope> history)
         {
             foreach(var e in history)
             {
-                if(e.SourceAggregateVersion != (Version + 1))
+                if(e.StreamVersion != (Version + 1))
                 {
                     throw new Exception(string.Format("Events are out of order for aggregate id {0}; Aggregate version: {1}, Event version: {2}",
-                        e.SourceAggregateId, Version, e.SourceAggregateVersion));
+                        e.StreamId, Version, e.StreamVersion));
                 }
-                if(e.SourceAggregateId != Id)
+                if(e.StreamId != Id)
                 {
-                    throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Id, e.SourceAggregateId));
+                    throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Id, e.StreamId));
                 }
-                RaiseEvent(e, true);
+                RaiseEvent((IEvent)e.Payload, true);
             }
             Changes.Clear();
         }
 
         protected void RaiseEvent(IEvent @event, bool loadingFromHistory = false)
         {
-            if(!loadingFromHistory)
-            {
-                @event.SourceAggregateId = Id;
-                @event.SourceAggregateVersion = NextEventVersion;
-            }
             Version = NextEventVersion;
             //TODO: allow call to apply fail when loading from history. Because historic event may not be used anymore by current aggregate Version
             //Also consider AbsoleteAttribute on the event to make it deleted from the stream!!!!
@@ -69,7 +67,7 @@ namespace FeiEventStore.Core
             State = new TState();
         }
 
-        object IStateHolder.GetState()
+        IState IStateHolder.GetState()
         {
             return GetState();
         }
@@ -87,6 +85,11 @@ namespace FeiEventStore.Core
         public virtual void RestoreFromState(TState state)
         {
             State = state;
+        }
+
+        public void RestoreFromState(IState state)
+        {
+            RestoreFromState((TState) state);
         }
     }
 }

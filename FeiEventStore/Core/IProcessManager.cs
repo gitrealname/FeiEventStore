@@ -5,7 +5,7 @@ namespace FeiEventStore.Core
 {
     using FeiEventStore.Core;
 
-    public interface IProcess : IMessageEmitter<ICommand>, IStateHolder, IPermanentlyTyped
+    public interface IProcessManager : ICommandEmitter<ICommand>, IStateHolder, IPermanentlyTyped
     {
         Guid Id { get; set; }
 
@@ -31,7 +31,7 @@ namespace FeiEventStore.Core
         HashSet<Guid> InvolvedAggregateIds { get; set; }
     }
 
-    public interface IProcess<TState> : IProcess where TState : IState, new()
+    public interface IProcessManager<TState> : IProcessManager where TState : IState, new()
     {
         new TState GetState();
 

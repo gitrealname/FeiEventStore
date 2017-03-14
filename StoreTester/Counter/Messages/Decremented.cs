@@ -3,11 +3,8 @@
 namespace EventStoreIntegrationTester.Counter.Messages
 {
     [PermanentType("counter.decremented")]
-    public class Decremented : IState
+    public class Decremented : IEvent
     {
         public int By { get; set; }
-    }
-    public class DecrementedEvent : BaseEvent<Decremented>
-    {
     }
 }

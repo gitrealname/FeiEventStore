@@ -72,11 +72,10 @@ namespace FeiEventStore.Persistence
         }
 
         public long Commit(IList<EventRecord> events,
-            //IList<Constraint> aggregateConstraints = null,
-            //IList<Constraint> processConstraints = null,
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
-            HashSet<Guid> processIdsToBeDeleted = null)
+            HashSet<Guid> processIdsToBeDeleted = null,
+            IList<StreamPrimaryKeyRecord> primaryKeyChanges = null)
         {
             var stats_events = 0;
             var stats_snapshots = 0;
@@ -98,40 +97,43 @@ namespace FeiEventStore.Persistence
                     throw ex;
                 }
 
+                //check primary key violation
+                if(primaryKeyChanges != null)
+                {
+                    foreach(var pk in primaryKeyChanges)
+                    {
+                        string key;
+                        if(pk.PrimaryKey == null)
+                        {
+                            if(_primaryKeyByAggregateId.TryGetValue(pk.StreamId, out key))
+                            {
+                                _primaryKey.Remove(key);
+                                _primaryKeyByAggregateId.Remove(pk.StreamId);
+                            }
+
+                        }
+                        else
+                        {
+                            key = pk.PrimaryKey + ":" + pk.StreamId;
+                            if(!_primaryKey.Add(key))
+                            {
+                                var ex = new AggregatePrimaryKeyViolationException(pk.StreamId, pk.StreamTypeId, pk.PrimaryKey);
+                                Logger.Fatal(ex);
+                                throw ex;
+                            }
+                            _primaryKeyByAggregateId[pk.StreamId] = key;
+                        }
+                    }
+                }
+
                 //check constraints
                 foreach(var e in events)
                 {
-                    if(!e.Header.ProcessPrimaryKey)
-                    {
-                        continue;
-                    }
-                    string key;
-                    //delete primary key
-                    if(e.AggregateTypeUniqueKey == null)
-                    {
-                        if(_primaryKeyByAggregateId.TryGetValue(e.AggregateId, out key))
-                        {
-                            _primaryKey.Remove(key);
-                            _primaryKeyByAggregateId.Remove(e.AggregateId);
-                        }
-                    }
-                    else
-                    {
-                        key = e.AggregateTypeUniqueKey + ":" + e.AggregateTypeId;
-                        if(!_primaryKey.Add(key))
-                        {
-                            var ex = new AggregatePrimaryKeyViolationException(e.AggregateId, e.AggregateTypeId, e.AggregateTypeUniqueKey);
-                            Logger.Fatal(ex);
-                            throw ex;
-                        }
-                        _primaryKeyByAggregateId[e.AggregateId] = key;
-                    }
-
                     //check aggregate version
-                    var currentVersion = GetAggregateVersion(e.AggregateId);
-                    if(currentVersion >= e.AggregateVersion)
+                    var currentVersion = GetAggregateVersion(e.StreamId);
+                    if(currentVersion >= e.StreamVersion)
                     {
-                        var ex = new AggregateConcurrencyViolationException(e.AggregateId, e.AggregateVersion, currentVersion);
+                        var ex = new AggregateConcurrencyViolationException(e.StreamId, e.StreamVersion, currentVersion);
                         Logger.Warn(ex);
                         throw ex;
                     }
@@ -186,14 +188,14 @@ namespace FeiEventStore.Persistence
                     if(Logger.IsDebugEnabled)
                     {
                         Logger.Debug("Preparing event for persistence: Store Version: {0}, Aggregate Id: {2} Aggregate Version: {3}",
-                            e.StoreVersion, e.AggregateId, e.AggregateVersion);
+                            e.StoreVersion, e.StreamId, e.StreamVersion);
                     }
                     _events.Add(e);
-                    if(!_eventsByAggregateId.ContainsKey(e.AggregateId))
+                    if(!_eventsByAggregateId.ContainsKey(e.StreamId))
                     {
-                        _eventsByAggregateId.Add(e.AggregateId, new List<Tuple<EventRecord, int>>());
+                        _eventsByAggregateId.Add(e.StreamId, new List<Tuple<EventRecord, int>>());
                     }
-                    _eventsByAggregateId[e.AggregateId].Add(new Tuple<EventRecord, int>(e, endPos));
+                    _eventsByAggregateId[e.StreamId].Add(new Tuple<EventRecord, int>(e, endPos));
                     endPos++;
                     stats_events = events.Count;
                 }
@@ -263,7 +265,7 @@ namespace FeiEventStore.Persistence
                 return 0;
             }
 
-            return aggregateEvents.Last().Item1.AggregateVersion;
+            return aggregateEvents.Last().Item1.StreamVersion;
         }
 
         public IEnumerable<EventRecord> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion)
@@ -273,7 +275,7 @@ namespace FeiEventStore.Persistence
                 return new List<EventRecord>();
             }
             var result = _eventsByAggregateId[aggregateId]
-                .Where(r => r.Item1.AggregateVersion >= fromAggregateVersion && (!toAggregateVersion.HasValue || r.Item1.AggregateVersion <= toAggregateVersion.Value))
+                .Where(r => r.Item1.StreamVersion >= fromAggregateVersion && (!toAggregateVersion.HasValue || r.Item1.StreamVersion <= toAggregateVersion.Value))
                 .Select(t => t.Item1);
             return result;
         }

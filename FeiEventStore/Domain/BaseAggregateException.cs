@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace FeiEventStore.Core
+namespace FeiEventStore.Domain
 {
     public abstract class BaseAggregateException : Exception
     {

@@ -11,10 +11,12 @@ namespace EventStoreIntegrationTester.UserGroup
     [PermanentType("user.group.aggregate")]
     public class UserGroupAggregate : BaseAggregate<UserGroup>
         , IErrorTranslator
-        , ICreatedByCommand<CreateUserGroupCommand>
+        , ICreatedByCommand<CreateUserGroup>
 
     {
         private readonly IDomainCommandExecutionContext _ctx;
+
+        public override string PrimaryKey { get { return State.Name; } }
 
         public UserGroupAggregate(IDomainCommandExecutionContext ctx)
         {
@@ -22,14 +24,13 @@ namespace EventStoreIntegrationTester.UserGroup
         }
         public void Create(string name, Guid? groupCounterId = null)
         {
-            var e = new UserGroupCreatedEvent {Payload = {Name = name, GroupCounterId = groupCounterId}};
-            e.AggregateKey = name;
+            var e = new UserGroupCreated {Name = name, GroupCounterId = groupCounterId};
             RaiseEvent(e);
 
         }
-        private void Apply(UserGroupCreatedEvent @event)
+        private void Apply(UserGroupCreated eventEnvelope)
         {
-            State.Name = @event.Payload.Name;
+            State.Name = eventEnvelope.Name;
         }
 
         public string Translate(AggregateConstraintViolationException exception)

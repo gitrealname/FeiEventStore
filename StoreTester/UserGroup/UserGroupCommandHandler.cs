@@ -8,13 +8,13 @@ using FeiEventStore.Domain;
 
 namespace EventStoreIntegrationTester.UserGroup
 {
-    public class UserGroupCommandHandler : IHandleCommand<CreateUserGroupCommand, UserGroupAggregate>
+    public class UserGroupCommandHandler : IHandleCommand<CreateUserGroup, UserGroupAggregate>
     {
-        public void HandleCommand(CreateUserGroupCommand cmd, UserGroupAggregate aggregate)
+        public void HandleCommand(CreateUserGroup cmd, UserGroupAggregate aggregate)
         {
             //Do domain specific validation here
 
-            aggregate.Create(cmd.Payload.Name, cmd.Payload.GroupCounterId);
+            aggregate.Create(cmd.Name, cmd.GroupCounterId);
         }
     }
 }

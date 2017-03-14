@@ -4,6 +4,5 @@
 
     public interface IMessage
     {
-        MessageOrigin Origin { get; set; }
     }
 }

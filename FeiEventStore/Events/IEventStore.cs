@@ -24,13 +24,14 @@ namespace FeiEventStore.Events
         /// Saves/Commit the specified events and snapshots
         /// </summary>
         /// <param name="events">The events.</param>
-        /// <param name="aggregateConstraints">The constraints.</param>
         /// <param name="snapshots">The snapshots.</param>
         /// <param name="processes">The processes.</param>
-        void Commit(IList<IEvent> events,
+        /// <param name="primaryKeyChanges">The list of primary key changes.</param>
+        void Commit(IList<IEventEnvelope> events,
             //IList<Constraint> aggregateConstraints = null,
             IList<IAggregate> snapshots = null,
-            IList<IProcess> processes = null);
+            IList<IProcessManager> processes = null,
+            IList<Tuple<Guid, TypeId, string>> primaryKeyChanges = null);
 
         /// <summary>
         /// Get the events for given aggregate. 
@@ -41,7 +42,7 @@ namespace FeiEventStore.Events
         /// <returns></returns>
         /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
         /// <exception cref="MultipleTypeInstancesException"></exception>
-        IList<IEvent> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion = null);
+        IList<IEventEnvelope> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion = null);
 
         /// <summary>
         /// Gets the events since commit.
@@ -51,7 +52,7 @@ namespace FeiEventStore.Events
         /// <returns></returns>
         /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
         /// <exception cref="MultipleTypeInstancesException"></exception>
-        IList<IEvent> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount = null);
+        IList<IEventEnvelope> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount = null);
 
         /// <summary>
         /// Gets the aggregate latest version number. This call may be required to fast check version of any aggregate for validation purposes.
@@ -86,8 +87,8 @@ namespace FeiEventStore.Events
         /// <exception cref="AggregateNotFoundException"></exception>
         IAggregate LoadAggregate(Guid aggregateId, Type aggregateType = null);
 
-        IProcess LoadProcess(Type processType, Guid aggregateId );
+        IProcessManager LoadProcess(Type processType, Guid aggregateId );
 
-        IProcess LoadProcess(Guid processId);
+        IProcessManager LoadProcess(Guid processId);
     }
 }

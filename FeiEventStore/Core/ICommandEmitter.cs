@@ -4,12 +4,12 @@ namespace FeiEventStore.Core
 {
     using System.Collections.Generic;
 
-    public interface IMessageEmitter<TMessage> where TMessage : IMessage
+    public interface ICommandEmitter<TCommand> where TCommand : ICommand
     {
         /// <summary>
         /// Flushes the uncommitted events.
         /// </summary>
         /// <returns></returns>
-        IList<TMessage> FlushUncommitedMessages();
+        IList<TCommand> FlushUncommitedCommands();
     }
 }

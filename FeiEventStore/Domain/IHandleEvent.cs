@@ -21,6 +21,7 @@ namespace FeiEventStore.Domain
         /// IMPORTANT: before renaming method name search code for .AsDynamic().HandleEvent!!!!
         /// </summary>
         /// <param name="event">The event.</param>
-        void HandleEvent(TEvent @event);
+        /// <param name="sourceAggregate">The source aggregate.</param>
+        void HandleEvent(TEvent @event, IAggregate sourceAggregate);
     }
 }

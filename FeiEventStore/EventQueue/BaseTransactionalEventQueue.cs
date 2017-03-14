@@ -21,7 +21,7 @@ namespace FeiEventStore.EventQueue
         protected readonly IEventQueueConfiguration _baseConfig;
         protected readonly IEventStore _eventStore;
         protected readonly IVersionTrackingStore _verstionStore;
-        protected readonly BlockingCollection<IEvent> _blockingQueue;
+        protected readonly BlockingCollection<IEventEnvelope> _blockingQueue;
         protected readonly TypeId _typeId;
         protected Thread _thread;
         protected long _version; //last processed version
@@ -34,11 +34,11 @@ namespace FeiEventStore.EventQueue
             _version = 0;
             _typeId = this.GetType().GetPermanentTypeId();
             _version = _verstionStore.Get(_typeId);
-            _blockingQueue = new BlockingCollection<IEvent>(_baseConfig.MaxQueueCapacity);
+            _blockingQueue = new BlockingCollection<IEventEnvelope>(_baseConfig.MaxQueueCapacity);
         }
 
 
-        public void Enqueue(ICollection<IEvent> eventBatch)
+        public void Enqueue(ICollection<IEventEnvelope> eventBatch)
         {
             if((_blockingQueue.Count + eventBatch.Count) > _baseConfig.MaxQueueCapacity)
             {
@@ -67,14 +67,14 @@ namespace FeiEventStore.EventQueue
 
             RecoverFromEventStore();
 
-            List<IEvent> events = new List<IEvent>();
+            List<IEventEnvelope> events = new List<IEventEnvelope>();
             while(!_baseConfig.CancellationToken.IsCancellationRequested)
             {
                 while(events.Count < _baseConfig.MaxEventsPerTransaction && (_blockingQueue.Count > 0 || events.Count == 0))
                 {
                     try
                     {
-                        IEvent e;
+                        IEventEnvelope e;
                         _blockingQueue.TryTake(out e, -1, _baseConfig.CancellationToken);
                         events.Add(e);
                     }
@@ -103,7 +103,7 @@ namespace FeiEventStore.EventQueue
             }
         }
 
-        protected virtual void StartProcessingTransaction(ICollection<IEvent> events)
+        protected virtual void StartProcessingTransaction(ICollection<IEventEnvelope> events)
         {
             while(!_baseConfig.CancellationToken.IsCancellationRequested)
             {
@@ -130,7 +130,7 @@ namespace FeiEventStore.EventQueue
         /// IMPORTANT: Implementation should enlist to external transaction scope!
         /// </summary>
         /// <param name="events">The events.</param>
-        protected abstract void HandleEvents(ICollection<IEvent> events);
+        protected abstract void HandleEvents(ICollection<IEventEnvelope> events);
 
         protected virtual void RecoverFromEventStore(long? untilVersion = null)
         {
