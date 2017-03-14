@@ -11,7 +11,7 @@ using NLog;
 namespace FeiEventStore.Ioc
 {
 
-    public enum IocMappingAction
+    public enum IocRegistrationType
     {
         /// <summary>
         /// Register as service transient type 
@@ -43,6 +43,8 @@ namespace FeiEventStore.Ioc
         /// </summary>
         RegisterTypePerScopeLifetime,
 
+        RegisterInstance,
+
         //Todo: RegisterAutoFactory,
 
         /// <summary>
@@ -56,38 +58,24 @@ namespace FeiEventStore.Ioc
         Swallow,
         
     }
-
-    public enum IocRegistrationLifetime
+    
+    public class IocRegistrationAction
     {
-        /// <summary>
-        /// The transient
-        /// </summary>
-        ServiceTransient = 0,
-        /// <summary>
-        /// The per container
-        /// </summary>
-        ServicePerContainer,
-        /// <summary>
-        /// The per scope. 
-        /// IMPORTANT: if registering type is IDisposable, container must call Dispose method when scope gets deleted
-        /// </summary>
-        ServicePerScope,
+        public IocRegistrationAction(IocRegistrationType registrationType, object instance = null)
+        {
+            RegistrationType = registrationType;
+            Instance = instance;
 
-        /// <summary>
-        /// The transient
-        /// </summary>
-        TypeTransient,
-        /// <summary>
-        /// The per container
-        /// </summary>
-        TypePerContainer,
-        /// <summary>
-        /// The per scope. 
-        /// IMPORTANT: if registering type is IDisposable, container must call Dispose method when scope gets deleted
-        /// </summary>
-        TypePerScope
+            if(registrationType == IocRegistrationType.RegisterInstance && instance == null)
+            {
+                throw new ArgumentNullException(nameof(instance));
+            }
+        }
+        public IocRegistrationType RegistrationType { get; private set; }
+
+        public object Instance { get; private set; }
     }
-
+    
     /// <summary>
     /// IOC registration scanner.
     /// <example>
@@ -109,6 +97,7 @@ namespace FeiEventStore.Ioc
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly IIocRegistrar _registrar;
         private readonly List<string> _assemblyPatterns;
+        private readonly List<string> _assemblyPatternsBlackList;
         private readonly List<IIocRegistrationMapper> _mappers;
         private readonly AppDomain _appDomain;
         private readonly string _baseDirectory;
@@ -121,6 +110,7 @@ namespace FeiEventStore.Ioc
         {
             _registrar = registrar;    
             _assemblyPatterns = new List<string>();
+            _assemblyPatternsBlackList = new List<string>();
             _mappers = new List<IIocRegistrationMapper>();
 
             _appDomain = AppDomain.CurrentDomain;
@@ -136,6 +126,12 @@ namespace FeiEventStore.Ioc
         public IocRegistrationScanner ScanAssembly(string assemblyPattern)
         {
             _assemblyPatterns.Add(assemblyPattern);
+            return this;
+        }
+
+        public IocRegistrationScanner IgnoreAssembly(string assemblyPattern)
+        {
+            _assemblyPatternsBlackList.Add(assemblyPattern);
             return this;
         }
 
@@ -163,6 +159,14 @@ namespace FeiEventStore.Ioc
         }
 
 
+        private Regex PatternToRegex(string pattern)
+        {
+            return new Regex(pattern
+                   .Replace(".", "[.]")
+                   .Replace("*", ".*")
+                   .Replace("?", ".")
+                   .Replace("\\\\", "[\\]"));
+        }
         public void Register()
         {
             //ensure proper configuration
@@ -177,12 +181,12 @@ namespace FeiEventStore.Ioc
 
             //translate assembly patterns into Regexp
             var rxs = _assemblyPatterns
-               .Select(pat => new Regex(pat
-                   .Replace(".", "[.]")
-                   .Replace("*", ".*")
-                   .Replace("?", ".")
-                   .Replace("\\\\", "[\\]")))
+               .Select(PatternToRegex)
                .ToArray();
+
+            var rxsBlackList = _assemblyPatternsBlackList
+                .Select(PatternToRegex)
+                .ToArray();
 
             var baseDirectoryLength = _baseDirectory.Length;
             var assemblies = _appDomain.GetAssemblies();
@@ -192,6 +196,12 @@ namespace FeiEventStore.Ioc
                 var relativeName = a.Location.Substring(baseDirectoryLength);
                 if(rxs.Any(rx => rx.IsMatch(relativeName)))
                 {
+                    //check against black list
+                    if(rxsBlackList.Any(rx => rx.IsMatch(relativeName)))
+                    {
+                        continue;
+                    }
+
                     //process all Types
                     var types = a.GetTypes(); //a.GetExportedTypes();
                     if(Logger.IsDebugEnabled)
@@ -239,23 +249,30 @@ namespace FeiEventStore.Ioc
             foreach(var mapper in _mappers)
             {
                 var action = mapper.Map(serviceType, type);
-                if(action == IocMappingAction.PassToNext)
+                if(action.RegistrationType == IocRegistrationType.PassToNext)
                 {
                     continue;
                 }
-                if(action != IocMappingAction.Swallow)
+                if(action.RegistrationType != IocRegistrationType.Swallow)
                 {
                     //convert to Registration lifetime
-                    var lifetime = (IocRegistrationLifetime)(int)action;
-                    _registrar.Register(serviceType, type, lifetime);
-                    if(lifetime == IocRegistrationLifetime.TypeTransient || lifetime == IocRegistrationLifetime.TypePerContainer || lifetime == IocRegistrationLifetime.TypePerScope)
+                    _registrar.Register(serviceType, type, action);
+                    if(action.RegistrationType == IocRegistrationType.RegisterTypeTransientLifetime 
+                        || action.RegistrationType == IocRegistrationType.RegisterTypePerContainerLifetime 
+                        || action.RegistrationType == IocRegistrationType.RegisterTypePerScopeLifetime)
                     {
-                        Logger.Debug("Registered type '{0}' with lifetime {1}.", type.FullName, lifetime.ToString());
+                        Logger.Debug("Registered type '{0}' with lifetime {1}.", type.FullName, action.RegistrationType.ToString());
                         ignoreSubTypes = 2;
                     } else
                     {
-                        Logger.Debug("Registered type '{0}' as service of type '{1}' with lifetime {2}.", type.FullName, serviceType.FullName, lifetime.ToString());
+                        Logger.Debug("Registered type '{0}' as service of type '{1}' with lifetime {2}.", type.FullName, serviceType.FullName, action.RegistrationType.ToString());
                         ignoreSubTypes = 1;
+                    }
+
+                    //notify mappers about registration
+                    foreach(var m in _mappers)
+                    {
+                        m.OnAfterRegistration(serviceType, type, action);
                     }
                 }
                 else

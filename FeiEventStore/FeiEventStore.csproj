@@ -88,7 +88,8 @@
     <Compile Include="Domain\IHandleEvent.cs" />
     <Compile Include="Domain\IHandleCommand.cs" />
     <Compile Include="Domain\DomainCommandResult.cs" />
-    <Compile Include="EventQueue\BaseEventQueue.cs" />
+    <Compile Include="EventQueue\BaseNonTransactionalEventQueue.cs" />
+    <Compile Include="EventQueue\BaseTransactionalEventQueue.cs" />
     <Compile Include="EventQueue\IEventQueue.cs" />
     <Compile Include="EventQueue\IEventQueueConfiguration.cs" />
     <Compile Include="EventQueue\InMemoryVersionTrackingStore.cs" />

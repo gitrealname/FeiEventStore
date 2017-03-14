@@ -12,7 +12,7 @@ using FluentAssertions;
 
 namespace EventStoreIntegrationTester
 {
-    public class SingleEventTest : BaseTest<SingleEventTest>
+    public class SingleEventTest : BaseTest
     {
         public SingleEventTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore):base(commandExecutor, eventStore, "Single command"){}
         public override bool Run()
@@ -30,7 +30,7 @@ namespace EventStoreIntegrationTester
         }
     }
 
-    public class CommandBatchTest : BaseTest<CommandBatchTest>
+    public class CommandBatchTest : BaseTest
     {
         public CommandBatchTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore) : base(commandExecutor, eventStore, "Command batch") { }
         public override bool Run()
@@ -55,7 +55,7 @@ namespace EventStoreIntegrationTester
         }
     }
 
-    public class SnapshotTakingTest : BaseTest<SnapshotTakingTest>
+    public class SnapshotTakingTest : BaseTest
     {
         private readonly IPersistenceEngine _engine;
 

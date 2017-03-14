@@ -11,53 +11,63 @@ namespace FeiEventStore.Ioc
 {
     public class IocRegistrationMapper : IIocRegistrationMapper
     {
-        private readonly Dictionary<Tuple<Type,Type>, IocMappingAction> _explicitMap = new Dictionary<Tuple<Type, Type>, IocMappingAction>
+        private readonly PermanentlyTypeRegistry _permanentlyTypedRegistry = new PermanentlyTypeRegistry();
+
+        private readonly Dictionary<Tuple<Type,Type>, IocRegistrationType> _explicitMap = new Dictionary<Tuple<Type, Type>, IocRegistrationType>
         {
-            { new Tuple<Type, Type>(typeof(IPermanentlyTypedRegistry), typeof(PermanentlyTypeRegistry)), IocMappingAction.RegisterServicePerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IPermanentlyTypedObjectService), typeof(PermanentlyTypedObjectService)), IocMappingAction.RegisterServicePerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IEventStore), typeof(EventStore)), IocMappingAction.RegisterServicePerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocMappingAction.RegisterServicePerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocMappingAction.RegisterServicePerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IEventDispatcher), typeof(EventDispatcher)), IocMappingAction.RegisterServicePerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IAggregateStateRepository), typeof(AggregateStateRepository.AggregateStateRepository)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IPermanentlyTypedObjectService), typeof(PermanentlyTypedObjectService)), IocRegistrationType.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IEventStore), typeof(EventStore)), IocRegistrationType.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocRegistrationType.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocRegistrationType.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IEventDispatcher), typeof(EventDispatcher)), IocRegistrationType.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IAggregateStateRepository), typeof(AggregateStateRepository.AggregateStateRepository)), IocRegistrationType.RegisterServicePerContainerLifetime },
 
             //per scope!
-            { new Tuple<Type, Type>(typeof(IDomainCommandExecutionContext), typeof(DomainCommandExecutionContext)), IocMappingAction.RegisterServicePerScopeLifetime },
+            { new Tuple<Type, Type>(typeof(IDomainCommandExecutionContext), typeof(DomainCommandExecutionContext)), IocRegistrationType.RegisterServicePerScopeLifetime },
 
             //in production expected to be overridden/handled by in-fact persistent engine mapper
-            { new Tuple<Type, Type>(typeof(IPersistenceEngine), typeof(InMemoryPersistenceEngine)), IocMappingAction.RegisterServicePerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IVersionTrackingStore), typeof(InMemoryVersionTrackingStore)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IPersistenceEngine), typeof(InMemoryPersistenceEngine)), IocRegistrationType.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IVersionTrackingStore), typeof(InMemoryVersionTrackingStore)), IocRegistrationType.RegisterServicePerContainerLifetime },
+
+            //manual registration of instance see below!
+            //{ new Tuple<Type, Type>(typeof(IPermanentlyTypedRegistry), typeof(PermanentlyTypeRegistry)), IocRegistrationType.RegisterServicePerContainerLifetime },
+
         };
 
-        private readonly Dictionary<Type, IocMappingAction> _genericMap = new Dictionary<Type, IocMappingAction>
+        private readonly Dictionary<Type, IocRegistrationType> _genericMap = new Dictionary<Type, IocRegistrationType>
         {
-            { typeof(IPermanentlyTyped), IocMappingAction.RegisterTypeTransientLifetime },
-            { typeof(IReplace<>), IocMappingAction.RegisterTypeTransientLifetime },
-            { typeof(IHandleCommand<,>), IocMappingAction.RegisterTypeTransientLifetime },
-            { typeof(IHandleEvent<>), IocMappingAction.RegisterTypeTransientLifetime },
-            { typeof(ICreatedByCommand<>), IocMappingAction.RegisterTypeTransientLifetime },
-            { typeof(IStartedByEvent<>), IocMappingAction.RegisterTypeTransientLifetime },
-            { typeof(IAggregate<>), IocMappingAction.RegisterTypeTransientLifetime },
-            { typeof(IProcess<>), IocMappingAction.RegisterTypeTransientLifetime },
-            { typeof(IEvent<>), IocMappingAction.RegisterTypeTransientLifetime },
+            { typeof(IPermanentlyTyped), IocRegistrationType.RegisterTypeTransientLifetime },
+            { typeof(IReplace<>), IocRegistrationType.RegisterTypeTransientLifetime },
+            { typeof(IHandleCommand<,>), IocRegistrationType.RegisterTypeTransientLifetime },
+            { typeof(IHandleEvent<>), IocRegistrationType.RegisterTypeTransientLifetime },
+            { typeof(ICreatedByCommand<>), IocRegistrationType.RegisterTypeTransientLifetime },
+            { typeof(IStartedByEvent<>), IocRegistrationType.RegisterTypeTransientLifetime },
+            { typeof(IAggregate<>), IocRegistrationType.RegisterTypeTransientLifetime },
+            { typeof(IProcess<>), IocRegistrationType.RegisterTypeTransientLifetime },
+            { typeof(IEvent<>), IocRegistrationType.RegisterTypeTransientLifetime },
            
         };
 
-        public IocMappingAction Map(Type serviceType, Type implementationType)
+        public IocRegistrationAction Map(Type serviceType, Type implementationType)
         {
+            if(serviceType == typeof(IPermanentlyTypedRegistry))
+            {
+                return new IocRegistrationAction(IocRegistrationType.RegisterInstance, _permanentlyTypedRegistry);
+            }
+
             if(serviceType.IsGenericType)
             {
                 serviceType = serviceType.GetGenericTypeDefinition();
             }
-            IocMappingAction action;
+            IocRegistrationType action;
             if(_explicitMap.TryGetValue(new Tuple<Type, Type>(serviceType, implementationType), out action))
             {
                 //Console.WriteLine("Registering type {0} for {1}", implementationType.Name, serviceType.Name);
-                return action;
+                return new IocRegistrationAction(action);
             }
             if(_genericMap.TryGetValue(serviceType, out action))
             {
-                //DEBUG:
+                ////DEBUG:
                 //if(serviceType == typeof(IPermanentlyTyped))
                 //{
                 //    var typeId = implementationType.GetPermanentTypeId();
@@ -65,16 +75,25 @@ namespace FeiEventStore.Ioc
                 //    {
                 //        Console.WriteLine("Registering Permanent type '{0}' of type '{1}' for '{2}'", typeId, implementationType.Name, serviceType.Name);
                 //    }
-                //} 
+                //}
                 //else
                 //{
                 //    Console.WriteLine("Registering type {0} for {1}", implementationType.Name, serviceType.Name);
                 //}
 
-                return action;
+                return new IocRegistrationAction(action);
             }
 
-            return IocMappingAction.PassToNext;
+            return new IocRegistrationAction(IocRegistrationType.PassToNext);
+        }
+
+        public void OnAfterRegistration(Type serviceType, Type implementationType, IocRegistrationAction action)
+        {
+            //build permanently typed registry
+            if(typeof(IPermanentlyTyped).IsAssignableFrom(implementationType))
+            {
+                _permanentlyTypedRegistry.RegisterPermanentlyTyped(implementationType);
+            }
         }
     }
 }

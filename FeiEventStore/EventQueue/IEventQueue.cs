@@ -11,7 +11,7 @@ namespace FeiEventStore.EventQueue
     /// Domain services event queue.
     /// Used to process events produced by domain
     /// </summary>
-    public interface IEventQueue
+    public interface IEventQueue : IPermanentlyTyped
     {
         void Enqueue(ICollection<IEvent> eventBatch);
 

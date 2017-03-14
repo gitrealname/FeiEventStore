@@ -13,20 +13,20 @@ using NLog;
 
 namespace FeiEventStore.EventQueue
 {
-    public abstract class BaseEventQueue : IEventQueue, IPermanentlyTyped
+    public abstract class BaseTransactionalEventQueue : IEventQueue
     {
 
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly IEventQueueConfiguration _baseConfig;
-        private readonly IEventStore _eventStore;
-        private readonly IVersionTrackingStore _verstionStore;
-        private readonly BlockingCollection<IEvent> _blockingQueue;
-        private readonly TypeId _typeId;
-        private Thread _thread;
-        private long _version; //last processed version
+        protected readonly IEventQueueConfiguration _baseConfig;
+        protected readonly IEventStore _eventStore;
+        protected readonly IVersionTrackingStore _verstionStore;
+        protected readonly BlockingCollection<IEvent> _blockingQueue;
+        protected readonly TypeId _typeId;
+        protected Thread _thread;
+        protected long _version; //last processed version
 
-        protected BaseEventQueue(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore)
+        protected BaseTransactionalEventQueue(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore)
         {
             _baseConfig = baseConfig;
             _eventStore = eventStore;
@@ -36,6 +36,8 @@ namespace FeiEventStore.EventQueue
             _version = _verstionStore.Get(_typeId);
             _blockingQueue = new BlockingCollection<IEvent>(_baseConfig.MaxQueueCapacity);
         }
+
+
         public void Enqueue(ICollection<IEvent> eventBatch)
         {
             if((_blockingQueue.Count + eventBatch.Count) > _baseConfig.MaxQueueCapacity)

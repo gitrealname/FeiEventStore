@@ -5,11 +5,12 @@ using FeiEventStore.Events;
 
 namespace EventStoreIntegrationTester.EventQueues
 {
-    public class PrinterEventQueue : BaseEventQueue
+    [PermanentType("printer.event.queue")]
+    public class PrinterTransactionalEventQueue : BaseTransactionalEventQueue
     {
         private readonly IPrinterEventQueueConfiguration _config;
 
-        public PrinterEventQueue(IPrinterEventQueueConfiguration config, IEventStore eventStore, IVersionTrackingStore verstionStore) 
+        public PrinterTransactionalEventQueue(IPrinterEventQueueConfiguration config, IEventStore eventStore, IVersionTrackingStore verstionStore) 
             : base(config, eventStore, verstionStore)
         {
             _config = config;

@@ -12,6 +12,14 @@ namespace FeiEventStore.Ioc
 {
     public interface IIocRegistrationMapper
     {
-        IocMappingAction Map(Type serviceType, Type implementationType);
+        IocRegistrationAction Map(Type serviceType, Type implementationType);
+
+        /// <summary>
+        /// Called when certain type has been registered. Can be used for type validations or analysis
+        /// </summary>
+        /// <param name="serviceType">Type of the service.</param>
+        /// <param name="implementationType">Type of the implementation.</param>
+        /// <param name="action">The action.</param>
+        void OnAfterRegistration(Type serviceType, Type implementationType, IocRegistrationAction action);
     }
 }

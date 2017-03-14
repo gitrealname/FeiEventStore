@@ -10,36 +10,40 @@ namespace FeiEventStore.Ioc.LightInject
 {
     public class IocRegistrationMapper : IIocRegistrationMapper
     {
-        private readonly Dictionary<Tuple<Type,Type>, IocMappingAction> _explicitMap = new Dictionary<Tuple<Type, Type>, IocMappingAction>
+        private readonly Dictionary<Tuple<Type,Type>, IocRegistrationType> _explicitMap = new Dictionary<Tuple<Type, Type>, IocRegistrationType>
         {
-            { new Tuple<Type, Type>(typeof(IObjectFactory), typeof(LightInjectObjectFactory)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IObjectFactory), typeof(LightInjectObjectFactory)), IocRegistrationType.RegisterServicePerContainerLifetime },
             //IMPORTANT: it has to be per scope registration!
-            { new Tuple<Type, Type>(typeof(IDomainCommandScopedExecutionContextFactory), typeof(LightInjectDomainCommandExecutionContextFactory)), IocMappingAction.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IDomainCommandScopedExecutionContextFactory), typeof(LightInjectDomainCommandExecutionContextFactory)), IocRegistrationType.RegisterServicePerContainerLifetime },
         };
 
-        private readonly Dictionary<Type, IocMappingAction> _genericMap = new Dictionary<Type, IocMappingAction>
+        private readonly Dictionary<Type, IocRegistrationType> _genericMap = new Dictionary<Type, IocRegistrationType>
         {
-            { typeof(IObjectFactory), IocMappingAction.Swallow },
-            { typeof(IDomainCommandScopedExecutionContextFactory), IocMappingAction.Swallow },
+            { typeof(IObjectFactory), IocRegistrationType.Swallow },
+            { typeof(IDomainCommandScopedExecutionContextFactory), IocRegistrationType.Swallow },
         };
 
-        public IocMappingAction Map(Type serviceType, Type implementationType)
+        public IocRegistrationAction Map(Type serviceType, Type implementationType)
         {
             if(serviceType.IsGenericType)
             {
                 serviceType = serviceType.GetGenericTypeDefinition();
             }
-            IocMappingAction action;
+            IocRegistrationType action;
             if(_explicitMap.TryGetValue(new Tuple<Type, Type>(serviceType, implementationType), out action))
             {
-                return action;
+                return new IocRegistrationAction(action);
             }
             if(_genericMap.TryGetValue(serviceType, out action))
             {
-                return action;
+                return new IocRegistrationAction(action);
             }
 
-            return IocMappingAction.PassToNext;
+            return new IocRegistrationAction(IocRegistrationType.PassToNext);
+        }
+
+        public void OnAfterRegistration(Type serviceType, Type implementationType, IocRegistrationAction action)
+        {
         }
     }
 }

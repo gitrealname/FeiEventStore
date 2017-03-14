@@ -17,11 +17,7 @@ namespace EventStoreIntegrationTester
 
         string Name { get; }
     }
-    public interface ITest<T> : ITest where T : class
-    {
-    }
-
-    public abstract class BaseTest<T> : ITest<T> where T : class
+    public abstract class BaseTest : ITest
     {
         protected readonly IDomainCommandExecutor CommandExecutor;
         protected readonly IEventStore EventStore;

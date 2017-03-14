@@ -17,7 +17,7 @@ using FluentAssertions;
 namespace EventStoreIntegrationTester
 {
     //[Only]
-    public class TestUserGroup : BaseTest<TestUserGroup>
+    public class TestUserGroup : BaseTest
     {
         public TestUserGroup(IDomainCommandExecutor commandExecutor, IEventStore eventStore):base(commandExecutor, eventStore, "Primary key violation")
         {
@@ -35,7 +35,7 @@ namespace EventStoreIntegrationTester
     }
 
     //[Only]
-    public class ProcessManagerTest : BaseTest<ProcessManagerTest>
+    public class ProcessManagerTest : BaseTest
     {
         public ProcessManagerTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore) : base(commandExecutor, eventStore, "Process Manager Simple") { }
         public override bool Run()
@@ -55,7 +55,7 @@ namespace EventStoreIntegrationTester
     }
 
     //[Only]
-    public class RepositoryTest : BaseTest<ProcessManagerTest>
+    public class RepositoryTest : BaseTest
     {
         private readonly IAggregateStateRepository _stateRepository;
         public RepositoryTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository) : base(commandExecutor, eventStore, "State Repository")
@@ -74,8 +74,8 @@ namespace EventStoreIntegrationTester
         }
     }
 
-    [Only]
-    public class LongRunningProcessManagerTest : BaseTest<LongRunningProcessManagerTest>
+    //[Only]
+    public class LongRunningProcessManagerTest : BaseTest
     {
         public LongRunningProcessManagerTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore) : base(commandExecutor, eventStore, "Process Manager Long running") { }
         public override bool Run()

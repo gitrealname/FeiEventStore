@@ -12,6 +12,6 @@ namespace FeiEventStore.Ioc
 {
     public interface IIocRegistrar
     {
-        void Register(Type serviceType, Type implementationType, IocRegistrationLifetime lifetime);
+        void Register(Type serviceType, Type implementationType, IocRegistrationAction action);
     }
 }

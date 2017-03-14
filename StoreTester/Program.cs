@@ -1,35 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using EventStoreIntegrationTester.Counter;
-using EventStoreIntegrationTester.Counter.Messages;
-using FeiEventStore.Core;
-using FeiEventStore.Domain;
-using FeiEventStore.Events;
-using FeiEventStore.Ioc;
-using FeiEventStore.Ioc.LightInject;
-using FeiEventStore.Persistence;
-using LightInject;
-using NLog;
+﻿
+using System.Threading;
+using EventStoreIntegrationTester.EventQueues;
 
 namespace EventStoreIntegrationTester
 {
+    using System;
+    using System.Diagnostics;
+    using System.Linq;
+    using FeiEventStore.Ioc;
+    using FeiEventStore.Ioc.LightInject;
+    using FeiEventStore.Persistence;
+    using LightInject;
+    using NLog;
+
     public class TestAppMapper : IIocRegistrationMapper
     {
-        public IocMappingAction Map(Type serviceType, Type implementationType)
+        private readonly IPrinterEventQueueConfiguration _queueConfiguration;
+
+        public TestAppMapper(IPrinterEventQueueConfiguration queueConfiguration = null)
         {
-            if(serviceType.IsGenericType)
+            _queueConfiguration = queueConfiguration;
+        }
+        public IocRegistrationAction Map(Type serviceType, Type implementationType)
+        {
+            if(implementationType == typeof(PrinterTransactionalEventQueue))
             {
-                serviceType = serviceType.GetGenericTypeDefinition();
-                if(serviceType == typeof(ITest<>))
+                if(_queueConfiguration == null)
                 {
-                    return IocMappingAction.RegisterServicePerContainerLifetime;
+                    return new IocRegistrationAction(IocRegistrationType.Swallow);   
                 }
+                return new IocRegistrationAction(IocRegistrationType.RegisterTypePerContainerLifetime);
             }
-            return IocMappingAction.PassToNext;
+            if(implementationType == typeof(PrintEventQueueConfiguration))
+            {
+                if(_queueConfiguration == null)
+                {
+                    return new IocRegistrationAction(IocRegistrationType.Swallow);
+                }
+                return new IocRegistrationAction(IocRegistrationType.RegisterInstance, _queueConfiguration);
+            }
+
+            if(serviceType == typeof(ITest))
+            {
+                return new IocRegistrationAction(IocRegistrationType.RegisterTypePerContainerLifetime);
+            }
+
+            return new IocRegistrationAction(IocRegistrationType.PassToNext);
+        }
+
+        public void OnAfterRegistration(Type serviceType, Type implementationType, IocRegistrationAction action)
+        {
         }
     }
 
@@ -40,7 +60,9 @@ namespace EventStoreIntegrationTester
         static void Main(string[] args)
         {
             var container = new LightInject.ServiceContainer();
-            Bootstrap(container);
+
+            BootstrapWithoutEventQueue(container);
+            //BootstrapWithPrinterQueue(container);
 
             var tests = container.GetAllInstances<ITest>().ToList();
             var onlyTests = tests.Where(t => t.GetType().GetCustomAttributes(typeof(OnlyAttribute), false).Any()).ToList();
@@ -95,7 +117,25 @@ namespace EventStoreIntegrationTester
             }
         }
 
-        static void Bootstrap(ServiceContainer container)
+        private static void BootstrapWithPrinterQueue(ServiceContainer container)
+        {
+            var cancelationSource = new CancellationTokenSource();
+            var queueConfig = new PrintEventQueueConfiguration(cancelationSource.Token);
+
+            IocRegistrationScanner
+                .WithRegistrar(new LightInjectIocRegistrar(container))
+                .ScanAssembly("FeiEventStore*dll")
+                .ScanAssembly(typeof(Counter.CounterAggregate))
+                .UseMapper(new TestAppMapper(queueConfig)) //register tests
+                .UseMapper(new FeiEventStore.Ioc.LightInject.IocRegistrationMapper())
+                .UseMapper(new FeiEventStore.Ioc.IocRegistrationMapper())
+                .Register();
+
+            var printer = container.GetInstance<EventQueues.PrinterTransactionalEventQueue>();
+            printer.Start();
+        }
+
+        private static void BootstrapWithoutEventQueue(ServiceContainer container)
         {
             IocRegistrationScanner
                 .WithRegistrar(new LightInjectIocRegistrar(container))

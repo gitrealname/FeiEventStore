@@ -70,7 +70,7 @@
     <Compile Include="Counter\Messages\Decremented.cs" />
     <Compile Include="Counter\Messages\Incremented.cs" />
     <Compile Include="OnlyAttribute.cs" />
-    <Compile Include="EventQueues\PrinterEventQueue.cs" />
+    <Compile Include="EventQueues\PrinterTransactionalEventQueue.cs" />
     <Compile Include="EventQueues\PrinterEventQueueConfiguration.cs" />
     <Compile Include="TestConst.cs" />
     <Compile Include="TestUserGroup.cs" />

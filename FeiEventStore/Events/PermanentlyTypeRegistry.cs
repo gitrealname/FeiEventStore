@@ -10,53 +10,26 @@ namespace FeiEventStore.Events
 {
     public class PermanentlyTypeRegistry : IPermanentlyTypedRegistry
     {
-        /*private IEnumerable<IPermanentlyTyped> _permanentlyTypedCollection;*/
-        private readonly IObjectFactory _objectFactory;
-        private readonly IDomainCommandScopedExecutionContextFactory _scopeFactory;
         private readonly Dictionary<TypeId, Type> _typeIdToType;
-        private bool _initialized = false;
 
 
-        public PermanentlyTypeRegistry(/*IEnumerable<IPermanentlyTyped> permanentlyTypedCollection,*/ IObjectFactory objectFactory, IDomainCommandScopedExecutionContextFactory scopeFactory)
+        public PermanentlyTypeRegistry()
         {
-            /*_permanentlyTypedCollection = permanentlyTypedCollection;*/
-            _objectFactory = objectFactory;
-            _scopeFactory = scopeFactory;
             _typeIdToType = new Dictionary<TypeId, Type>();
         }
 
-        private void Initialize()
+        internal void RegisterPermanentlyTyped(Type type)
         {
-            if(_initialized)
+            var typeId = type.GetPermanentTypeId();
+            if(typeId == null)
             {
-                return;
+                throw new Exception(string.Format("IPermanentlyTyped '{0}' must be have PermanentTypeAttribute defined.", type));
             }
-
-            //We need to create a temporary scope, to prevent failure of loading objects with scoped dependencies.
-            _scopeFactory.ExecuteInScope<IPermanentlyTypedRegistry, bool>((r) => {
-                var permanentlyTypedCollection = _objectFactory.GetAllInstances(typeof(IPermanentlyTyped));
-                foreach(var o in permanentlyTypedCollection)
-                {
-                    var objectType = o.GetType();
-                    var typeId = objectType.GetPermanentTypeId();
-                    if(typeId == null)
-                    {
-                        throw new Exception(string.Format("IPermanentlyTyped '{0}' must be have PermanentTypeAttribute defined.", objectType.FullName));
-                    }
-                    _typeIdToType.Add(typeId, objectType);
-                }
-                _initialized = true;
-                return true;
-            });
-            
+            _typeIdToType[typeId] = type;
         }
+
         public Type LookupTypeByPermanentTypeId(TypeId permanentTypeId)
         {
-            if(!_initialized)
-            {
-                Initialize();
-            }
-
             Type type;
             if(!_typeIdToType.TryGetValue(permanentTypeId, out type))
             {
