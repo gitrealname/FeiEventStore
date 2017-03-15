@@ -69,9 +69,11 @@
     <Compile Include="Counter\Counter.cs" />
     <Compile Include="Counter\Messages\Decremented.cs" />
     <Compile Include="Counter\Messages\Incremented.cs" />
+    <Compile Include="Ioc\PrinterEventQueueMapper.cs" />
     <Compile Include="OnlyAttribute.cs" />
     <Compile Include="EventQueues\PrinterTransactionalEventQueue.cs" />
     <Compile Include="EventQueues\PrinterEventQueueConfiguration.cs" />
+    <Compile Include="Ioc\TestAppMapper.cs" />
     <Compile Include="TestConst.cs" />
     <Compile Include="TestUserGroup.cs" />
     <Compile Include="UserGroup\UserGroupCounterProcessManager.cs" />

@@ -389,26 +389,10 @@ namespace FeiEventStore.Persistence
                 .ForEach(kv => _processByProcessTypeIdAggregateId.Remove(kv.Key));
         }
 
-        public long OnDispatched(long dispatchedVersion)
+        public void UpdateDispatchVersion(long version)
         {
-            lock(_locker)
-            {
-                if(_dispatchedStoreVersion < dispatchedVersion)
-                {
-                    _dispatchedStoreVersion = dispatchedVersion;
-                }
-                else
-                {
-                    if(Logger.IsInfoEnabled)
-                    {
-                        Logger.Info("Double Dispatch. Notified about dispatch for version {0} while current dispatch is for version {1}.",
-                            dispatchedVersion, _dispatchedStoreVersion);
-                    }
-                }
-                return _dispatchedStoreVersion;
-            }
+            _dispatchedStoreVersion = version;
         }
-
 
         public void Purge(Guid aggregateId)
         {
@@ -429,5 +413,6 @@ namespace FeiEventStore.Persistence
         {
             return payload;
         }
+
     }
 }

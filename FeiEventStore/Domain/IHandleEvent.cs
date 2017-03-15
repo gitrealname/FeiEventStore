@@ -7,13 +7,15 @@ using FeiEventStore.Core;
 
 namespace FeiEventStore.Domain
 {
+    public interface IHandleEvent { }
+    
     /// <summary>
     /// Process Manager that handles the event must be in running/in-complete state.
     /// Otherwise, event handler on the process manager will not be executed.
     /// <seealso cref="IStartedByEvent{TEvent}"/>
     /// </summary>
     /// <typeparam name="TEvent">The type of the event.</typeparam>
-    public interface IHandleEvent<in TEvent>
+    public interface IHandleEvent<in TEvent> : IHandleEvent
         where TEvent : IEvent
     {
         /// <summary>

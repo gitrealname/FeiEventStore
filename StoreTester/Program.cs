@@ -1,6 +1,8 @@
 ﻿
+using System.ServiceModel.Configuration;
 using System.Threading;
 using EventStoreIntegrationTester.EventQueues;
+using EventStoreIntegrationTester.Ioc;
 
 namespace EventStoreIntegrationTester
 {
@@ -12,46 +14,6 @@ namespace EventStoreIntegrationTester
     using FeiEventStore.Persistence;
     using LightInject;
     using NLog;
-
-    public class TestAppMapper : IIocRegistrationMapper
-    {
-        private readonly IPrinterEventQueueConfiguration _queueConfiguration;
-
-        public TestAppMapper(IPrinterEventQueueConfiguration queueConfiguration = null)
-        {
-            _queueConfiguration = queueConfiguration;
-        }
-        public IocRegistrationAction Map(Type serviceType, Type implementationType)
-        {
-            if(implementationType == typeof(PrinterTransactionalEventQueue))
-            {
-                if(_queueConfiguration == null)
-                {
-                    return new IocRegistrationAction(IocRegistrationType.Swallow);   
-                }
-                return new IocRegistrationAction(IocRegistrationType.RegisterTypePerContainerLifetime);
-            }
-            if(implementationType == typeof(PrintEventQueueConfiguration))
-            {
-                if(_queueConfiguration == null)
-                {
-                    return new IocRegistrationAction(IocRegistrationType.Swallow);
-                }
-                return new IocRegistrationAction(IocRegistrationType.RegisterInstance, _queueConfiguration);
-            }
-
-            if(serviceType == typeof(ITest))
-            {
-                return new IocRegistrationAction(IocRegistrationType.RegisterTypePerContainerLifetime);
-            }
-
-            return new IocRegistrationAction(IocRegistrationType.PassToNext);
-        }
-
-        public void OnAfterRegistration(Type serviceType, Type implementationType, IocRegistrationAction action)
-        {
-        }
-    }
 
     class Program
     {
@@ -126,7 +88,8 @@ namespace EventStoreIntegrationTester
                 .WithRegistrar(new LightInjectIocRegistrar(container))
                 .ScanAssembly("FeiEventStore*dll")
                 .ScanAssembly(typeof(Counter.CounterAggregate))
-                .UseMapper(new TestAppMapper(queueConfig)) //register tests
+                .UseMapper(new PrinterEventQueueMapper(queueConfig))
+                .UseMapper(new TestAppMapper()) //register tests
                 .UseMapper(new FeiEventStore.Ioc.LightInject.IocRegistrationMapper())
                 .UseMapper(new FeiEventStore.Ioc.IocRegistrationMapper())
                 .Register();

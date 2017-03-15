@@ -7,6 +7,8 @@ using FeiEventStore.Core;
 
 namespace FeiEventStore.Domain
 {
+    public interface IStartedByEvent { }
+    
     /// <summary>
     /// Indicates which event causes new Process manger instance.
     /// The same Process manager can implement both IStartByEvent and IHandleEvent but their meaning is very different
@@ -14,7 +16,7 @@ namespace FeiEventStore.Domain
     /// and IHandleEvent will not be performed unless there is running/in-complete process manager 
     /// </summary>
     /// <typeparam name="TEvent">The type of the event.</typeparam>
-    public interface IStartedByEvent<in TEvent>
+    public interface IStartedByEvent<in TEvent> : IStartedByEvent
         where TEvent : IEvent
     {
         /// <summary>

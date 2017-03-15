@@ -7,12 +7,11 @@ using FeiEventStore.Core;
 
 namespace FeiEventStore.Domain
 {
-    public interface IHandle<in TMesage> where TMesage : IMessage
-    {
-        
-    }
+    public interface IHandleCommand { }
 
-    public interface IHandleCommand<in TCommand, in TAggregate> : IHandle<TCommand>
+    public interface IHandleCommand<in TCommand> : IHandleCommand where TCommand : ICommand { }
+
+    public interface IHandleCommand<in TCommand, in TAggregate> : IHandleCommand<TCommand>
         where TCommand : ICommand
         where TAggregate : IAggregate
     {

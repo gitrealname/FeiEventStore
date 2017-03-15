@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using LightInject;
 
 namespace FeiEventStore.Ioc.LightInject
 {
-    public class LightInjectDomainCommandExecutionContextFactory : IDomainCommandScopedExecutionContextFactory
+    public class LightInjectDomainCommandExecutionContextFactory : IScopedExecutionContextFactory
     {
         private readonly IServiceFactory _serviceFactory;
 

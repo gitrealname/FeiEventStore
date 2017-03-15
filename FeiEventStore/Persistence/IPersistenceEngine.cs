@@ -52,12 +52,6 @@ namespace FeiEventStore.Persistence
         long DispatchedStoreVersion { get; }
 
         /// <summary>
-        /// Called when set of event get dispatched.
-        /// </summary>
-        /// <param name="dispatchedVersion">The dispatched version.</param>
-        long OnDispatched(long dispatchedVersion);
-
-        /// <summary>
         /// Saves the specified events and snapshots.
         /// NOTES:
         /// if DB commit fails due to concurrency violation, commit should re-try until success.
@@ -165,6 +159,12 @@ namespace FeiEventStore.Persistence
         /// <param name="throwNotFound">if set to <c>true</c> [throw not found].</param>
         /// <returns></returns>
         IList<ProcessRecord> GetProcessRecords(TypeId processTypeId, Guid aggregateId, bool throwNotFound = true);
+
+        /// <summary>
+        /// Updates and stores the dispatch version
+        /// </summary>
+        /// <param name="version">The version.</param>
+        void UpdateDispatchVersion(long version);
 
         /// <summary>
         /// Deletes the process.

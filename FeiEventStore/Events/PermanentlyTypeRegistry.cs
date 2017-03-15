@@ -25,7 +25,14 @@ namespace FeiEventStore.Events
             {
                 throw new Exception(string.Format("IPermanentlyTyped '{0}' must be have PermanentTypeAttribute defined.", type));
             }
+            if(_typeIdToType.ContainsKey(typeId))
+            {
+                throw new Exception(string.Format("Permanent '{0}' type collision between implementing type '{1}' and '{2}'",
+                    typeId, _typeIdToType[typeId].FullName, type.FullName));
+            }
             _typeIdToType[typeId] = type;
+
+            //DBG: Console.WriteLine("Registered permanent type id '{0}'; implementing type '{1}'. ", typeId, type.FullName);
         }
 
         public Type LookupTypeByPermanentTypeId(TypeId permanentTypeId)

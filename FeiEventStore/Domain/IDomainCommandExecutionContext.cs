@@ -16,7 +16,7 @@ namespace FeiEventStore.Domain
         void ReportException(Exception e);
 
         /// <summary>
-        /// Reports the DOMAIN fatal error. Fatal error must invalidate the scope, so that <typeparam name="ExecutionHasFailed"/> must return true;
+        /// Reports the DOMAIN fatal error. Fatal error must invalidate the scope, so that <typeparam name="DomainCommandResult.ExecutionHasFailed"/> must return true;
         /// </summary>
         /// <param name="errorMessage">The error message.</param>
         void ReportFatalError(string errorMessage);

@@ -20,6 +20,8 @@ namespace FeiEventStore.Events
         private readonly IPersistenceEngine _engine;
         private readonly IPermanentlyTypedObjectService _service;
 
+        private readonly object _dispatchLocker = new object();
+
         public EventStore(IPersistenceEngine engine, IPermanentlyTypedObjectService service)
         {
             _engine = engine;
@@ -192,6 +194,18 @@ namespace FeiEventStore.Events
                 }
             }
 
+        }
+
+        public void DispatchExecutor(Func<long, long?> dispatcherFunc)
+        {
+            lock(_dispatchLocker)
+            {
+                var finalDispatchVersion = dispatcherFunc(DispatchedStoreVersion);
+                if(finalDispatchVersion.HasValue)
+                {
+                    _engine.UpdateDispatchVersion(finalDispatchVersion.Value);
+                }
+            }
         }
 
         public long GetSnapshotVersion(Guid aggregateId)

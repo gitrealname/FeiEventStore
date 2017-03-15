@@ -19,7 +19,6 @@ namespace FeiEventStore.Ioc
             { new Tuple<Type, Type>(typeof(IEventStore), typeof(EventStore)), IocRegistrationType.RegisterServicePerContainerLifetime },
             { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocRegistrationType.RegisterServicePerContainerLifetime },
             { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocRegistrationType.RegisterServicePerContainerLifetime },
-            { new Tuple<Type, Type>(typeof(IEventDispatcher), typeof(EventDispatcher)), IocRegistrationType.RegisterServicePerContainerLifetime },
             { new Tuple<Type, Type>(typeof(IAggregateStateRepository), typeof(AggregateStateRepository.AggregateStateRepository)), IocRegistrationType.RegisterServicePerContainerLifetime },
 
             //per scope!
@@ -36,7 +35,10 @@ namespace FeiEventStore.Ioc
 
         private readonly Dictionary<Type, IocRegistrationType> _genericMap = new Dictionary<Type, IocRegistrationType>
         {
-            { typeof(IPermanentlyTyped), IocRegistrationType.RegisterTypeTransientLifetime },
+            //Permanently typed must only be registered via derived interface/type!!!
+            //{ typeof(IPermanentlyTyped), IocRegistrationType.RegisterTypeTransientLifetime },
+
+            { typeof(IState), IocRegistrationType.RegisterTypeTransientLifetime },
             { typeof(IReplace<>), IocRegistrationType.RegisterTypeTransientLifetime },
             { typeof(IHandleCommand<,>), IocRegistrationType.RegisterTypeTransientLifetime },
             { typeof(IHandleEvent<>), IocRegistrationType.RegisterTypeTransientLifetime },
@@ -45,7 +47,8 @@ namespace FeiEventStore.Ioc
             { typeof(IAggregate<>), IocRegistrationType.RegisterTypeTransientLifetime },
             { typeof(IProcessManager<>), IocRegistrationType.RegisterTypeTransientLifetime },
             { typeof(IEventEnvelope<>), IocRegistrationType.RegisterTypeTransientLifetime },
-           
+            { typeof(IEvent), IocRegistrationType.RegisterTypeTransientLifetime },
+
         };
 
         public IocRegistrationAction Map(Type serviceType, Type implementationType)
@@ -93,6 +96,17 @@ namespace FeiEventStore.Ioc
             if(typeof(IPermanentlyTyped).IsAssignableFrom(implementationType))
             {
                 _permanentlyTypedRegistry.RegisterPermanentlyTyped(implementationType);
+                //DBG: Console.WriteLine("Registered permanent type id '{0}'; implementing type '{1}'. ", implementationType.GetPermanentTypeId(), implementationType.FullName);
+            }
+
+            //IHandleEvent and IStartedByEvent must only be used on ProcessManagers
+            if(typeof(IStartedByEvent).IsAssignableFrom(implementationType) || typeof(IHandleEvent).IsAssignableFrom(implementationType))
+            {
+                if(!typeof(IProcessManager).IsAssignableFrom(implementationType))
+                {
+                    throw new Exception(string.Format("Type '{0}' must be derived from '{1}', as '{2}' and '{3}' can only be used in such a case",
+                        implementationType.FullName, typeof(IProcessManager).FullName, typeof(IStartedByEvent).FullName, typeof(IHandleEvent).FullName));
+                }
             }
         }
     }

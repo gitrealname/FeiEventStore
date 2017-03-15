@@ -10,15 +10,19 @@ namespace FeiEventStore.Domain
     {
         private readonly DomainCommandResult _commandResult;
 
-        public void ReportException(Exception e)
-        {
-            _commandResult.Exception = e;
-            _commandResult.CommandHasFailed = true;
-        }
         public DomainCommandExecutionContext()
         {
             _commandResult = new DomainCommandResult();
         }
+        public void ReportException(Exception e)
+        {
+            _commandResult.Exception = new DomainCommandResult.ExceptionInfo() {
+                Message = e.Message,
+                StackTrace = e.StackTrace,
+            };
+            _commandResult.CommandHasFailed = true;
+        }
+
         public void ReportFatalError(string errorMessage)
         {
             _commandResult.Errors.Add(errorMessage);

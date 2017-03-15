@@ -90,5 +90,11 @@ namespace FeiEventStore.Events
         IProcessManager LoadProcess(Type processType, Guid aggregateId, bool throwNotFound = true);
 
         IProcessManager LoadProcess(Guid processId, bool throwNotFound = true);
+
+        /// <summary>
+        /// Insures thread safe dispatch callback execution and synchronization with persistence engine
+        /// </summary>
+        /// <param name="dispatcherFunc">The dispatcher function. Parameter is latest dispatched version, returns null or final dispatched version</param>
+        void DispatchExecutor(Func<long, long?> dispatcherFunc);
     }
 }

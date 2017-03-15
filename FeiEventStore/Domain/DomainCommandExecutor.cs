@@ -2,6 +2,7 @@
 using System.ServiceModel.Channels;
 using System.ServiceModel.Dispatcher;
 using System.Threading.Tasks;
+using FeiEventStore.EventQueue;
 using FeiEventStore.Persistence;
 
 namespace FeiEventStore.Domain
@@ -17,36 +18,37 @@ namespace FeiEventStore.Domain
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly IObjectFactory _factory;
-        private readonly IDomainCommandScopedExecutionContextFactory _executorFactory;
+        private readonly IScopedExecutionContextFactory _executorFactory;
         private readonly IEventStore _eventStore;
-        private readonly IEventDispatcher _eventDispatcher;
-        private readonly IPermanentlyTypedRegistry _permanentlyTypedRegistry;
+        private readonly IList<IEventQueue> _eventDispatchQueues;
         private readonly ISnapshotStrategy _snapshotStrategy;
-        private readonly IEnumerable<IDomainCommandValidationProvider> _validationProviders;
+        private readonly IList<IDomainCommandValidationProvider> _validationProviders;
 
-        public DomainCommandExecutor(IObjectFactory factory, IDomainCommandScopedExecutionContextFactory executorFactory,
+        public DomainCommandExecutor(IObjectFactory factory, IScopedExecutionContextFactory executorFactory,
             IEventStore eventStore, 
             ISnapshotStrategy snapshotStrategy,
             IEnumerable<IDomainCommandValidationProvider> validationProviders,
-            IEventDispatcher  eventDispatcher,
-            IPermanentlyTypedRegistry permanentlyTypedRegistry)
+            IEnumerable<IEventQueue> eventDispatchQueues)
         {
             _factory = factory;
             _executorFactory = executorFactory;
             _eventStore = eventStore;
             _executorFactory = executorFactory;
-            _eventDispatcher = eventDispatcher;
-            _permanentlyTypedRegistry = permanentlyTypedRegistry;
+            _eventDispatchQueues = eventDispatchQueues.ToList();
             _snapshotStrategy = snapshotStrategy;
-            _validationProviders = validationProviders;
+            _validationProviders = validationProviders.ToList();
         }
 
-        private long Execute(IList<ICommand> commandBatch, IDomainCommandExecutionContext execContext, MessageOrigin origin)
+        private DomainCommandResult Execute(IList<ICommand> commandBatch, IDomainCommandExecutionContext execContext, MessageOrigin origin)
         {
             var finalStoreVersion = -1L;
+            DomainCommandResult result = new DomainCommandResult()
+            {
+                EventStoreVersion = -1L,
+                CommandHasFailed = true,
+            };
             var cache = new DomainObjectCache();
             cache.EnqueueList(commandBatch);
-            var externalCommandCount = cache.Queue.Count;
 
             //main loop
             try
@@ -57,7 +59,6 @@ namespace FeiEventStore.Domain
                     if(msg is ICommand)
                     {
                         ProcessCommand(msg as ICommand, execContext, cache, origin);
-                        externalCommandCount--;
                     }
                     else if(msg is IEventEnvelope)
                     {
@@ -72,7 +73,8 @@ namespace FeiEventStore.Domain
 
                 if(execContext.CommandHasFailed)
                 {
-                    return finalStoreVersion;
+                    result = execContext.BuildResult(finalStoreVersion);
+                    return  result;
                 }
 
                 //commit
@@ -90,18 +92,60 @@ namespace FeiEventStore.Domain
 
                 if(execContext.CommandHasFailed)
                 {
-                    return finalStoreVersion;
+                    result = execContext.BuildResult(finalStoreVersion);
+                    return result;
                 }
 
-                //Todo: dispatch, what if last dispatch version < initial dispatch (before first event was created), concurrent dispatch???
+                Dispatch(cache);
 
             }
             catch(BaseAggregateException ex)
             {
                 TranslateAndReportError(ex, execContext, cache);
-                return finalStoreVersion;
+                result = execContext.BuildResult(finalStoreVersion);
+                return result;
             }
-            return finalStoreVersion;
+
+            result = execContext.BuildResult(finalStoreVersion);
+            //update aggregate map
+            foreach(var kv in cache.AggregateMap)
+            {
+                result.AggregateVersionMap.Add(kv.Key, kv.Value.Version);
+            }
+
+            return result;
+        }
+
+        private void Dispatch(DomainObjectCache cache)
+        {
+            if(_eventDispatchQueues.Count > 0 && cache.RaisedEvents.Count > 0)
+            {
+                _eventStore.DispatchExecutor((currentVersion) =>
+                {
+                    var first = cache.RaisedEvents.First();
+                    var last = cache.RaisedEvents.Last();
+                    List<IEventEnvelope> dispatchEventList;
+                    if(currentVersion < (first.StoreVersion - 1))
+                    {
+                        dispatchEventList = _eventStore.GetEventsSinceStoreVersion(currentVersion + 1, first.StoreVersion - currentVersion + 1).ToList();
+                        dispatchEventList.AddRange(cache.RaisedEvents);
+                    }
+                    else
+                    {
+                        dispatchEventList = cache.RaisedEvents.Where(e => e.StoreVersion <= currentVersion).ToList();
+                    }
+
+                    if(dispatchEventList.Count > 0)
+                    {
+                        foreach(var queue in _eventDispatchQueues)
+                        {
+                            queue.Enqueue(dispatchEventList);
+                        }
+                        return last.StoreVersion;
+                    }
+                    return null;
+                });
+            }
         }
 
         private void TranslateAndReportError(BaseAggregateException exception, IDomainCommandExecutionContext execScope, DomainObjectCache cache )
@@ -215,7 +259,7 @@ namespace FeiEventStore.Domain
             }
 
             //get instance of the handler and aggregate
-            var iHandleType = typeof(IHandle<>).MakeGenericType(cmd.GetType());
+            var iHandleType = typeof(IHandleCommand<>).MakeGenericType(cmd.GetType());
             var iHandlers = _factory.GetAllInstances(iHandleType);
             //it must just one command handler for given command type
             if(iHandlers.Count > 1)
@@ -234,7 +278,7 @@ namespace FeiEventStore.Domain
             if(iHandleCommandIterface == null)
             {
                 throw new Exception(string.Format("SYSTEM: Command handler must implement 'IHandleCommand<{0}>' interface, instead of '{1}'.",
-                    cmd.GetType().FullName, typeof(IHandle<>).FullName));
+                    cmd.GetType().FullName, typeof(IHandleCommand<>).FullName));
 
             }
             var aggregateType = iHandleCommandIterface.GenericTypeArguments[1];
@@ -373,11 +417,10 @@ namespace FeiEventStore.Domain
             while(reTry)
             {
                 reTry = false;
-                var finalStoreVersion = -1L;
                 _executorFactory.ExecuteInScope<IDomainCommandExecutionContext, DomainCommandResult>((execScope) => {
                     try
                     {
-                        finalStoreVersion = Execute(commandBatch, execScope, origin);
+                        result = Execute(commandBatch, execScope, origin);
                     }
                     catch(AggregateConcurrencyViolationException ex)
                     {
@@ -402,7 +445,7 @@ namespace FeiEventStore.Domain
                     }
                     finally
                     {
-                        result = execScope.BuildResult(finalStoreVersion);
+                        result = result ?? execScope.BuildResult(-1L);
                     }
                     return result;
                 });

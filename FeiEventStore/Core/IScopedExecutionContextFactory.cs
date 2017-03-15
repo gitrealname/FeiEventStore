@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace FeiEventStore.Domain
+namespace FeiEventStore.Core
 {
     /// <summary>
     /// IOC container specific scope creator and executor
     /// </summary>
-    public interface IDomainCommandScopedExecutionContextFactory
+    public interface IScopedExecutionContextFactory
     {
         TResult ExecuteInScope<TExecScope, TResult>(Func<TExecScope, TResult> action);
     }
