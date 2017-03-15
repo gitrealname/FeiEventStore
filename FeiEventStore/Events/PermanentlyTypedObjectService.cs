@@ -24,7 +24,7 @@ namespace FeiEventStore.Events
         }
 
 
-        private T GetSingleInstance<T>(Type closedGenericType)
+        private T GetSingleInstance<T>(Type closedGenericType, bool throwNotFound = true) where T : class
         {
             var instances = _factory.GetAllInstances(closedGenericType).ToList();
             if(instances.Count > 1)
@@ -39,12 +39,16 @@ namespace FeiEventStore.Events
             {
                 var ex = new RuntimeTypeInstancesNotFoundException(closedGenericType);
                 Logger.Fatal(ex);
+                if(!throwNotFound)
+                {
+                    return null;
+                }
                 throw ex;
             }
             return (T)result;
 
         }
-        public T GetSingleInstanceForConcreteType<T>(Type concreteType, Type genericType)
+        public T GetSingleInstanceForConcreteType<T>(Type concreteType, Type genericType) where T : class
         {
             var interfaces = concreteType.GetInterfaces();
             var types = interfaces.Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == genericType).ToList();
@@ -57,7 +61,7 @@ namespace FeiEventStore.Events
             return GetSingleInstance<T>(types[0]);
         }
 
-        public T GetSingleInstanceForGenericType<T>(Type genericType, params Type[] typeArguments)
+        public T GetSingleInstanceForGenericType<T>(bool throwNotFound, Type genericType, params Type[] typeArguments) where T : class
         {
             if(!genericType.IsGenericType)
             {
@@ -66,7 +70,11 @@ namespace FeiEventStore.Events
                 throw ex;
             }
             var type = genericType.MakeGenericType(typeArguments);
-            return GetSingleInstance<T>(type);
+            return GetSingleInstance<T>(type, throwNotFound);
+        }
+        public T GetSingleInstanceForGenericType<T>(Type genericType, params Type[] typeArguments) where T : class
+        {
+            return GetSingleInstanceForGenericType<T>(true, genericType, typeArguments);
         }
 
         public TypeId GetPermanentTypeIdForType(Type type)
@@ -120,7 +128,7 @@ namespace FeiEventStore.Events
             return replacer;
         }
 
-        public IEnumerable<Type> BuildUpgradeTypeChain(Type baseType)
+        public IEnumerable<Type> BuildUpgradeTypeChain(Type baseType, bool throwNotFound = true)
         {
             var chain = new List<Type>();
             chain.Add(baseType);
@@ -130,7 +138,11 @@ namespace FeiEventStore.Events
                 IPermanentlyTyped replacer;
                 try
                 {
-                    replacer = GetSingleInstanceForGenericType<IPermanentlyTyped>(typeof(IReplace<>), new[] {baseType});
+                    replacer = GetSingleInstanceForGenericType<IPermanentlyTyped>(throwNotFound, typeof(IReplace<>), new[] {baseType});
+                    if(replacer == null)
+                    {
+                        return chain;
+                    }
                     replacerType = replacer.GetType();
                 }
                 catch(Exception)

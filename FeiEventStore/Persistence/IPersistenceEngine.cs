@@ -135,9 +135,10 @@ namespace FeiEventStore.Persistence
         /// Loads the latest aggregate snapshot record.
         /// </summary>
         /// <param name="aggregateId">The aggregate(aggregate) identifier.</param>
+        /// <param name="throwNotFound">if set to <c>true</c> [throw not found].</param>
         /// <returns></returns>
         /// <exception cref="SnapshotNotFoundException"></exception>
-        SnapshotRecord GetSnapshot(Guid aggregateId);
+        SnapshotRecord GetSnapshot(Guid aggregateId, bool throwNotFound = true);
 
         /// <summary>
         /// Gets the process version.
@@ -161,8 +162,9 @@ namespace FeiEventStore.Persistence
         /// </summary>
         /// <param name="processTypeId">The process type identifier.</param>
         /// <param name="aggregateId">The aggregate identifier.</param>
+        /// <param name="throwNotFound">if set to <c>true</c> [throw not found].</param>
         /// <returns></returns>
-        IList<ProcessRecord> GetProcessRecords(TypeId processTypeId, Guid aggregateId);
+        IList<ProcessRecord> GetProcessRecords(TypeId processTypeId, Guid aggregateId, bool throwNotFound = true);
 
         /// <summary>
         /// Deletes the process.

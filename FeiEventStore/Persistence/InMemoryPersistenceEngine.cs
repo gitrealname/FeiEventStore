@@ -300,13 +300,17 @@ namespace FeiEventStore.Persistence
             return result;
         }
 
-        public SnapshotRecord GetSnapshot(Guid aggregateId)
+        public SnapshotRecord GetSnapshot(Guid aggregateId, bool throwNotFound = true)
         {
             SnapshotRecord snapshot;
             if(!_snapshotByAggregateId.TryGetValue(aggregateId, out snapshot))
             {
                 var ex = new SnapshotNotFoundException(aggregateId);
                 Logger.Warn(ex);
+                if(!throwNotFound)
+                {
+                    return null;
+                }
                 throw ex;
             }
             return snapshot;
@@ -348,13 +352,17 @@ namespace FeiEventStore.Persistence
             return process.ProcessVersion;
         }
 
-        public IList<ProcessRecord> GetProcessRecords(TypeId processTypeId, Guid aggregateId)
+        public IList<ProcessRecord> GetProcessRecords(TypeId processTypeId, Guid aggregateId, bool throwNotFound = true)
         {
             ProcessRecord process;
             if(!_processByProcessTypeIdAggregateId.TryGetValue(new Tuple<TypeId, Guid>(processTypeId, aggregateId), out process))
             {
                 var ex = new ProcessNotFoundException(processTypeId, aggregateId);
                 Logger.Warn(ex);
+                if(!throwNotFound)
+                {
+                    return null;
+                }
                 throw ex;
             }
 

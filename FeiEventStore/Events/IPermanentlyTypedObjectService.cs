@@ -12,18 +12,22 @@ namespace FeiEventStore.Events
     /// </summary>
     public interface IPermanentlyTypedObjectService
     {
-        T GetSingleInstanceForConcreteType<T>(Type concreteType, Type genericType);
+        T GetSingleInstanceForConcreteType<T>(Type concreteType, Type genericType) where T : class;
 
         /// <summary>
         /// Get single instance of the object that implements specified
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="throwNotFound">if set to <c>true</c> [throw not found].</param>
         /// <param name="genericType">Type of the generic.</param>
         /// <param name="typeArguments">The type arguments.</param>
         /// <returns></returns>
         /// <exception cref="RuntimeTypeInstancesNotFoundException"></exception>
         /// <exception cref="MultipleTypeInstancesException"></exception>
-        T GetSingleInstanceForGenericType<T>(Type genericType, params Type[] typeArguments);
+        T GetSingleInstanceForGenericType<T>(bool throwNotFound, Type genericType, params Type[] typeArguments) where  T: class;
+
+        T GetSingleInstanceForGenericType<T>(Type genericType, params Type[] typeArguments) where T : class;
+
 
         /// <summary>
         /// Upgrades the object.
@@ -38,11 +42,12 @@ namespace FeiEventStore.Events
 
         /// <summary>
         /// Build upgrade type chain.
-        /// NOTE: <paramref name="baseType"/> gets included into result 
+        /// NOTE: <paramref name="baseType" /> gets included into result
         /// </summary>
         /// <param name="baseType">base type; for which upgrade type chain is constructed</param>
+        /// <param name="throwNotFound">if set to <c>true</c> [throw not found].</param>
         /// <returns></returns>
-        IEnumerable<Type> BuildUpgradeTypeChain(Type baseType);
+        IEnumerable<Type> BuildUpgradeTypeChain(Type baseType, bool throwNotFound = true);
 
             /// <summary>
         /// Lookups the <see cref="Type"/> by permanent type identifier.

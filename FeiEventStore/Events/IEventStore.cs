@@ -87,8 +87,8 @@ namespace FeiEventStore.Events
         /// <exception cref="AggregateNotFoundException"></exception>
         IAggregate LoadAggregate(Guid aggregateId, Type aggregateType = null);
 
-        IProcessManager LoadProcess(Type processType, Guid aggregateId );
+        IProcessManager LoadProcess(Type processType, Guid aggregateId, bool throwNotFound = true);
 
-        IProcessManager LoadProcess(Guid processId);
+        IProcessManager LoadProcess(Guid processId, bool throwNotFound = true);
     }
 }

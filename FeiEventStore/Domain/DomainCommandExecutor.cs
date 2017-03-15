@@ -153,17 +153,14 @@ namespace FeiEventStore.Domain
                     if(process == null)
                     {
                         //try loading process from the store
-                        try
+                        process = _eventStore.LoadProcess(handler.GetType(), e.StreamId, false);
+                        if(process != null)
                         {
-                            process = _eventStore.LoadProcess(handler.GetType(), e.StreamId);
                             process.Version++;
                             cache.TrackProcessManager(process);
                         }
-                        catch(ProcessNotFoundException)
-                        {
-                            process = null;
-                        }
-                    } else
+                    }
+                    else
                     {
                         isCached = true;
                     }

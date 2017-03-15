@@ -258,11 +258,9 @@ namespace FeiEventStore.Events
         {
             IAggregate aggregate = null;
             long startingEventVersion = 0;
-//            var aggregateStateType = aggregateType.GetGenericInterfaceArgumentTypes(typeof(IAggregate<>), 0).FirstOrDefault();
-            //try to get snapshot
-            try
+            var snapshotRecord = _engine.GetSnapshot(aggregateId, false);
+            if(snapshotRecord != null)
             {
-                var snapshotRecord = _engine.GetSnapshot(aggregateId);
                 var persistedAggregateType = _service.LookupTypeByPermanentTypeId(snapshotRecord.AggregateTypeId);
                 if(aggregateType != null && persistedAggregateType != aggregateType)
                 {
@@ -284,18 +282,6 @@ namespace FeiEventStore.Events
                 aggregate.Version = snapshotRecord.AggregateVersion;
                 aggregate.LatestPersistedVersion = snapshotRecord.AggregateVersion;
                 startingEventVersion = aggregate.Version + 1;
-            }
-            catch (SnapshotNotFoundException)
-            {
-                //if(aggregateType == null)
-                //{
-                //    throw;
-                //}
-                //aggregate = _service.GetSingleInstanceForConcreteType<IAggregate>(aggregateType, typeof(IAggregate<>));
-                //aggregate.TypeId = _service.GetPermanentTypeIdForType(aggregateType);
-                //aggregate.Id = aggregateId;
-                //aggregate.Version = 0;
-                //aggregate.LatestPersistedVersion = 0;
             }
             //load events
             var events = GetEvents(aggregateId, startingEventVersion);
@@ -331,56 +317,67 @@ namespace FeiEventStore.Events
             return (IAggregate)aggregate;
         }
 
-        public IProcessManager LoadProcess(Type processType, Guid aggregateId)
+        public IProcessManager LoadProcess(Type processType, Guid aggregateId, bool throwNotFound = true)
         {
-            var result = LoadProcess(() => {
+            var result = LoadProcess((throwFlag) => {
                 var processTypeId = _service.GetPermanentTypeIdForType(processType);
-                return _engine.GetProcessRecords(processTypeId, aggregateId);
-            });
+                return _engine.GetProcessRecords(processTypeId, aggregateId, throwNotFound);
+            }, throwNotFound);
             return result;
         }
 
-        public IProcessManager LoadProcess(Guid processId)
+        public IProcessManager LoadProcess(Guid processId, bool throwNotFound = true)
         {
-            var result = LoadProcess(() => _engine.GetProcessRecords(processId));
+            var result = LoadProcess((throwFlag) => _engine.GetProcessRecords(processId), throwNotFound);
             return result;
         }
 
-        private IProcessManager LoadProcess(Func<IList<ProcessRecord>> getRecords)
+        private IProcessManager LoadProcess(Func<bool,IList<ProcessRecord>> getRecords, bool throwNotFound = true)
         {
             IProcessManager process;
             Guid processId = Guid.Empty;
             //try to get process
             try
             {
-                var processRecords = getRecords();
-                var involvedAggregateIds = new HashSet<Guid>();
-                IState state = null;
-                long processVersion = 0;
-                foreach(var pr in processRecords)
+                var processRecords = getRecords(throwNotFound);
+                if(processRecords != null)
                 {
-                    involvedAggregateIds.Add(pr.InvolvedAggregateId);
-                    if(pr.State != null)
+                    var involvedAggregateIds = new HashSet<Guid>();
+                    IState state = null;
+                    long processVersion = 0;
+                    foreach(var pr in processRecords)
                     {
-                        processId = pr.ProcessId;
-                        var stateType = _service.LookupTypeByPermanentTypeId(pr.ProcessStateTypeId.Value);
-                        state = (IState)_engine.DeserializePayload(pr.State, stateType);
-                        //determine what state type is expected by current implementation of the process
-                        var processType = _service.LookupTypeByPermanentTypeId(pr.ProcessTypeId);
-                        var finalStateType = processType.GetGenericInterfaceArgumentTypes(typeof(IProcessManager<>)).FirstOrDefault();
-                        //upgrade state to desired level
-                        state = _service.UpgradeObject(state, finalStateType);
-                        processVersion = pr.ProcessVersion;
+                        involvedAggregateIds.Add(pr.InvolvedAggregateId);
+                        if(pr.State != null)
+                        {
+                            processId = pr.ProcessId;
+                            var stateType = _service.LookupTypeByPermanentTypeId(pr.ProcessStateTypeId.Value);
+                            state = (IState)_engine.DeserializePayload(pr.State, stateType);
+                            //determine what state type is expected by current implementation of the process
+                            var processType = _service.LookupTypeByPermanentTypeId(pr.ProcessTypeId);
+                            var finalStateType = processType.GetGenericInterfaceArgumentTypes(typeof(IProcessManager<>)).FirstOrDefault();
+                            //upgrade state to desired level
+                            state = _service.UpgradeObject(state, finalStateType);
+                            processVersion = pr.ProcessVersion;
+                        }
                     }
+
+                    process = _service.GetSingleInstanceForGenericType<IProcessManager>(typeof(IProcessManager<>), state.GetType());
+
+                    process.Id = processId;
+                    process.LatestPersistedVersion = processVersion;
+                    process.RestoreFromState(state);
+                    process.Version = processVersion;
+                    process.InvolvedAggregateIds = involvedAggregateIds;
                 }
-
-                process = _service.GetSingleInstanceForGenericType<IProcessManager>(typeof(IProcessManager<>), state.GetType());
-
-                process.Id = processId;
-                process.LatestPersistedVersion = processVersion;
-                process.RestoreFromState(state);
-                process.Version = processVersion;
-                process.InvolvedAggregateIds = involvedAggregateIds;
+                else
+                {
+                    if(Logger.IsTraceEnabled)
+                    {
+                        Logger.Trace("Process id '{0}' either completed or not started.", processId);
+                    }
+                    return null;
+                }
             }
             catch(ProcessNotFoundException)
             {
@@ -409,7 +406,7 @@ namespace FeiEventStore.Events
                 var payloadType = _service.LookupTypeByPermanentTypeId(er.EventPayloadTypeId);
                 var payload = (IState)_engine.DeserializePayload(er.Payload, payloadType);
                 //upgrade event
-                var finalType = _service.BuildUpgradeTypeChain(payloadType).Skip(1).Reverse().FirstOrDefault();
+                var finalType = _service.BuildUpgradeTypeChain(payloadType, false).Skip(1).Reverse().FirstOrDefault();
                 if(finalType != null)
                 {
                     payload = _service.UpgradeObject(payload, finalType);
