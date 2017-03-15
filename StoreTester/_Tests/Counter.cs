@@ -4,14 +4,16 @@ using System.Text;
 using System.Threading.Tasks;
 using EventStoreIntegrationTester.Counter.Messages;
 using EventStoreIntegrationTester.Counter;
+using EventStoreIntegrationTester._Tests;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
 using FeiEventStore.Persistence;
 using FluentAssertions;
 
-namespace EventStoreIntegrationTester
+namespace EventStoreIntegrationTester._Tests
 {
+    //[Only]
     public class SingleEventTest : BaseTest
     {
         public SingleEventTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore):base(commandExecutor, eventStore, "Single command"){}
@@ -30,6 +32,7 @@ namespace EventStoreIntegrationTester
         }
     }
 
+    //[Only]
     public class CommandBatchTest : BaseTest
     {
         public CommandBatchTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore) : base(commandExecutor, eventStore, "Command batch") { }

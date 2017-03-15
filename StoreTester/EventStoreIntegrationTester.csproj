@@ -65,7 +65,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BaseTest.cs" />
+    <Compile Include="EventQueues\ITestingEventQueue.cs" />
+    <Compile Include="EventQueues\ITestingIEventQueueConfiguration.cs" />
+    <Compile Include="_Tests\BaseTest.cs" />
     <Compile Include="Counter\Counter.cs" />
     <Compile Include="Counter\Messages\Decremented.cs" />
     <Compile Include="Counter\Messages\Incremented.cs" />
@@ -74,13 +76,13 @@
     <Compile Include="EventQueues\PrinterTransactionalEventQueue.cs" />
     <Compile Include="EventQueues\PrinterEventQueueConfiguration.cs" />
     <Compile Include="Ioc\TestAppMapper.cs" />
-    <Compile Include="TestConst.cs" />
-    <Compile Include="TestUserGroup.cs" />
+    <Compile Include="_Tests\Const.cs" />
+    <Compile Include="_Tests\UserGroup.cs" />
     <Compile Include="UserGroup\UserGroupCounterProcessManager.cs" />
     <Compile Include="UserGroup\Messages\UserGroupCreated.cs" />
     <Compile Include="UserGroup\UserGroupAggregate.cs" />
     <Compile Include="UserGroup\Messages\CreateUserGroup.cs" />
-    <Compile Include="TestCounter.cs" />
+    <Compile Include="_Tests\Counter.cs" />
     <Compile Include="Counter\CounterAggregate.cs" />
     <Compile Include="Counter\Messages\Decrement.cs" />
     <Compile Include="Counter\Messages\Increment.cs" />

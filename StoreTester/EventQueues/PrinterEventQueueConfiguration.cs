@@ -4,9 +4,12 @@ using FeiEventStore.EventQueue;
 
 namespace EventStoreIntegrationTester.EventQueues
 {
-    public interface IPrinterEventQueueConfiguration : IEventQueueConfiguration
+    public interface IPrinterEventQueueConfiguration : ITestingIEventQueueConfiguration
     {
         List<string> Output { get; }
+
+        bool PrintToConsole { get; }
+
     }
 
     public class PrintEventQueueConfiguration : IPrinterEventQueueConfiguration
@@ -17,12 +20,22 @@ namespace EventStoreIntegrationTester.EventQueues
 
         public List<string> Output { get; protected set; }
 
-        public PrintEventQueueConfiguration(CancellationToken cancellationToken)
+        public bool PrintToConsole { get; protected set; }
+
+        public PrintEventQueueConfiguration(CancellationToken cancellationToken, bool printToConsole = true)
         {
             MaxQueueCapacity = 1000;
             CancellationToken = cancellationToken;
             MaxEventsPerTransaction = 100;
             Output = new List<string>();
+            PrintToConsole = printToConsole;
+            DoneEvent = new AutoResetEvent(false);
+        }
+
+        public AutoResetEvent DoneEvent { get; protected set; }
+        public void UpdateCancelationToken(CancellationToken token)
+        {
+            CancellationToken = token;
         }
     }
 }

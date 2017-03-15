@@ -1,20 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using EventStoreIntegrationTester.Counter;
+﻿using EventStoreIntegrationTester.Counter;
 using EventStoreIntegrationTester.Counter.Messages;
 using EventStoreIntegrationTester.UserGroup;
 using EventStoreIntegrationTester.UserGroup.Messages;
 using FeiEventStore.AggregateStateRepository;
-using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
 using FeiEventStore.Persistence;
 using FluentAssertions;
 
-namespace EventStoreIntegrationTester
+namespace EventStoreIntegrationTester._Tests
 {
     //[Only]
     public class TestUserGroup : BaseTest

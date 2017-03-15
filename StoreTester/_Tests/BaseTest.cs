@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using EventStoreIntegrationTester.Counter.Messages;
-using EventStoreIntegrationTester.Counter;
-using FeiEventStore.Core;
+﻿using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
 
-namespace EventStoreIntegrationTester
+namespace EventStoreIntegrationTester._Tests
 {
     public interface ITest
     {

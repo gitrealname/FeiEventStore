@@ -132,7 +132,7 @@ namespace FeiEventStore.Domain
                     }
                     else
                     {
-                        dispatchEventList = cache.RaisedEvents.Where(e => e.StoreVersion <= currentVersion).ToList();
+                        dispatchEventList = cache.RaisedEvents.Where(e => e.StoreVersion > currentVersion).ToList();
                     }
 
                     if(dispatchEventList.Count > 0)

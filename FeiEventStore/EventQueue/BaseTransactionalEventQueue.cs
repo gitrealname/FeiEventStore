@@ -59,7 +59,6 @@ namespace FeiEventStore.EventQueue
         }
         protected void BackgroundWorker()
         {
-
             if(Logger.IsDebugEnabled)
             {
                 Logger.Debug("Starting Event Queue of type id {0}", _typeId);    
@@ -70,12 +69,20 @@ namespace FeiEventStore.EventQueue
             List<IEventEnvelope> events = new List<IEventEnvelope>();
             while(!_baseConfig.CancellationToken.IsCancellationRequested)
             {
+                if(events.Count == 0 && _blockingQueue.Count == 0)
+                {
+                    OnBeforeBlocking();
+                }
                 while(events.Count < _baseConfig.MaxEventsPerTransaction && (_blockingQueue.Count > 0 || events.Count == 0))
                 {
                     try
                     {
                         IEventEnvelope e;
                         _blockingQueue.TryTake(out e, -1, _baseConfig.CancellationToken);
+                        if(events.Count == 0)
+                        {
+                            OnAfterBlocking();
+                        }
                         events.Add(e);
                     }
                     catch(OperationCanceledException)
@@ -85,7 +92,7 @@ namespace FeiEventStore.EventQueue
                 }
 
                 //skip all old events
-                events = events.Where(e => e.StoreVersion <= _version).ToList();
+                events = events.Where(e => e.StoreVersion > _version).ToList();
                 if(events.Count == 0)
                 {
                     continue;
@@ -93,35 +100,42 @@ namespace FeiEventStore.EventQueue
 
                 //make sure that next event version is _version + 1
                 var firstEvent  = events.First();
-                if(firstEvent.StoreVersion > _version + 1)
+                if(firstEvent.StoreVersion != _version + 1)
                 {
                     RecoverFromEventStore(firstEvent.StoreVersion - 1);
                 }
 
                 //process events
                 StartProcessingTransaction(events);
+                events.Clear();
             }
+        }
+
+        protected virtual void OnAfterBlocking()
+        {
+        }
+
+        protected  virtual void OnBeforeBlocking()
+        {
         }
 
         protected virtual void StartProcessingTransaction(ICollection<IEventEnvelope> events)
         {
-            while(!_baseConfig.CancellationToken.IsCancellationRequested)
+            try
             {
-                try
+                using(var tx = new TransactionScope())
                 {
-                    using(var tx = new TransactionScope())
-                    {
-                        var finalVersion = events.Last().StoreVersion;
-                        HandleEvents(events);
-                        _verstionStore.Set(_typeId, finalVersion);
-                        _version = finalVersion;
-                    }
+                    var finalVersion = events.Last().StoreVersion;
+                    HandleEvents(events);
+                    _verstionStore.Set(_typeId, finalVersion);
+                    _version = finalVersion;
+                    tx.Complete();
                 }
-                catch(Exception e)
-                {
-                    Logger.Fatal(e);
-                    Thread.Sleep(1000);
-                }
+            }
+            catch(Exception e)
+            {
+                Logger.Fatal(e);
+                Thread.Sleep(1000);
             }
         }
 

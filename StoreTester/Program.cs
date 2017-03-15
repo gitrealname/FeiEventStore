@@ -1,8 +1,10 @@
 ﻿
+using System.Collections.Generic;
 using System.ServiceModel.Configuration;
 using System.Threading;
 using EventStoreIntegrationTester.EventQueues;
 using EventStoreIntegrationTester.Ioc;
+using EventStoreIntegrationTester._Tests;
 
 namespace EventStoreIntegrationTester
 {
@@ -19,12 +21,41 @@ namespace EventStoreIntegrationTester
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+        private static CancellationTokenSource cancelationSource;
+        private static IServiceContainer container;
+
+        static void StartQueues()
+        {
+            var queues = container.GetAllInstances<ITestingEventQueue>().ToList();
+            cancelationSource = new CancellationTokenSource();
+            foreach(var q in queues)
+            {
+                q.UpdateCancelationToken(cancelationSource.Token);
+                q.ResetStoreVersion();
+                q.Start();
+            }
+        }
+
+        static void StopQueues(bool waitUntilDone = true)
+        {
+
+            var queues = container.GetAllInstances<ITestingEventQueue>().ToList();
+            if(waitUntilDone)
+            {
+                Thread.Sleep(100);
+                var handlers = queues.Select(i => i.GetDoneEvent()).ToArray();
+                WaitHandle.WaitAll(handlers, new TimeSpan(0, 0, 5));
+            }
+            cancelationSource.Cancel();
+        }
+
         static void Main(string[] args)
         {
-            var container = new LightInject.ServiceContainer();
+            container = new LightInject.ServiceContainer();
+            cancelationSource = new CancellationTokenSource();
 
-            BootstrapWithoutEventQueue(container);
-            //BootstrapWithPrinterQueue(container);
+            //BootstrapWithoutEventQueue();
+            BootstrapWithPrinterQueue();
 
             var tests = container.GetAllInstances<ITest>().ToList();
             var onlyTests = tests.Where(t => t.GetType().GetCustomAttributes(typeof(OnlyAttribute), false).Any()).ToList();
@@ -44,6 +75,8 @@ namespace EventStoreIntegrationTester
                     i++;
                     Exception exception = null;
                     var success = true;
+                    StartQueues();
+
                     sw.Restart();
                     try
                     {
@@ -57,6 +90,9 @@ namespace EventStoreIntegrationTester
                     }
                     sw.Stop();
                 
+                    //wait for readers
+                    StopQueues(true);
+
                     //print result
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.Write("{0}. {1}: ", i, t.Name);
@@ -76,12 +112,14 @@ namespace EventStoreIntegrationTester
                     }
                     Console.ForegroundColor = defaultColor;
                 }
+
+                //let event queues to catch up
+                Thread.Sleep(500);
             }
         }
 
-        private static void BootstrapWithPrinterQueue(ServiceContainer container)
+        private static void BootstrapWithPrinterQueue()
         {
-            var cancelationSource = new CancellationTokenSource();
             var queueConfig = new PrintEventQueueConfiguration(cancelationSource.Token);
 
             IocRegistrationScanner
@@ -93,12 +131,9 @@ namespace EventStoreIntegrationTester
                 .UseMapper(new FeiEventStore.Ioc.LightInject.IocRegistrationMapper())
                 .UseMapper(new FeiEventStore.Ioc.IocRegistrationMapper())
                 .Register();
-
-            var printer = container.GetInstance<EventQueues.PrinterTransactionalEventQueue>();
-            printer.Start();
         }
 
-        private static void BootstrapWithoutEventQueue(ServiceContainer container)
+        private static void BootstrapWithoutEventQueue()
         {
             IocRegistrationScanner
                 .WithRegistrar(new LightInjectIocRegistrar(container))

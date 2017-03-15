@@ -1,5 +1,6 @@
 using System;
 using EventStoreIntegrationTester.EventQueues;
+using EventStoreIntegrationTester._Tests;
 using FeiEventStore.Ioc;
 
 namespace EventStoreIntegrationTester.Ioc

@@ -1,6 +1,6 @@
 using System;
 
-namespace EventStoreIntegrationTester
+namespace EventStoreIntegrationTester._Tests
 {
     public static class Const
     {
