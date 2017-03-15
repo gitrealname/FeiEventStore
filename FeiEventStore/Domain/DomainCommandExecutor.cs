@@ -78,9 +78,13 @@ namespace FeiEventStore.Domain
                 //commit
                 if(cache.RaisedEvents.Count > 0)
                 {
+                    var pk = cache.ChangedPrimaryKeyMap.Select(kv => new Tuple<Guid, TypeId, string>(kv.Key, cache.AggregateMap[kv.Key].TypeId, kv.Value)).ToList();
                     var snapshots = cache.AggregateMap.Values.Where(a => _snapshotStrategy.ShouldAggregateSnapshotBeCreated(a)).ToList();
                     var processes = cache.ProcessMap.Values.ToList();
-                    _eventStore.Commit(cache.RaisedEvents, snapshots.Count > 0 ? snapshots : null, processes.Count > 0 ? processes : null);
+                    _eventStore.Commit(cache.RaisedEvents, 
+                        snapshots.Count > 0 ? snapshots : null, 
+                        processes.Count > 0 ? processes : null, 
+                        pk.Count > 0 ? pk : null);
                     finalStoreVersion = cache.RaisedEvents.Count == 0 ? 0L : cache.RaisedEvents[cache.RaisedEvents.Count - 1].StoreVersion;
                 }
 
@@ -165,7 +169,7 @@ namespace FeiEventStore.Domain
                     }
                     if(process != null)
                     {
-                        process.AsDynamic().HandleEvent(e);
+                        process.AsDynamic().HandleEvent(e.Payload);
                     }
                 }
                 if(process == null && iStartByEventType.IsInstanceOfType(handler))
@@ -173,7 +177,7 @@ namespace FeiEventStore.Domain
                     process = (IProcessManager)handler;
                     process.Id = Guid.NewGuid();
                     process.InvolvedAggregateIds.Add(e.StreamId);
-                    process.AsDynamic().StartByEvent(e);
+                    process.AsDynamic().StartByEvent(e.Payload);
                     if(Logger.IsInfoEnabled)
                     {
                         Logger.Info("Started new Process Manager id {0}; Runtime type: '{1}', By event type: '{2}', Source Aggregate id: {3}",
@@ -279,6 +283,7 @@ namespace FeiEventStore.Domain
 
             //remember primary key before the command
             var initialPrimaryKey = aggregate.PrimaryKey;
+            var initialAggregateVersion = aggregate.Version;
             
             //execute command
             handler.AsDynamic().HandleCommand(cmd, aggregate);
@@ -306,14 +311,14 @@ namespace FeiEventStore.Domain
             var envelopes = new List<IEventEnvelope>();
             foreach(var e in events)
             {
+                initialAggregateVersion++;
                 var envelopeType =  typeof(EventEnvelope<>).MakeGenericType(e.GetType());
                 var envelope = (IEventEnvelope)Activator.CreateInstance(envelopeType);
                 envelope.OriginSystemId = origin.SystemId;
                 envelope.OriginUserId = origin.UserId;
                 envelope.StreamId = aggregate.Id;
                 envelope.StreamTypeId = aggregate.TypeId;
-                aggregate.LatestPersistedVersion++;
-                envelope.StreamVersion = aggregate.LatestPersistedVersion;
+                envelope.StreamVersion = initialAggregateVersion;
                 envelope.StoreVersion = 0; // it will be set by event store
                 envelope.Timestapm = DateTimeOffset.UtcNow;
                 envelope.Payload = e;

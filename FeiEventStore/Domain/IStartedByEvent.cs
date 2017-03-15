@@ -22,7 +22,6 @@ namespace FeiEventStore.Domain
         /// IMPORTANT: before renaming this method search code for .AsDynamic().StartByEvent!!!!
         /// </summary>
         /// <param name="event">The event.</param>
-        /// <param name="sourceAggregate">The source aggregate.</param>
-        void StartByEvent(TEvent @event, IAggregate sourceAggregate);
+        void StartByEvent(TEvent @event);
     }
 }

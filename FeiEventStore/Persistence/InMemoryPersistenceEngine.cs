@@ -114,7 +114,7 @@ namespace FeiEventStore.Persistence
                         }
                         else
                         {
-                            key = pk.PrimaryKey + ":" + pk.StreamId;
+                            key = pk.PrimaryKey + ":" + pk.StreamTypeId;
                             if(!_primaryKey.Add(key))
                             {
                                 var ex = new AggregatePrimaryKeyViolationException(pk.StreamId, pk.StreamTypeId, pk.PrimaryKey);

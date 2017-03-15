@@ -19,11 +19,11 @@ namespace EventStoreIntegrationTester.UserGroup
     }
 
     [PermanentType("user.group.counter.pm")]
-    public class UserGroupCounterProcessManagerManager : BaseProcessManager<UserGroupCounter>
+    public class UserGroupCounterProcessManager : BaseProcessManager<UserGroupCounter>
         ,IStartedByEvent<UserGroupCreated>
         ,IHandleEvent<Incremented>
     {
-        public void StartByEvent(UserGroupCreated e, IAggregate sourceAggregate)
+        public void StartByEvent(UserGroupCreated e)
         {
             if(e.GroupCounterId != null)
             {
@@ -40,7 +40,7 @@ namespace EventStoreIntegrationTester.UserGroup
             }
         }
 
-        public void HandleEvent(Incremented e, IAggregate sourceAggregate)
+        public void HandleEvent(Incremented e)
         {
             State.ProcessedEventCount++;
             //long running process ends when counter incremented by 100

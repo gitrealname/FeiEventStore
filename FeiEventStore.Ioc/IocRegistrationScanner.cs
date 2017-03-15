@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization.Formatters;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -190,8 +191,14 @@ namespace FeiEventStore.Ioc
 
             var baseDirectoryLength = _baseDirectory.Length;
             var assemblies = _appDomain.GetAssemblies();
+            var visited = new HashSet<Assembly>();
             foreach(var a in assemblies)
             {
+                if(!visited.Add(a))
+                {
+                    continue;
+                }
+                
                 //does it match any of the patters?
                 var relativeName = a.Location.Substring(baseDirectoryLength);
                 if(rxs.Any(rx => rx.IsMatch(relativeName)))

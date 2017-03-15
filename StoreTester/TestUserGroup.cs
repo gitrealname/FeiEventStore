@@ -24,8 +24,8 @@ namespace EventStoreIntegrationTester
         }
         public override bool Run()
         {
-            var result1 = CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.DefaultUserGroup, "group1"), Origin);
-            var result2 = CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.DefaultUserGroup, "group1"), Origin);
+            var result1 = CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.FirstUserGroup, "group1"), Origin);
+            var result2 = CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.SecondUserGroup, "group1"), Origin);
 
             result2.Errors.Should().HaveCount(1);
             result2.Errors[0].Should().StartWith("User Group with name");
@@ -40,7 +40,7 @@ namespace EventStoreIntegrationTester
         public ProcessManagerTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore) : base(commandExecutor, eventStore, "Process Manager Simple") { }
         public override bool Run()
         {
-            var result = CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.DefaultUserGroup, "group1", Const.FirstCounterId), Origin);
+            var result = CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.FirstUserGroup, "group1", Const.FirstCounterId), Origin);
 
             var group = (UserGroupAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(UserGroupAggregate));
             group.Version.ShouldBeEquivalentTo(1);
@@ -64,9 +64,9 @@ namespace EventStoreIntegrationTester
         }
         public override bool Run()
         {
-            var result = CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.DefaultUserGroup, "group1"), Origin);
+            var result = CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.FirstUserGroup, "group1"), Origin);
 
-            var userGroup = _stateRepository.Get<UserGroup.UserGroup>(Const.DefaultUserGroup);
+            var userGroup = _stateRepository.Get<UserGroup.UserGroup>(Const.FirstUserGroup);
             userGroup.Name.ShouldBeEquivalentTo("group1");
 
 
@@ -81,14 +81,14 @@ namespace EventStoreIntegrationTester
         public override bool Run()
         {
             //'_' in the name will be used by CreateUserGroupCounterProcessManager to run long running process
-            CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.DefaultUserGroup, "_prefered group", Const.FirstCounterId), Origin);
+            CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.FirstUserGroup, "_prefered group", Const.FirstCounterId), Origin);
 
             CommandExecutor.ExecuteCommand(new Increment(Const.FirstCounterId, 1), Origin);
             CommandExecutor.ExecuteCommand(new Increment(Const.FirstCounterId, 1), Origin); 
 
             //Process manager state should be stored in event store for both UserGroupAggregate and CounterAggregate
-            var pm1 = (UserGroupCounterProcessManagerManager)EventStore.LoadProcess(typeof(UserGroupCounterProcessManagerManager), Const.DefaultUserGroup);
-            var pm2 = (UserGroupCounterProcessManagerManager)EventStore.LoadProcess(typeof(UserGroupCounterProcessManagerManager), Const.FirstCounterId);
+            var pm1 = (UserGroupCounterProcessManager)EventStore.LoadProcess(typeof(UserGroupCounterProcessManager), Const.FirstUserGroup);
+            var pm2 = (UserGroupCounterProcessManager)EventStore.LoadProcess(typeof(UserGroupCounterProcessManager), Const.FirstCounterId);
 
             var state = pm1.GetState();
             state.LongRunning.ShouldBeEquivalentTo(true);
@@ -101,7 +101,7 @@ namespace EventStoreIntegrationTester
 
             try
             {
-                pm2 = (UserGroupCounterProcessManagerManager)EventStore.LoadProcess(typeof(UserGroupCounterProcessManagerManager), Const.DefaultUserGroup);
+                pm2 = (UserGroupCounterProcessManager)EventStore.LoadProcess(typeof(UserGroupCounterProcessManager), Const.FirstUserGroup);
             }
             catch(ProcessNotFoundException)
             {
