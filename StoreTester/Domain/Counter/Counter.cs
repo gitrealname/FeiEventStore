@@ -1,6 +1,6 @@
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Counter
+namespace EventStoreIntegrationTester.Domain.Counter
 {
     [PermanentType("counter")]
     public class Counter : IState

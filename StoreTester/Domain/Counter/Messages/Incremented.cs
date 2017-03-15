@@ -1,6 +1,6 @@
 ﻿using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Counter.Messages
+namespace EventStoreIntegrationTester.Domain.Counter.Messages
 {
     [PermanentType("counter.incremented")]
     public class Incremented : IEvent

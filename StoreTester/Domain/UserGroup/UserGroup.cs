@@ -1,6 +1,6 @@
 ﻿using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.UserGroup
+namespace EventStoreIntegrationTester.Domain.UserGroup
 {
     [PermanentType("user.group")]
     public class UserGroup : IState

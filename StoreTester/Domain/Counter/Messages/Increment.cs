@@ -5,11 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Counter.Messages
+namespace EventStoreIntegrationTester.Domain.Counter.Messages
 {
-    public class Decrement : ICommand
+    public class Increment : ICommand
     {
-        public Decrement(Guid aggregateId, int by, long? targetAggregateVersion = null)
+        public Increment(Guid aggregateId, int by, long? targetAggregateVersion = null)
         {
             TargetAggregateId = aggregateId;
             By = by;
@@ -19,4 +19,5 @@ namespace EventStoreIntegrationTester.Counter.Messages
         public Guid TargetAggregateId { get; set; }
         public long? TargetAggregateVersion { get; set; }
     }
+    
 }

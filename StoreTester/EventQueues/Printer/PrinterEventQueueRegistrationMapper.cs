@@ -1,14 +1,14 @@
 using System;
-using EventStoreIntegrationTester.EventQueues;
+using EventStoreIntegrationTester.EventQueues.Ado;
 using FeiEventStore.Ioc;
 
-namespace EventStoreIntegrationTester.Ioc
+namespace EventStoreIntegrationTester.EventQueues.Printer
 {
-    public class PrinterEventQueueMapper : IIocRegistrationMapper
+    public class PrinterEventQueueRegistrationMapper : IIocRegistrationMapper
     {
         private readonly IPrinterEventQueueConfiguration _queueConfiguration;
 
-        public PrinterEventQueueMapper(IPrinterEventQueueConfiguration queueConfiguration)
+        public PrinterEventQueueRegistrationMapper(IPrinterEventQueueConfiguration queueConfiguration)
         {
             _queueConfiguration = queueConfiguration;
         }

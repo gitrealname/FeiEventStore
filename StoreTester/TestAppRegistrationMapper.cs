@@ -1,14 +1,13 @@
 using System;
-using EventStoreIntegrationTester.EventQueues;
 using EventStoreIntegrationTester._Tests;
 using FeiEventStore.Ioc;
 
-namespace EventStoreIntegrationTester.Ioc
+namespace EventStoreIntegrationTester
 {
-    public class TestAppMapper : IIocRegistrationMapper
+    public class TestAppRegistrationMapper : IIocRegistrationMapper
     {
 
-        public TestAppMapper()
+        public TestAppRegistrationMapper()
         {
         }
         public IocRegistrationAction Map(Type serviceType, Type implementationType)

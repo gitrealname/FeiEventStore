@@ -1,6 +1,6 @@
 ﻿namespace FeiEventStore.Core
 {
-    internal static class PrivateReflectionDynamicObjectExtensions
+    public static class PrivateReflectionDynamicObjectExtensions
     {
         public static dynamic AsDynamic(this object o)
         {

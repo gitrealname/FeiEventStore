@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Resources;
-using System.Text;
-using System.Threading.Tasks;
-using EventStoreIntegrationTester.Counter.Messages;
-using EventStoreIntegrationTester.UserGroup.Messages;
+﻿using EventStoreIntegrationTester.Domain.Counter.Messages;
+using EventStoreIntegrationTester.Domain.UserGroup.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
 
-namespace EventStoreIntegrationTester.UserGroup
+namespace EventStoreIntegrationTester.Domain.UserGroup
 {
     [PermanentType("user.group.counter")]
     public class UserGroupCounter : IState

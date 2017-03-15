@@ -1,7 +1,7 @@
-﻿using EventStoreIntegrationTester.Counter;
-using EventStoreIntegrationTester.Counter.Messages;
-using EventStoreIntegrationTester.UserGroup;
-using EventStoreIntegrationTester.UserGroup.Messages;
+﻿using EventStoreIntegrationTester.Domain.Counter;
+using EventStoreIntegrationTester.Domain.Counter.Messages;
+using EventStoreIntegrationTester.Domain.UserGroup;
+using EventStoreIntegrationTester.Domain.UserGroup.Messages;
 using FeiEventStore.AggregateStateRepository;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
@@ -60,7 +60,7 @@ namespace EventStoreIntegrationTester._Tests
         {
             var result = CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.FirstUserGroup, "group1"), Origin);
 
-            var userGroup = _stateRepository.Get<UserGroup.UserGroup>(Const.FirstUserGroup);
+            var userGroup = _stateRepository.Get<Domain.UserGroup.UserGroup>(Const.FirstUserGroup);
             userGroup.Name.ShouldBeEquivalentTo("group1");
 
 

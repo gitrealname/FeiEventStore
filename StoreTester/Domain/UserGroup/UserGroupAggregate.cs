@@ -1,15 +1,13 @@
 ﻿using System;
-using EventStoreIntegrationTester.UserGroup.Messages;
+using EventStoreIntegrationTester.Domain.UserGroup.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
-using FeiEventStore.Events;
 using FeiEventStore.Persistence;
-using NLog.Config;
 
-namespace EventStoreIntegrationTester.UserGroup
+namespace EventStoreIntegrationTester.Domain.UserGroup
 {
     [PermanentType("user.group.aggregate")]
-    public class UserGroupAggregate : BaseAggregate<UserGroup>
+    public class UserGroupAggregate : BaseAggregate<Domain.UserGroup.UserGroup>
         , IErrorTranslator
         , ICreatedByCommand<CreateUserGroup>
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.UserGroup.Messages
+namespace EventStoreIntegrationTester.Domain.UserGroup.Messages
 {
     public class CreateUserGroup : ICommand
     {

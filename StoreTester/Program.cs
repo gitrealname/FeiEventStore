@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.ServiceModel.Configuration;
 using System.Threading;
+using EventStoreIntegrationTester.Domain.Counter;
 using EventStoreIntegrationTester.EventQueues;
-using EventStoreIntegrationTester.Ioc;
+using EventStoreIntegrationTester.EventQueues.Ado;
+using EventStoreIntegrationTester.EventQueues.Printer;
 using EventStoreIntegrationTester._Tests;
 
 namespace EventStoreIntegrationTester
@@ -44,7 +46,10 @@ namespace EventStoreIntegrationTester
             {
                 Thread.Sleep(100);
                 var handlers = queues.Select(i => i.GetDoneEvent()).ToArray();
-                WaitHandle.WaitAll(handlers, new TimeSpan(0, 0, 5));
+                if(handlers.Length > 0)
+                {
+                    WaitHandle.WaitAll(handlers, new TimeSpan(0, 0, 5));
+                }
             }
             cancelationSource.Cancel();
         }
@@ -55,7 +60,9 @@ namespace EventStoreIntegrationTester
             cancelationSource = new CancellationTokenSource();
 
             //BootstrapWithoutEventQueue();
-            BootstrapWithPrinterQueue();
+            //BootstrapWithPrinterQueue(true);
+            BootstrapWithAdoQueue();
+            //BootstrapWithAdoAndPrinterQueue(true);
 
             var tests = container.GetAllInstances<ITest>().ToList();
             var onlyTests = tests.Where(t => t.GetType().GetCustomAttributes(typeof(OnlyAttribute), false).Any()).ToList();
@@ -75,12 +82,12 @@ namespace EventStoreIntegrationTester
                     i++;
                     Exception exception = null;
                     var success = true;
+                    persistenceEngine.Purge();
                     StartQueues();
 
                     sw.Restart();
                     try
                     {
-                        persistenceEngine.Purge();
                         success = t.Run();
                     }
                     catch(Exception e)
@@ -90,7 +97,7 @@ namespace EventStoreIntegrationTester
                     }
                     sw.Stop();
                 
-                    //wait for readers
+                    //wait for queue to complete processing, than cancel threads
                     StopQueues(true);
 
                     //print result
@@ -118,16 +125,53 @@ namespace EventStoreIntegrationTester
             }
         }
 
-        private static void BootstrapWithPrinterQueue()
+        private static void BootstrapWithPrinterQueue(bool printToConsole = true)
         {
-            var queueConfig = new PrintEventQueueConfiguration(cancelationSource.Token);
+            var queueConfig = new PrintEventQueueConfiguration(cancelationSource.Token, printToConsole);
 
             IocRegistrationScanner
                 .WithRegistrar(new LightInjectIocRegistrar(container))
                 .ScanAssembly("FeiEventStore*dll")
-                .ScanAssembly(typeof(Counter.CounterAggregate))
-                .UseMapper(new PrinterEventQueueMapper(queueConfig))
-                .UseMapper(new TestAppMapper()) //register tests
+                .ScanAssembly(typeof(CounterAggregate))
+                .UseMapper(new PrinterEventQueueRegistrationMapper(queueConfig))
+                .UseMapper(new TestAppRegistrationMapper()) //register tests
+                .UseMapper(new FeiEventStore.Ioc.LightInject.IocRegistrationMapper())
+                .UseMapper(new FeiEventStore.Ioc.IocRegistrationMapper())
+                .Register();
+        }
+
+        private static void BootstrapWithAdoQueue()
+        {
+            var queueConfig = new AdoEventQueueConfiguration(cancelationSource.Token, 
+                @"Data Source=d:\adoQueue.sqlite3; Version=3; FailIfMissing=True; Foreign Keys=True;",
+                true);
+
+            IocRegistrationScanner
+                .WithRegistrar(new LightInjectIocRegistrar(container))
+                .ScanAssembly("FeiEventStore*dll")
+                .ScanAssembly(typeof(CounterAggregate))
+                .UseMapper(new AdoEventQueueRegistrationMapper(queueConfig))
+                .UseMapper(new TestAppRegistrationMapper()) //register tests
+                .UseMapper(new FeiEventStore.Ioc.LightInject.IocRegistrationMapper())
+                .UseMapper(new FeiEventStore.Ioc.IocRegistrationMapper())
+                .Register();
+        }
+
+        private static void BootstrapWithAdoAndPrinterQueue(bool printToConsole = true)
+        {
+            var adoQueueConfig = new AdoEventQueueConfiguration(cancelationSource.Token,
+                @"Data Source=d:\adoQueue.sqlite3; Version=3; FailIfMissing=True; Foreign Keys=True;",
+                true);
+
+            var printQueueConfig = new PrintEventQueueConfiguration(cancelationSource.Token, printToConsole);
+
+            IocRegistrationScanner
+                .WithRegistrar(new LightInjectIocRegistrar(container))
+                .ScanAssembly("FeiEventStore*dll")
+                .ScanAssembly(typeof(CounterAggregate))
+                .UseMapper(new PrinterEventQueueRegistrationMapper(printQueueConfig))
+                .UseMapper(new AdoEventQueueRegistrationMapper(adoQueueConfig))
+                .UseMapper(new TestAppRegistrationMapper()) //register tests
                 .UseMapper(new FeiEventStore.Ioc.LightInject.IocRegistrationMapper())
                 .UseMapper(new FeiEventStore.Ioc.IocRegistrationMapper())
                 .Register();
@@ -138,9 +182,9 @@ namespace EventStoreIntegrationTester
             IocRegistrationScanner
                 .WithRegistrar(new LightInjectIocRegistrar(container))
                 .ScanAssembly("FeiEventStore*dll")
-                .ScanAssembly(typeof(Counter.CounterAggregate))
-                .UseMapper( new TestAppMapper()) //register tests
-                .UseMapper(new FeiEventStore.Ioc.LightInject.IocRegistrationMapper())
+                .ScanAssembly(typeof(CounterAggregate))
+                .UseMapper( new TestAppRegistrationMapper()) //register tests
+                .UseMapper( new FeiEventStore.Ioc.LightInject.IocRegistrationMapper())
                 .UseMapper( new FeiEventStore.Ioc.IocRegistrationMapper())
                 .Register();
         }

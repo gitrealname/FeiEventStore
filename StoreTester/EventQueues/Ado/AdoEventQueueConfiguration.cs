@@ -2,40 +2,42 @@
 using System.Threading;
 using FeiEventStore.EventQueue;
 
-namespace EventStoreIntegrationTester.EventQueues
+namespace EventStoreIntegrationTester.EventQueues.Ado
 {
-    public interface IPrinterEventQueueConfiguration : ITestingIEventQueueConfiguration
+    public interface IAdoEventQueueConfiguration : ITestingIEventQueueConfiguration
     {
-        List<string> Output { get; }
+        string ConnectionString { get; }
 
-        bool PrintToConsole { get; }
-
+        bool RegenerateModelOnStart { get; }
     }
 
-    public class PrintEventQueueConfiguration : IPrinterEventQueueConfiguration
+    public class AdoEventQueueConfiguration : IAdoEventQueueConfiguration
     {
         public int MaxQueueCapacity { get; protected set; }
         public CancellationToken CancellationToken { get; protected set; }
         public long MaxEventsPerTransaction { get; protected set; }
 
-        public List<string> Output { get; protected set; }
+        public string ConnectionString { get; protected set; }
 
-        public bool PrintToConsole { get; protected set; }
+        public bool RegenerateModelOnStart { get; protected set; }
 
-        public PrintEventQueueConfiguration(CancellationToken cancellationToken, bool printToConsole = true)
+        public AdoEventQueueConfiguration(CancellationToken cancellationToken, string connectionString, bool regenerateModelOnEachStart = true)
         {
             MaxQueueCapacity = 1000;
             CancellationToken = cancellationToken;
             MaxEventsPerTransaction = 100;
-            Output = new List<string>();
-            PrintToConsole = printToConsole;
             DoneEvent = new AutoResetEvent(false);
+            ConnectionString = connectionString;
+            RegenerateModelOnStart = regenerateModelOnEachStart;
         }
 
+
+        /* Testing specific */
         public AutoResetEvent DoneEvent { get; protected set; }
         public void UpdateCancelationToken(CancellationToken token)
         {
             CancellationToken = token;
         }
+
     }
 }

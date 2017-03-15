@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using EventStoreIntegrationTester.UserGroup.Messages;
+﻿using EventStoreIntegrationTester.Domain.UserGroup.Messages;
 using FeiEventStore.Domain;
 
-namespace EventStoreIntegrationTester.UserGroup
+namespace EventStoreIntegrationTester.Domain.UserGroup
 {
     public class UserGroupCommandHandler : IHandleCommand<CreateUserGroup, UserGroupAggregate>
     {

@@ -1,11 +1,11 @@
-﻿using EventStoreIntegrationTester.Counter.Messages;
+﻿using EventStoreIntegrationTester.Domain.Counter.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
 
-namespace EventStoreIntegrationTester.Counter
+namespace EventStoreIntegrationTester.Domain.Counter
 {
     [PermanentType("counter.aggregate")]
-    public class CounterAggregate : BaseAggregate<Counter>
+    public class CounterAggregate : BaseAggregate<Domain.Counter.Counter>
         , ICreatedByCommand<Increment>
         , IHandleCommand<Increment, CounterAggregate>
         , IHandleCommand<Decrement, CounterAggregate>

@@ -12,6 +12,8 @@
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -53,6 +55,10 @@
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.SQLite, Version=1.0.104.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Data.SQLite.Core.1.0.104.0\lib\net46\System.Data.SQLite.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
@@ -65,31 +71,43 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EventQueues\Ado\DbModel\AdoConnectionProvider.cs" />
+    <Compile Include="EventQueues\Ado\DbModel\AdoDbFactory.cs" />
+    <Compile Include="EventQueues\Ado\DbModel\CounterTbl.cs" />
+    <Compile Include="EventQueues\IConnectionProvider.cs" />
+    <Compile Include="EventQueues\IModelGenerator.cs" />
+    <Compile Include="EventQueues\Ado\DbModel\AdoModelGenerator.cs" />
+    <Compile Include="EventQueues\Ado\Handlers\CounterHandler.cs" />
+    <Compile Include="EventQueues\Ado\Handlers\IAdoQueueEventHandler.cs" />
+    <Compile Include="EventQueues\IHandleQueueEvent.cs" />
     <Compile Include="EventQueues\ITestingEventQueue.cs" />
     <Compile Include="EventQueues\ITestingIEventQueueConfiguration.cs" />
+    <Compile Include="EventQueues\Ado\AdoTransactionalEventQueue.cs" />
+    <Compile Include="EventQueues\Ado\AdoEventQueueConfiguration.cs" />
+    <Compile Include="EventQueues\Ado\AdoEventQueueRegistrationMapper.cs" />
     <Compile Include="_Tests\BaseTest.cs" />
-    <Compile Include="Counter\Counter.cs" />
-    <Compile Include="Counter\Messages\Decremented.cs" />
-    <Compile Include="Counter\Messages\Incremented.cs" />
-    <Compile Include="Ioc\PrinterEventQueueMapper.cs" />
+    <Compile Include="Domain\Counter\Counter.cs" />
+    <Compile Include="Domain\Counter\Messages\Decremented.cs" />
+    <Compile Include="Domain\Counter\Messages\Incremented.cs" />
+    <Compile Include="EventQueues\Printer\PrinterEventQueueRegistrationMapper.cs" />
     <Compile Include="OnlyAttribute.cs" />
-    <Compile Include="EventQueues\PrinterTransactionalEventQueue.cs" />
-    <Compile Include="EventQueues\PrinterEventQueueConfiguration.cs" />
-    <Compile Include="Ioc\TestAppMapper.cs" />
+    <Compile Include="EventQueues\Printer\PrinterTransactionalEventQueue.cs" />
+    <Compile Include="EventQueues\Printer\PrinterEventQueueConfiguration.cs" />
+    <Compile Include="TestAppRegistrationMapper.cs" />
     <Compile Include="_Tests\Const.cs" />
     <Compile Include="_Tests\UserGroup.cs" />
-    <Compile Include="UserGroup\UserGroupCounterProcessManager.cs" />
-    <Compile Include="UserGroup\Messages\UserGroupCreated.cs" />
-    <Compile Include="UserGroup\UserGroupAggregate.cs" />
-    <Compile Include="UserGroup\Messages\CreateUserGroup.cs" />
+    <Compile Include="Domain\UserGroup\UserGroupCounterProcessManager.cs" />
+    <Compile Include="Domain\UserGroup\Messages\UserGroupCreated.cs" />
+    <Compile Include="Domain\UserGroup\UserGroupAggregate.cs" />
+    <Compile Include="Domain\UserGroup\Messages\CreateUserGroup.cs" />
     <Compile Include="_Tests\Counter.cs" />
-    <Compile Include="Counter\CounterAggregate.cs" />
-    <Compile Include="Counter\Messages\Decrement.cs" />
-    <Compile Include="Counter\Messages\Increment.cs" />
+    <Compile Include="Domain\Counter\CounterAggregate.cs" />
+    <Compile Include="Domain\Counter\Messages\Decrement.cs" />
+    <Compile Include="Domain\Counter\Messages\Increment.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UserGroup\UserGroup.cs" />
-    <Compile Include="UserGroup\UserGroupCommandHandler.cs" />
+    <Compile Include="Domain\UserGroup\UserGroup.cs" />
+    <Compile Include="Domain\UserGroup\UserGroupCommandHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -114,9 +132,20 @@
       <Project>{c6486fad-4256-4f5c-8b39-b83b8cd2739c}</Project>
       <Name>FeiEventStore</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SqlFu\src\SqlFu\SqlFu.csproj">
+      <Project>{CC6D8079-500F-457B-9FF2-CE0A68EDCCF0}</Project>
+      <Name>SqlFu</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\System.Data.SQLite.Core.1.0.104.0\build\net46\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.104.0\build\net46\System.Data.SQLite.Core.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\System.Data.SQLite.Core.1.0.104.0\build\net46\System.Data.SQLite.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.Data.SQLite.Core.1.0.104.0\build\net46\System.Data.SQLite.Core.targets'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
