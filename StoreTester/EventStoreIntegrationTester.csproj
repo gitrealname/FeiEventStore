@@ -162,7 +162,7 @@
       <Name>FeiEventStore</Name>
     </ProjectReference>
     <ProjectReference Include="..\SqlFu\src\SqlFu\SqlFu.csproj">
-      <Project>{CC6D8079-500F-457B-9FF2-CE0A68EDCCF0}</Project>
+      <Project>{cc6d8079-500f-457b-9ff2-ce0a68edccf0}</Project>
       <Name>SqlFu</Name>
     </ProjectReference>
   </ItemGroup>
