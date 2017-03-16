@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Transactions;
 using EventStoreIntegrationTester.EventQueues.Ado;
@@ -82,6 +83,8 @@ namespace EventStoreIntegrationTester.EventQueues.Ado
             {
                 name = name.Substring(0, name.Length - 3);
             }
+            var rx = new Regex("([A-Z]+)", RegexOptions.Compiled);
+            name = rx.Replace(name, "_$1").Substring(1);
             name = name.ToLowerInvariant();
             return name;
         }

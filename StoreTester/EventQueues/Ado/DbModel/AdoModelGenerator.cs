@@ -25,6 +25,23 @@ namespace EventStoreIntegrationTester.EventQueues.Ado.DbModel
                     .PrimaryKey(pk => pk.OnColumns(d => d.Id))
                 ;
             });
+
+            Db.CreateTableFrom<UserGroupTbl>(cf => {
+                cf.DropIfExists()
+                    .PrimaryKey(pk => pk.OnColumns(d => d.Id))
+                ;
+            });
+
+            Db.CreateTableFrom<EMessageTbl>(cf => {
+                cf.DropIfExists()
+                    .PrimaryKey(pk => pk.OnColumns(d => d.Id))
+                ;
+            });
+            Db.CreateTableFrom<EMessageRecepientTbl>(cf => {
+                cf.DropIfExists()
+                    .Index(i => i.OnColumns(c => c.MessageId, c => c.RecepientId, c => c.Relation).Unique())
+                ;
+            });
         }
     }
 }

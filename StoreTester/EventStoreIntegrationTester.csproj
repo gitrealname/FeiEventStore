@@ -72,9 +72,26 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Domain\Counter\Messages\CounterCreated.cs" />
+    <Compile Include="Domain\EMessage\EMessage.cs" />
+    <Compile Include="Domain\EMessage\EMessageCommandHandler.cs" />
+    <Compile Include="Domain\EMessage\EMessageAggregate.cs" />
+    <Compile Include="Domain\EMessage\Messages\BaseEMessageCommand.cs" />
+    <Compile Include="Domain\EMessage\Messages\CreateEMessage.cs" />
+    <Compile Include="Domain\EMessage\Messages\EMessageSubjectRevised.cs" />
+    <Compile Include="Domain\EMessage\Messages\EMessageToRecepientListRevised.cs" />
+    <Compile Include="Domain\EMessage\Messages\EMessageBodyRevised.cs" />
+    <Compile Include="Domain\EMessage\Messages\EMessageCreated.cs" />
+    <Compile Include="Domain\EMessage\Messages\ReviseEMessageSubject.cs" />
+    <Compile Include="Domain\EMessage\Messages\ReviseEMessageToRecepientList.cs" />
+    <Compile Include="Domain\EMessage\Messages\ReviseEMessageBody.cs" />
     <Compile Include="EventQueues\Ado\DbModel\AdoConnectionProvider.cs" />
     <Compile Include="EventQueues\Ado\DbModel\AdoDbFactory.cs" />
+    <Compile Include="EventQueues\Ado\DbModel\EMessageRecepientTbl.cs" />
+    <Compile Include="EventQueues\Ado\DbModel\EMessageTbl.cs" />
+    <Compile Include="EventQueues\Ado\DbModel\UserGroupTbl.cs" />
     <Compile Include="EventQueues\Ado\DbModel\CounterTbl.cs" />
+    <Compile Include="EventQueues\Ado\Handlers\EMessageHandler.cs" />
+    <Compile Include="EventQueues\Ado\Handlers\UserGroupHandler.cs" />
     <Compile Include="EventQueues\IConnectionProvider.cs" />
     <Compile Include="EventQueues\IModelGenerator.cs" />
     <Compile Include="EventQueues\Ado\DbModel\AdoModelGenerator.cs" />
@@ -96,6 +113,7 @@
     <Compile Include="EventQueues\Printer\PrinterEventQueueConfiguration.cs" />
     <Compile Include="TestAppRegistrationMapper.cs" />
     <Compile Include="_Tests\Const.cs" />
+    <Compile Include="_Tests\EMessage.cs" />
     <Compile Include="_Tests\UserGroup.cs" />
     <Compile Include="Domain\UserGroup\UserGroupCounterProcessManager.cs" />
     <Compile Include="Domain\UserGroup\Messages\UserGroupCreated.cs" />
