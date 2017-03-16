@@ -19,6 +19,15 @@ namespace EventStoreIntegrationTester.Domain.EMessage
         {
             _ctx = ctx;
         }
+
+        private void CheckIsSent()
+        {
+            if(State.IsSent)
+            {
+                throw new Exception("Message can not be modified, it has been sent");
+            }
+        }
+
         public void Create(Guid authorId)
         {
             var e = new EMessageCreated() { AuthorId = authorId };
@@ -28,6 +37,7 @@ namespace EventStoreIntegrationTester.Domain.EMessage
 
         public void ReviseBody(string body)
         {
+            CheckIsSent();
             var e = new EMessageBodyRevised()  {
                 Body = body,
             };    
@@ -36,6 +46,7 @@ namespace EventStoreIntegrationTester.Domain.EMessage
 
         public void ReviseToList(List<Guid> toList )
         {
+            CheckIsSent();
             var e = new EMessageToRecepientListRevised() {
                 ToRecepientList = toList
             };
@@ -44,12 +55,38 @@ namespace EventStoreIntegrationTester.Domain.EMessage
 
         public void ReviseSubject(string subject)
         {
+            CheckIsSent();
             var e = new EMessageSubjectRevised() {
                 Subject = subject,
             };
             RaiseEvent(e);
         }
 
+        public void Send()
+        {
+            CheckHasRecipients();
+            var e = new EMessageSent() {
+                ToRecipientList = State.ToRecepients,
+                CcRecipientList = State.CcRecepients,
+                AuthorId = State.AuthorId,
+            };
+            RaiseEvent(e);
+        }
+
+        private void CheckHasRecipients()
+        {
+            if(State.ToRecepients.Count == 0)
+            {
+                throw new Exception("There are no recipients specified.");
+            }
+        }
+
+
+        private void Apply(EMessageSent e)
+        {
+            State.IsSent = true;
+
+        }
         private void Apply(EMessageCreated e)
         {
             State.AuthorId = e.AuthorId;

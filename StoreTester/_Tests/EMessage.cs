@@ -15,7 +15,7 @@ using FluentAssertions;
 
 namespace EventStoreIntegrationTester._Tests
 {
-    //[Only]
+    [Only]
     public class EMessageCreation: BaseTest
     {
         public EMessageCreation(IDomainCommandExecutor commandExecutor, IEventStore eventStore):base(commandExecutor, eventStore, "EMessage creation"){}
@@ -26,7 +26,7 @@ namespace EventStoreIntegrationTester._Tests
                 new CreateEMessage(Const.EMessageId,  Const.UserId1),
                 new ReviseEMessageBody(Const.EMessageId, "message body"),
                 new ReviseEMessageSubject(Const.EMessageId, "message subject"),
-                new ReviseEMessageToRecepientList(Const.EMessageId, new List<Guid>{ Const.UserId2, Const.UserId3 }),
+                new ReviseEMessageToRecepientList(Const.EMessageId, new List<Guid>{ Const.UserId2 }),
             };
 
             var result = CommandExecutor.ExecuteCommandBatch(batch, Origin);
@@ -36,7 +36,11 @@ namespace EventStoreIntegrationTester._Tests
             result = CommandExecutor.ExecuteCommand(new ReviseEMessageBody(Const.EMessageId, "new " + DateTime.Now), Origin);
             result.CommandHasFailed.ShouldBeEquivalentTo(false);
 
-            //DEMO: result = CommandExecutor.ExecuteCommand(new ReviseEMessageToRecepientList(Const.EMessageId, new List<Guid> { Const.UserId3 }), Origin);
+            result = CommandExecutor.ExecuteCommand(new ReviseEMessageToRecepientList(Const.EMessageId, new List<Guid> { Const.UserId2, Const.UserId3 }), Origin);
+            result.CommandHasFailed.ShouldBeEquivalentTo(false);
+
+            result = CommandExecutor.ExecuteCommand(new SendEMessage(Const.EMessageId), Origin);
+
 
             return !result.CommandHasFailed;
         }

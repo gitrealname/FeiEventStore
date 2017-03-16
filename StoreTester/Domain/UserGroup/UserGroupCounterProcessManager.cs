@@ -1,4 +1,5 @@
-﻿using EventStoreIntegrationTester.Domain.Counter.Messages;
+﻿using System;
+using EventStoreIntegrationTester.Domain.Counter.Messages;
 using EventStoreIntegrationTester.Domain.UserGroup.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
@@ -17,7 +18,7 @@ namespace EventStoreIntegrationTester.Domain.UserGroup
         ,IStartedByEvent<UserGroupCreated>
         ,IHandleEvent<Incremented>
     {
-        public void StartByEvent(UserGroupCreated e)
+        public void StartByEvent(UserGroupCreated e, Guid aggregateId, long aggregateVersion, TypeId aggregateTypeId)
         {
             if(e.GroupCounterId != null)
             {
@@ -34,7 +35,7 @@ namespace EventStoreIntegrationTester.Domain.UserGroup
             }
         }
 
-        public void HandleEvent(Incremented e)
+        public void HandleEvent(Incremented e, Guid aggregateId, long aggregateVersion, TypeId aggregateTypeId)
         {
             State.ProcessedEventCount++;
             //long running process ends when counter incremented by 100

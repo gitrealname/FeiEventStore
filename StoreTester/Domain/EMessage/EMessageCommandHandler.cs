@@ -10,6 +10,7 @@ namespace EventStoreIntegrationTester.Domain.EMessage
         , IHandleCommand<ReviseEMessageBody, EMessageAggregate>
         , IHandleCommand<ReviseEMessageToRecepientList, EMessageAggregate>
         , IHandleCommand<ReviseEMessageSubject, EMessageAggregate>
+        , IHandleCommand<SendEMessage, EMessageAggregate>
     {
         public void HandleCommand(CreateEMessage cmd, EMessageAggregate aggregate)
         {
@@ -30,6 +31,11 @@ namespace EventStoreIntegrationTester.Domain.EMessage
         public void HandleCommand(ReviseEMessageSubject cmd, EMessageAggregate aggregate)
         {
             aggregate.ReviseSubject(cmd.Subject);
+        }
+
+        public void HandleCommand(SendEMessage cmd, EMessageAggregate aggregate)
+        {
+            aggregate.Send();
         }
     }
 }

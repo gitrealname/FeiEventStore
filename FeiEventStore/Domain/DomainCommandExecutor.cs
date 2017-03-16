@@ -210,7 +210,7 @@ namespace FeiEventStore.Domain
                     }
                     if(process != null)
                     {
-                        process.AsDynamic().HandleEvent(e.Payload);
+                        process.AsDynamic().HandleEvent(e.Payload, e.StreamId, e.StoreVersion, e.StreamTypeId);
                     }
                 }
                 if(process == null && iStartByEventType.IsInstanceOfType(handler))
@@ -218,7 +218,7 @@ namespace FeiEventStore.Domain
                     process = (IProcessManager)handler;
                     process.Id = Guid.NewGuid();
                     process.InvolvedAggregateIds.Add(e.StreamId);
-                    process.AsDynamic().StartByEvent(e.Payload);
+                    process.AsDynamic().StartByEvent(e.Payload, e.StreamId, e.StoreVersion, e.StreamTypeId);
                     if(Logger.IsInfoEnabled)
                     {
                         Logger.Info("Started new Process Manager id {0}; Runtime type: '{1}', By event type: '{2}', Source Aggregate id: {3}",
