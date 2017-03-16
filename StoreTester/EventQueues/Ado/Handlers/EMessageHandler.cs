@@ -14,6 +14,7 @@ namespace EventStoreIntegrationTester.EventQueues.Ado.Handlers
         , IAdoQueueEventHandler<EMessageToRecepientListRevised>
         , IAdoQueueEventHandler<EMessageBodyRevised>
         , IAdoQueueEventHandler<EMessageSubjectRevised>
+        , IAdoQueueEventHandler<EMessageSent>
 
     {
 
@@ -74,5 +75,12 @@ namespace EventStoreIntegrationTester.EventQueues.Ado.Handlers
             }
         }
 
+        public void Handle(EMessageSent e, Guid aggregateId, long aggregateVersion, TypeId aggregateTypeId)
+        {
+            Db.Update<EMessageTbl>()
+                .Set(r => r.IsSent, true)
+                .Where(r => r.Id == aggregateId)
+                .Execute();
+        }
     }
 }
