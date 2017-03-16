@@ -3,7 +3,7 @@ using FeiEventStore.Core;
 
 namespace EventStoreIntegrationTester.Domain.EMessage.Messages
 {
-    public class ReviseEMessageBody : BaseEMessageCommand
+    public class ReviseEMessageBody : BaseCommand
     {
         public ReviseEMessageBody(Guid messageId, string newBody) : base(messageId)
         {

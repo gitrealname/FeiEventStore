@@ -75,7 +75,7 @@
     <Compile Include="Domain\EMessage\EMessage.cs" />
     <Compile Include="Domain\EMessage\EMessageCommandHandler.cs" />
     <Compile Include="Domain\EMessage\EMessageAggregate.cs" />
-    <Compile Include="Domain\EMessage\Messages\BaseEMessageCommand.cs" />
+    <Compile Include="Domain\BaseCommand.cs" />
     <Compile Include="Domain\EMessage\Messages\CreateEMessage.cs" />
     <Compile Include="Domain\EMessage\Messages\EMessageSubjectRevised.cs" />
     <Compile Include="Domain\EMessage\Messages\EMessageToRecepientListRevised.cs" />
@@ -84,6 +84,11 @@
     <Compile Include="Domain\EMessage\Messages\ReviseEMessageSubject.cs" />
     <Compile Include="Domain\EMessage\Messages\ReviseEMessageToRecepientList.cs" />
     <Compile Include="Domain\EMessage\Messages\ReviseEMessageBody.cs" />
+    <Compile Include="Domain\EMessage\EMesageToRecepientListProcessManager.cs" />
+    <Compile Include="Domain\UserMessage\Messages\CreateUserMessage.cs" />
+    <Compile Include="Domain\UserMessage\Messages\UserMessageCreated.cs" />
+    <Compile Include="Domain\UserMessage\UserMessage.cs" />
+    <Compile Include="Domain\UserMessage\UserMessageAggregate.cs" />
     <Compile Include="EventQueues\Ado\DbModel\AdoConnectionProvider.cs" />
     <Compile Include="EventQueues\Ado\DbModel\AdoDbFactory.cs" />
     <Compile Include="EventQueues\Ado\DbModel\EMessageRecepientTbl.cs" />

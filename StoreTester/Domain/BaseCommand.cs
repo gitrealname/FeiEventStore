@@ -1,11 +1,11 @@
 ﻿using System;
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Domain.EMessage.Messages
+namespace EventStoreIntegrationTester.Domain
 {
-    public class BaseEMessageCommand : ICommand
+    public class BaseCommand : ICommand
     {
-        public BaseEMessageCommand(Guid messageId)
+        public BaseCommand(Guid messageId)
         {
             TargetAggregateId = messageId;
             TargetAggregateVersion = null;

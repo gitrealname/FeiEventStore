@@ -15,7 +15,7 @@ using FluentAssertions;
 
 namespace EventStoreIntegrationTester._Tests
 {
-    [Only]
+    //[Only]
     public class EMessageCreation: BaseTest
     {
         public EMessageCreation(IDomainCommandExecutor commandExecutor, IEventStore eventStore):base(commandExecutor, eventStore, "EMessage creation"){}
