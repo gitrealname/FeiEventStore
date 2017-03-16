@@ -18,6 +18,11 @@ namespace EventStoreIntegrationTester.Domain.Counter
         }
         public void HandleCommand(Increment cmd, CounterAggregate aggregate)
         {
+            if(Version == 0)
+            {
+                var created = new CounterCreated() { Id = Id };
+                RaiseEvent(created);
+            }
             var e = new Incremented() { By = cmd.By};
             RaiseEvent(e);
         }

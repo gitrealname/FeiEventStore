@@ -95,10 +95,11 @@ namespace EventStoreIntegrationTester
                         exception = e;
                         success = false;
                     }
-                    sw.Stop();
-                
                     //wait for queue to complete processing, than cancel threads
                     StopQueues(true);
+
+                    sw.Stop();
+                
 
                     //print result
                     Console.ForegroundColor = ConsoleColor.Green;

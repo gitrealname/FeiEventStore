@@ -71,6 +71,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Domain\Counter\Messages\CounterCreated.cs" />
     <Compile Include="EventQueues\Ado\DbModel\AdoConnectionProvider.cs" />
     <Compile Include="EventQueues\Ado\DbModel\AdoDbFactory.cs" />
     <Compile Include="EventQueues\Ado\DbModel\CounterTbl.cs" />

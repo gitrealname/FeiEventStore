@@ -37,12 +37,12 @@ namespace EventStoreIntegrationTester._Tests
             var result = CommandExecutor.ExecuteCommand(new CreateUserGroup(Const.FirstUserGroup, "group1", Const.FirstCounterId), Origin);
 
             var group = (UserGroupAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(UserGroupAggregate));
-            group.Version.ShouldBeEquivalentTo(1);
+            group.Version.ShouldBeEquivalentTo(2); //2 instead of 1 is because first increment generates two events
 
             var counter = (CounterAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
             var state = counter.GetState();
-            state.Value.ShouldBeEquivalentTo(1);
-            counter.Version.ShouldBeEquivalentTo(1);
+            state.Value.ShouldBeEquivalentTo(1); 
+            counter.Version.ShouldBeEquivalentTo(2);
 
             return !result.CommandHasFailed;
         }

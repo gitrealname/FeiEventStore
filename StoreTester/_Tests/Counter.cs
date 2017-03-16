@@ -13,7 +13,7 @@ using FluentAssertions;
 
 namespace EventStoreIntegrationTester._Tests
 {
-    [Only]
+    //[Only]
     public class SingleEventTest : BaseTest
     {
         public SingleEventTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore):base(commandExecutor, eventStore, "Single command"){}
@@ -23,8 +23,8 @@ namespace EventStoreIntegrationTester._Tests
             var events = EventStore.GetEvents(Const.FirstCounterId, 0);
             var counter = (CounterAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
 
-            result.EventStoreVersion.ShouldBeEquivalentTo(1);
-            events.Count.ShouldBeEquivalentTo(1);
+            result.EventStoreVersion.ShouldBeEquivalentTo(2); //2 instead of 1 is because first increment generates two events
+            events.Count.ShouldBeEquivalentTo(2);
             var state = counter.GetState();
             state.Value.ShouldBeEquivalentTo(1);
             
@@ -49,8 +49,8 @@ namespace EventStoreIntegrationTester._Tests
             var events = EventStore.GetEvents(Const.FirstCounterId, 0);
             var counter = (CounterAggregate)EventStore.LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
 
-            result.EventStoreVersion.ShouldBeEquivalentTo(3);
-            events.Count.ShouldBeEquivalentTo(3);
+            result.EventStoreVersion.ShouldBeEquivalentTo(4); //4 instead of 3 is because first increment generates two events
+            events.Count.ShouldBeEquivalentTo(4);
             var state = counter.GetState();
             state.Value.ShouldBeEquivalentTo(0);
 
@@ -58,6 +58,7 @@ namespace EventStoreIntegrationTester._Tests
         }
     }
 
+    //[Only]
     public class SnapshotTakingTest : BaseTest
     {
         private readonly IPersistenceEngine _engine;
@@ -81,7 +82,7 @@ namespace EventStoreIntegrationTester._Tests
             var snapshotVersion = EventStore.GetSnapshotVersion(Const.FirstCounterId);
 
             events.Count.ShouldBeEquivalentTo(10);
-            snapshotVersion.ShouldBeEquivalentTo(199);
+            snapshotVersion.ShouldBeEquivalentTo(200); //200 instead of 199 is because first increment generates two events
 
             return !result.CommandHasFailed;
         }

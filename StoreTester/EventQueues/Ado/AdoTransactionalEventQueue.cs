@@ -88,7 +88,7 @@ namespace EventStoreIntegrationTester.EventQueues.Ado
 
         protected override void HandleEvents(ICollection<IEventEnvelope> events)
         {
-            var eventHandlers = new List<Tuple<IEvent, object>>();
+            var eventHandlers = new List<Tuple<IEventEnvelope, object>>();
 
             foreach( var e in events)
             {
@@ -96,7 +96,7 @@ namespace EventStoreIntegrationTester.EventQueues.Ado
                 var tmp = _factory.GetAllInstances(iHandleEventType);
                 var handlers = tmp
                     .ToList()
-                    .Select(h => new Tuple<IEvent, object>((IEvent)e.Payload, h));
+                    .Select(h => new Tuple<IEventEnvelope, object>((IEventEnvelope)e, h));
 
                 eventHandlers.AddRange(handlers);
             }
@@ -114,7 +114,8 @@ namespace EventStoreIntegrationTester.EventQueues.Ado
                 //conn.EnlistTransaction(Transaction.Current);
                 foreach(var tuple in eventHandlers)
                 {
-                    tuple.Item2.AsDynamic().Handle(tuple.Item1);
+                    var env = tuple.Item1;
+                    tuple.Item2.AsDynamic().Handle(env.Payload, env.StreamId, env.StreamVersion, env.StreamTypeId);
                 }
 
             }
