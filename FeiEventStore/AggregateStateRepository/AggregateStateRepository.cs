@@ -27,7 +27,7 @@ namespace FeiEventStore.AggregateStateRepository
             {
                 var a = _eventStore.LoadAggregate(id);
                 var state = a.GetStateReference();
-                var result = (TAggregateState)state;
+                var result = state as TAggregateState;
                 if(result == null && state != null)
                 {
                     var e = new InvalidAggregateStateTypeException(typeof(TAggregateState), state.GetType());

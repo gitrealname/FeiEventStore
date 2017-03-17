@@ -15,18 +15,25 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
     public class EMessageSandingProcessManager : BaseProcessManager<EMessageSanding>
         ,IStartedByEvent<EMessageSent>
     {
-        public void StartByEvent(EMessageSent e, Guid messageId, long aggregateVersion, TypeId aggregateTypeId)
-        {
-            ScheduleCommand(new CreateSentUserEMessage(Guid.NewGuid(), messageId, e.AuthorId));
+        private readonly IDomainExecutionScopeService _execScopeService;
 
-            foreach(var r in e.ToRecipientList)
+        public EMessageSandingProcessManager(IDomainExecutionScopeService execScopeService)
+        {
+            _execScopeService = execScopeService;
+        }
+        public void StartByEvent(EMessageSent e, Guid aggregateId, long aggregateVersion, TypeId aggregateTypeId)
+        {
+            var state = _execScopeService.GetImmutableAggregateState<EMessage>(aggregateId);
+
+            ScheduleCommand(new CreateSentUserEMessage(Guid.NewGuid(), aggregateId, state.AuthorId));
+            foreach(var r in state.ToRecepients)
             {
-                ScheduleCommand(new CreateUserEMessage(Guid.NewGuid(), messageId, r));
+                ScheduleCommand(new CreateUserEMessage(Guid.NewGuid(), aggregateId, r));
             }
 
-            foreach(var r in e.CcRecipientList)
+            foreach(var r in state.CcRecepients)
             {
-                ScheduleCommand(new CreateUserEMessage(Guid.NewGuid(), messageId, r));
+                ScheduleCommand(new CreateUserEMessage(Guid.NewGuid(), aggregateId, r));
             }
 
         }

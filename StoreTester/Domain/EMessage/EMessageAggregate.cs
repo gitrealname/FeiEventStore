@@ -11,11 +11,11 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
         , ICreatedByCommand<CreateEMessage>
 
     {
-        private readonly IResultBuilder _resultBuilder;
+        private readonly IDomainExecutionScopeService _executionScopeService;
 
-        public EMessageAggregate(IResultBuilder resultBuilder)
+        public EMessageAggregate(IDomainExecutionScopeService executionScopeService)
         {
-            _resultBuilder = resultBuilder;
+            _executionScopeService = executionScopeService;
         }
 
         private void CheckIsSent()
@@ -63,11 +63,7 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
         public void Send()
         {
             CheckHasRecipients();
-            var e = new EMessageSent() {
-                ToRecipientList = State.ToRecepients,
-                CcRecipientList = State.CcRecepients,
-                AuthorId = State.AuthorId,
-            };
+            var e = new EMessageSent() {};
             RaiseEvent(e);
         }
 

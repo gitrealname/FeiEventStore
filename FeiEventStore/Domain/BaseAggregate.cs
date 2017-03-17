@@ -54,8 +54,6 @@ namespace FeiEventStore.Domain
         protected void RaiseEvent(IEvent @event, bool loadingFromHistory = false)
         {
             Version = NextEventVersion;
-            //TODO: allow call to apply fail when loading from history. Because historic event may not be used anymore by current aggregate Version
-            //Also consider AbsoleteAttribute on the event to make it deleted from the stream!!!!
             this.AsDynamic().Apply(@event);
             Changes.Add(@event);
         }

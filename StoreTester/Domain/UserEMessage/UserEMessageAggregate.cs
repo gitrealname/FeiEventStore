@@ -12,11 +12,11 @@ namespace FeiEventStore.IntegrationTests.Domain.UserEMessage
         , IHandleCommand<CreateSentUserEMessage, UserEMessageAggregate>
 
     {
-        private readonly IResultBuilder _resultBuilder;
+        private readonly IDomainExecutionScopeService _executionScopeService;
 
-        public UserEMessageAggregate(IResultBuilder resultBuilder)
+        public UserEMessageAggregate(IDomainExecutionScopeService executionScopeService)
         {
-            _resultBuilder = resultBuilder;
+            _executionScopeService = executionScopeService;
         }
 
         public void HandleCommand(CreateUserEMessage cmd, UserEMessageAggregate aggregate)

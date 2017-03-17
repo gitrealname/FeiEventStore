@@ -55,9 +55,9 @@ namespace FeiEventStore.IntegrationTests
             container = new LightInject.ServiceContainer();
             cancelationSource = new CancellationTokenSource();
 
-            BootstrapWithoutEventQueue();
+            //BootstrapWithoutEventQueue();
             //BootstrapWithPrinterQueue(true);
-            //BootstrapWithAdoQueue();
+            BootstrapWithAdoQueue();
             //BootstrapWithAdoAndPrinterQueue(true);
 
             var tests = container.GetAllInstances<ITest>().ToList();

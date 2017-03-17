@@ -12,13 +12,13 @@ namespace FeiEventStore.IntegrationTests.Domain.UserGroup
         , ICreatedByCommand<CreateUserGroup>
 
     {
-        private readonly IResultBuilder _resultBuilder;
+        private readonly IDomainExecutionScopeService _executionScopeService;
 
         public override string PrimaryKey { get { return State.Name; } }
 
-        public UserGroupAggregate(IResultBuilder resultBuilder)
+        public UserGroupAggregate(IDomainExecutionScopeService executionScopeService)
         {
-            _resultBuilder = resultBuilder;
+            _executionScopeService = executionScopeService;
         }
         public void Create(string name, Guid? groupCounterId = null)
         {

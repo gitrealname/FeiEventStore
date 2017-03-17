@@ -10,11 +10,11 @@ namespace FeiEventStore.IntegrationTests.Domain.Counter
         , IHandleCommand<Increment, CounterAggregate>
         , IHandleCommand<Decrement, CounterAggregate>
     {
-        private readonly IResultBuilder _resultBuilder;
+        private readonly IDomainExecutionScopeService _executionScopeService;
 
-        public CounterAggregate(IResultBuilder resultBuilder)
+        public CounterAggregate(IDomainExecutionScopeService executionScopeService)
         {
-            _resultBuilder = resultBuilder;
+            _executionScopeService = executionScopeService;
         }
         public void HandleCommand(Increment cmd, CounterAggregate aggregate)
         {

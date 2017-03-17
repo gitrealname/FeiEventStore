@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 using FeiEventStore.Core;
@@ -8,13 +11,16 @@ using FeiEventStore.Persistence;
 
 namespace FeiEventStore.Domain
 {
-    public class DomainObjectCache
+    public class DomainExecutionScopeContext
     {
+        public DomainCommandResult ExecutionResult { get; protected set; }
         public Queue<IMessage> Queue { get; set; }
 
         public List<IEventEnvelope> RaisedEvents { get; set; }
 
         public Dictionary<Guid, IAggregate> AggregateMap { get; set; }
+
+        public Dictionary<Guid, IAggregateState> AggregateStateCloneCache { get; set; }
 
         public Dictionary<Guid, string> ChangedPrimaryKeyMap { get; set; } 
 
@@ -22,7 +28,7 @@ namespace FeiEventStore.Domain
 
         private readonly Dictionary<Tuple<Type, Guid>, IProcessManager> _processByTypeAndAggregateIdMap;
 
-        public DomainObjectCache()
+        public DomainExecutionScopeContext()
         {
             Queue= new Queue<IMessage>();
             RaisedEvents = new List<IEventEnvelope>();
@@ -30,6 +36,8 @@ namespace FeiEventStore.Domain
             ProcessMap = new Dictionary<Guid, IProcessManager>();
             ChangedPrimaryKeyMap = new Dictionary<Guid, string>();
             _processByTypeAndAggregateIdMap = new Dictionary<Tuple<Type, Guid>, IProcessManager>();
+            ExecutionResult = new DomainCommandResult();
+            AggregateStateCloneCache = new Dictionary<Guid, IAggregateState>();
         }
 
         public void EnqueueList(IEnumerable<IMessage> messages)
@@ -85,6 +93,30 @@ namespace FeiEventStore.Domain
         public void TrackPrimaryKeyChange(Guid aggregateId, string newPrimaryKey)
         {
             ChangedPrimaryKeyMap[aggregateId] = newPrimaryKey;
+        }
+
+        public IAggregateState CreateAndTrackAggregateStateCone(Guid aggregateId)
+        {
+            if(AggregateStateCloneCache.ContainsKey(aggregateId))
+            {
+                return AggregateStateCloneCache[aggregateId];
+            }
+
+            //aggregate must already be tracked or throw
+            if(!AggregateMap.ContainsKey(aggregateId))
+            {
+                throw new ArgumentException($"Aggregate {aggregateId} was not found in the domain execution scope.");
+            }
+            var stateRef = (IAggregateState)AggregateMap[aggregateId].GetStateReference();
+            var clone = stateRef.Clone();
+            AggregateStateCloneCache.Add(aggregateId, clone);
+
+            return clone;
+        }
+
+        public void RemoveAggregateStateCloneFromCache(Guid aggregateId)
+        {
+            AggregateStateCloneCache.Remove(aggregateId);
         }
     }
 }
