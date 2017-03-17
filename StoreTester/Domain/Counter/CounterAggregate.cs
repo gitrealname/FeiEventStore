@@ -5,10 +5,10 @@ using FeiEventStore.IntegrationTests.Domain.Counter.Messages;
 namespace FeiEventStore.IntegrationTests.Domain.Counter
 {
     [PermanentType("counter.aggregate")]
-    public class CounterAggregate : BaseAggregate<Domain.Counter.Counter>
+    public class CounterAggregate : BaseAggregate<Counter>
         , ICreatedByCommand<Increment>
-        , IHandleCommand<Increment, CounterAggregate>
-        , IHandleCommand<Decrement, CounterAggregate>
+        , IHandleCommand<Increment>
+        , IHandleCommand<Decrement>
     {
         private readonly IDomainExecutionScopeService _executionScopeService;
 
@@ -16,7 +16,7 @@ namespace FeiEventStore.IntegrationTests.Domain.Counter
         {
             _executionScopeService = executionScopeService;
         }
-        public void HandleCommand(Increment cmd, CounterAggregate aggregate)
+        public void HandleCommand(Increment cmd)
         {
             if(Version == 0)
             {
@@ -27,7 +27,7 @@ namespace FeiEventStore.IntegrationTests.Domain.Counter
             RaiseEvent(e);
         }
 
-        public void HandleCommand(Decrement cmd, CounterAggregate aggregate)
+        public void HandleCommand(Decrement cmd)
         {
             var e = new Decremented() {By = cmd.By};
             RaiseEvent(e);

@@ -13,6 +13,8 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
     {
         private readonly IDomainExecutionScopeService _executionScopeService;
 
+        public Guid AuthorId { get { return State.AuthorId;  } }
+
         public EMessageAggregate(IDomainExecutionScopeService executionScopeService)
         {
             _executionScopeService = executionScopeService;

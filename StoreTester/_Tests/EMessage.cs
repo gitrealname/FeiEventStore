@@ -15,6 +15,8 @@ namespace FeiEventStore.IntegrationTests._Tests
         public EMessageCreation(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository) :base(commandExecutor, eventStore, stateRepository, "EMessage creation"){}
         public override bool Run()
         {
+            var origin = new MessageOrigin(null, Const.UserId1);
+
             var batch = new List<ICommand>()
             {
                 new CreateEMessage(Const.EMessageId,  Const.UserId1),
@@ -23,17 +25,17 @@ namespace FeiEventStore.IntegrationTests._Tests
                 new ReviseEMessageToRecepientList(Const.EMessageId, new List<Guid>{ Const.UserId2 }),
             };
 
-            var result = CommandExecutor.ExecuteCommandBatch(batch, Origin);
+            var result = CommandExecutor.ExecuteCommandBatch(batch, origin);
             result.CommandHasFailed.ShouldBeEquivalentTo(false);
 
 
-            result = CommandExecutor.ExecuteCommand(new ReviseEMessageBody(Const.EMessageId, "new " + DateTime.Now), Origin);
+            result = CommandExecutor.ExecuteCommand(new ReviseEMessageBody(Const.EMessageId, "new " + DateTime.Now), origin);
             result.CommandHasFailed.ShouldBeEquivalentTo(false);
 
-            result = CommandExecutor.ExecuteCommand(new ReviseEMessageToRecepientList(Const.EMessageId, new List<Guid> { Const.UserId2, Const.UserId3 }), Origin);
+            result = CommandExecutor.ExecuteCommand(new ReviseEMessageToRecepientList(Const.EMessageId, new List<Guid> { Const.UserId2, Const.UserId3 }), origin);
             result.CommandHasFailed.ShouldBeEquivalentTo(false);
 
-            result = CommandExecutor.ExecuteCommand(new SendEMessage(Const.EMessageId), Origin);
+            result = CommandExecutor.ExecuteCommand(new SendEMessage(Const.EMessageId), origin);
 
 
             return !result.CommandHasFailed;

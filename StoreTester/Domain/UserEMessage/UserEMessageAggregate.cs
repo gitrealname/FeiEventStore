@@ -8,8 +8,8 @@ namespace FeiEventStore.IntegrationTests.Domain.UserEMessage
     public class UserEMessageAggregate : BaseAggregate<UserEMessage>
         , ICreatedByCommand<CreateUserEMessage>
         , ICreatedByCommand<CreateSentUserEMessage>
-        , IHandleCommand<CreateUserEMessage, UserEMessageAggregate>
-        , IHandleCommand<CreateSentUserEMessage, UserEMessageAggregate>
+        , IHandleCommand<CreateUserEMessage>
+        , IHandleCommand<CreateSentUserEMessage>
 
     {
         private readonly IDomainExecutionScopeService _executionScopeService;
@@ -19,7 +19,7 @@ namespace FeiEventStore.IntegrationTests.Domain.UserEMessage
             _executionScopeService = executionScopeService;
         }
 
-        public void HandleCommand(CreateUserEMessage cmd, UserEMessageAggregate aggregate)
+        public void HandleCommand(CreateUserEMessage cmd)
         {
             var e = new UserEMessageCreated() {
                 MessageId = cmd.MessageId,
@@ -29,7 +29,7 @@ namespace FeiEventStore.IntegrationTests.Domain.UserEMessage
             RaiseEvent(e);
         }
 
-        public void HandleCommand(CreateSentUserEMessage cmd, UserEMessageAggregate aggregate)
+        public void HandleCommand(CreateSentUserEMessage cmd)
         {
             var e = new UserEMessageCreated() {
                 MessageId = cmd.MessageId,

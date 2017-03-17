@@ -248,7 +248,7 @@ namespace FeiEventStore.Domain
         {
             if(cmd.TargetAggregateId == Guid.Empty)
             {
-                throw new Exception(string.Format("SYSTEM: Invalid Target Aggregate Id '{0}'; Command type '{1}'.", 
+                throw new Exception(string.Format("Invalid Target Aggregate Id '{0}'; Command type '{1}'.", 
                     cmd.TargetAggregateId, cmd.GetType().FullName));
             }
 
@@ -258,25 +258,42 @@ namespace FeiEventStore.Domain
             //it must just one command handler for given command type
             if(iHandlers.Count > 1)
             {
-                throw new Exception(string.Format("SYSTEM: It must be only one command handler for any given command type but {0} were found; Command type '{1}'.",
+                throw new Exception(string.Format("It must be only one command handler for any given command type but {0} were found; Command type '{1}'.",
                     iHandlers.Count, cmd.GetType().FullName));
             }
             if(iHandlers.Count == 0)
             {
-                throw new Exception(string.Format("SYSTEM: Command handler was not found; Command type '{0}'.",
+                throw new Exception(string.Format("Command handler was not found; Command type '{0}'.",
                     cmd.GetType().FullName));
 
             }
-            var interfaces = iHandlers[0].GetType().GetInterfaces();
-            var iHandleCommandIterface = interfaces.FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleCommand<,>));
-            if(iHandleCommandIterface == null)
+            var handler = iHandlers[0];
+            var handlerInterfaces = handler.GetType().GetInterfaces();
+
+            var iHandleCommandAggregate = iHandleType;
+            var iHandleCommandIterfaceNonAggregate = handlerInterfaces.FirstOrDefault(i => i.IsGenericType 
+                && i.GetGenericTypeDefinition() == typeof(IHandleCommand<,>)
+                && i.GenericTypeArguments[0] == cmd.GetType());
+            if(!(handler is IAggregate))
             {
-                throw new Exception(string.Format("SYSTEM: Command handler must implement 'IHandleCommand<{0}>' interface, instead of '{1}'.",
-                    cmd.GetType().FullName, typeof(IHandleCommand<>).FullName));
+                iHandleCommandAggregate = null;
+            }
+            if(iHandleCommandIterfaceNonAggregate == null && iHandleCommandAggregate == null)
+            {
+                throw new Exception($"Command handler {handler.GetType().FullName} must implement 'IHandleCommand<,>' interface, instead of 'IHandleCommand<>'.");
 
             }
-            var aggregateType = iHandleCommandIterface.GenericTypeArguments[1];
-            var handler = iHandlers[0];
+            Type aggregateType;
+            if (iHandleCommandIterfaceNonAggregate != null)
+            {
+                aggregateType = iHandleCommandIterfaceNonAggregate.GenericTypeArguments[1];
+                //aggregate can do both IHandleCommand<> and IHandleCommand<,>, thus if it implements the later - call it instead of IHandleCommand<>
+                iHandleCommandAggregate = null;
+            } else
+            {
+
+                aggregateType = handler.GetType();
+            }
 
             //Try to find aggregate in the scope by its id
             var aggregate = svc.Context.LookupAggregate(cmd.TargetAggregateId);
@@ -284,7 +301,7 @@ namespace FeiEventStore.Domain
             //ensure that found aggregate has the same type as expected by handler
             if(aggregate != null && aggregate.GetType() != aggregateType)
             {
-                throw new Exception(string.Format("SYSTEM: Cached aggregate with id '{0}' of type '{1}' doesn't match type '{2}' which is expected by command handler.",
+                throw new Exception(string.Format("Cached aggregate with id '{0}' of type '{1}' doesn't match type '{2}' which is expected by command handler.",
                     cmd.TargetAggregateId, aggregate.GetType().FullName, aggregateType.FullName));
             }
 
@@ -323,7 +340,14 @@ namespace FeiEventStore.Domain
             svc.Context.RemoveAggregateStateCloneFromCache(aggregate.Id);
 
             //execute command
-            handler.AsDynamic().HandleCommand(cmd, aggregate);
+            if(iHandleCommandAggregate != null)
+            {
+                handler.AsDynamic().HandleCommand(cmd);
+            }
+            else
+            {
+                handler.AsDynamic().HandleCommand(cmd, aggregate);
+            }
 
             var events = aggregate.FlushUncommitedEvents();
 
