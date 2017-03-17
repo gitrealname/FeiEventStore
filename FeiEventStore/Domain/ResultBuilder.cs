@@ -6,21 +6,19 @@ using System.Threading.Tasks;
 
 namespace FeiEventStore.Domain
 {
-    public class DomainCommandExecutionContext : IDomainCommandExecutionContext
+    public class ResultBuilder : IResultBuilder
     {
         private readonly DomainCommandResult _commandResult;
 
-        public DomainCommandExecutionContext()
+        public ResultBuilder()
         {
             _commandResult = new DomainCommandResult();
         }
         public void ReportException(Exception e)
         {
-            _commandResult.Exception = new DomainCommandResult.ExceptionInfo() {
-                Message = e.Message,
-                StackTrace = e.StackTrace,
-            };
-            _commandResult.CommandHasFailed = true;
+
+            ReportFatalError(e.Message);
+            _commandResult.ExceptionStackTrace = e.StackTrace;
         }
 
         public void ReportFatalError(string errorMessage)

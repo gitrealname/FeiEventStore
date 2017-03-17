@@ -1,24 +1,20 @@
-﻿
-using System.Collections.Generic;
-using System.ServiceModel.Configuration;
+﻿using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
-using EventStoreIntegrationTester.Domain.Counter;
-using EventStoreIntegrationTester.EventQueues;
-using EventStoreIntegrationTester.EventQueues.Ado;
-using EventStoreIntegrationTester.EventQueues.Printer;
-using EventStoreIntegrationTester._Tests;
+using FeiEventStore.IntegrationTests.Domain.Counter;
+using FeiEventStore.IntegrationTests.EventQueues;
+using FeiEventStore.IntegrationTests.EventQueues.Ado;
+using FeiEventStore.IntegrationTests.EventQueues.Printer;
+using FeiEventStore.IntegrationTests._Tests;
+using FeiEventStore.Ioc;
+using FeiEventStore.Ioc.LightInject;
+using FeiEventStore.Persistence;
+using LightInject;
+using NLog;
 
-namespace EventStoreIntegrationTester
+namespace FeiEventStore.IntegrationTests
 {
-    using System;
-    using System.Diagnostics;
-    using System.Linq;
-    using FeiEventStore.Ioc;
-    using FeiEventStore.Ioc.LightInject;
-    using FeiEventStore.Persistence;
-    using LightInject;
-    using NLog;
-
     class Program
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();

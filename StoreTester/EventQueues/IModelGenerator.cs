@@ -1,4 +1,4 @@
-﻿namespace EventStoreIntegrationTester.EventQueues
+﻿namespace FeiEventStore.IntegrationTests.EventQueues
 {
     public interface IModelGenerator
     {

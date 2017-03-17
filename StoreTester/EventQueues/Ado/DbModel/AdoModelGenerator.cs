@@ -1,9 +1,8 @@
-﻿using System.Data;
-using System.Data.Common;
+﻿using System.Data.Common;
 using SqlFu;
 using SqlFu.Builders.CreateTable;
 
-namespace EventStoreIntegrationTester.EventQueues.Ado.DbModel
+namespace FeiEventStore.IntegrationTests.EventQueues.Ado.DbModel
 {
     public interface IAdoModelGenerator : IModelGenerator { }
 

@@ -1,8 +1,7 @@
 using System;
-using EventStoreIntegrationTester.EventQueues.Ado;
 using FeiEventStore.Ioc;
 
-namespace EventStoreIntegrationTester.EventQueues.Printer
+namespace FeiEventStore.IntegrationTests.EventQueues.Printer
 {
     public class PrinterEventQueueRegistrationMapper : IIocRegistrationMapper
     {

@@ -1,7 +1,7 @@
-﻿using EventStoreIntegrationTester.Domain.UserGroup.Messages;
-using FeiEventStore.Domain;
+﻿using FeiEventStore.Domain;
+using FeiEventStore.IntegrationTests.Domain.UserGroup.Messages;
 
-namespace EventStoreIntegrationTester.Domain.UserGroup
+namespace FeiEventStore.IntegrationTests.Domain.UserGroup
 {
     public class UserGroupCommandHandler : IHandleCommand<CreateUserGroup, UserGroupAggregate>
     {

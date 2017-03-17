@@ -1,7 +1,7 @@
 ﻿using System;
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Domain
+namespace FeiEventStore.IntegrationTests.Domain
 {
     public class BaseCommand : ICommand
     {

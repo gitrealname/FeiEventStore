@@ -1,12 +1,10 @@
 ﻿using System;
-using EventStoreIntegrationTester.Domain.Counter.Messages;
-using EventStoreIntegrationTester.Domain.EMessage.Messages;
-using EventStoreIntegrationTester.Domain.UserEMessage.Messages;
-using EventStoreIntegrationTester.Domain.UserGroup.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
+using FeiEventStore.IntegrationTests.Domain.EMessage.Messages;
+using FeiEventStore.IntegrationTests.Domain.UserEMessage.Messages;
 
-namespace EventStoreIntegrationTester.Domain.EMessage
+namespace FeiEventStore.IntegrationTests.Domain.EMessage
 {
     [PermanentType("e.message.sending")]
     public class EMessageSanding : IState

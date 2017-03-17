@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Data.Common;
-using EventStoreIntegrationTester.Domain.Counter.Messages;
-using EventStoreIntegrationTester.EventQueues.Ado.DbModel;
 using FeiEventStore.Core;
+using FeiEventStore.IntegrationTests.Domain.Counter.Messages;
+using FeiEventStore.IntegrationTests.EventQueues.Ado.DbModel;
 using SqlFu;
 
-namespace EventStoreIntegrationTester.EventQueues.Ado.Handlers
+namespace FeiEventStore.IntegrationTests.EventQueues.Ado.Handlers
 {
     public class CounterHandler :
           IAdoQueueEventHandler<CounterCreated>

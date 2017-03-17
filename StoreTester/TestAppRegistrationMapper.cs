@@ -1,8 +1,8 @@
 using System;
-using EventStoreIntegrationTester._Tests;
+using FeiEventStore.IntegrationTests._Tests;
 using FeiEventStore.Ioc;
 
-namespace EventStoreIntegrationTester
+namespace FeiEventStore.IntegrationTests
 {
     public class TestAppRegistrationMapper : IIocRegistrationMapper
     {

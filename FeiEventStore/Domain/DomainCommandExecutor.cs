@@ -19,7 +19,7 @@ namespace FeiEventStore.Domain
 
         private readonly IObjectFactory _factory;
         private readonly IScopedExecutionContextFactory _executorFactory;
-        private readonly IEventStore _eventStore;
+        private readonly IDomainEventStore _eventStore;
         private readonly IList<IEventQueue> _eventDispatchQueues;
         private readonly ISnapshotStrategy _snapshotStrategy;
         private readonly IList<IDomainCommandValidationProvider> _validationProviders;
@@ -32,14 +32,14 @@ namespace FeiEventStore.Domain
         {
             _factory = factory;
             _executorFactory = executorFactory;
-            _eventStore = eventStore;
+            _eventStore = (IDomainEventStore)eventStore;
             _executorFactory = executorFactory;
             _eventDispatchQueues = eventDispatchQueues.ToList();
             _snapshotStrategy = snapshotStrategy;
             _validationProviders = validationProviders.ToList();
         }
 
-        private DomainCommandResult Execute(IList<ICommand> commandBatch, IDomainCommandExecutionContext execContext, MessageOrigin origin)
+        private DomainCommandResult Execute(IList<ICommand> commandBatch, IResultBuilder iResultBuilder, MessageOrigin origin)
         {
             var finalStoreVersion = -1L;
             DomainCommandResult result = new DomainCommandResult()
@@ -53,16 +53,16 @@ namespace FeiEventStore.Domain
             //main loop
             try
             {
-                while(cache.Queue.Count > 0 && !execContext.CommandHasFailed)
+                while(cache.Queue.Count > 0 && !iResultBuilder.CommandHasFailed)
                 {
                     var msg = cache.Queue.Dequeue();
                     if(msg is ICommand)
                     {
-                        ProcessCommand(msg as ICommand, execContext, cache, origin);
+                        ProcessCommand(msg as ICommand, iResultBuilder, cache, origin);
                     }
                     else if(msg is IEventEnvelope)
                     {
-                        ProcessEvent(msg as IEventEnvelope, execContext, cache, origin);
+                        ProcessEvent(msg as IEventEnvelope, iResultBuilder, cache, origin);
                     }
                     else
                     {
@@ -71,9 +71,9 @@ namespace FeiEventStore.Domain
                     }
                 }
 
-                if(execContext.CommandHasFailed)
+                if(iResultBuilder.CommandHasFailed)
                 {
-                    result = execContext.BuildResult(finalStoreVersion);
+                    result = iResultBuilder.BuildResult(finalStoreVersion);
                     return  result;
                 }
 
@@ -90,9 +90,9 @@ namespace FeiEventStore.Domain
                     finalStoreVersion = cache.RaisedEvents.Count == 0 ? 0L : cache.RaisedEvents[cache.RaisedEvents.Count - 1].StoreVersion;
                 }
 
-                if(execContext.CommandHasFailed)
+                if(iResultBuilder.CommandHasFailed)
                 {
-                    result = execContext.BuildResult(finalStoreVersion);
+                    result = iResultBuilder.BuildResult(finalStoreVersion);
                     return result;
                 }
 
@@ -101,12 +101,12 @@ namespace FeiEventStore.Domain
             }
             catch(BaseAggregateException ex)
             {
-                TranslateAndReportError(ex, execContext, cache);
-                result = execContext.BuildResult(finalStoreVersion);
+                TranslateAndReportError(ex, iResultBuilder, cache);
+                result = iResultBuilder.BuildResult(finalStoreVersion);
                 return result;
             }
 
-            result = execContext.BuildResult(finalStoreVersion);
+            result = iResultBuilder.BuildResult(finalStoreVersion);
             //update aggregate map
             foreach(var kv in cache.AggregateMap)
             {
@@ -127,7 +127,7 @@ namespace FeiEventStore.Domain
                     List<IEventEnvelope> dispatchEventList;
                     if(currentVersion < (first.StoreVersion - 1))
                     {
-                        dispatchEventList = _eventStore.GetEventsSinceStoreVersion(currentVersion + 1, first.StoreVersion - currentVersion + 1).ToList();
+                        dispatchEventList = _eventStore.GetEvents(currentVersion + 1, first.StoreVersion - currentVersion + 1).ToList();
                         dispatchEventList.AddRange(cache.RaisedEvents);
                     }
                     else
@@ -148,7 +148,7 @@ namespace FeiEventStore.Domain
             }
         }
 
-        private void TranslateAndReportError(BaseAggregateException exception, IDomainCommandExecutionContext execScope, DomainObjectCache cache )
+        private void TranslateAndReportError(BaseAggregateException exception, IResultBuilder execScope, DomainObjectCache cache )
         {
             var aggregate = cache.LookupAggregate(exception.AggregateId);
             string errorMessage;
@@ -165,7 +165,7 @@ namespace FeiEventStore.Domain
             Logger.Fatal(exception);
         }
 
-        private void ProcessEvent(IEventEnvelope e, IDomainCommandExecutionContext execContext, DomainObjectCache cache, MessageOrigin origin)
+        private void ProcessEvent(IEventEnvelope e, IResultBuilder iResultBuilder, DomainObjectCache cache, MessageOrigin origin)
         {
             var eventPayload = e.Payload;
             var iHandleEventType = typeof(IHandleEvent<>).MakeGenericType(eventPayload.GetType());
@@ -250,7 +250,7 @@ namespace FeiEventStore.Domain
             }
         }
 
-        private void ProcessCommand(ICommand cmd, IDomainCommandExecutionContext execContext, DomainObjectCache cache, MessageOrigin origin)
+        private void ProcessCommand(ICommand cmd, IResultBuilder iResultBuilder, DomainObjectCache cache, MessageOrigin origin)
         {
             if(cmd.TargetAggregateId == Guid.Empty)
             {
@@ -314,10 +314,10 @@ namespace FeiEventStore.Domain
             //perform command validation
             foreach(var validationProvider in _validationProviders)
             {
-                validationProvider.ValidateCommand(cmd, aggregate, origin, execContext);
+                validationProvider.ValidateCommand(cmd, aggregate, origin, iResultBuilder);
             }
 
-            if(execContext.CommandHasFailed)
+            if(iResultBuilder.CommandHasFailed)
             {
                 return;
             }
@@ -334,7 +334,7 @@ namespace FeiEventStore.Domain
             var finalPrimaryKey = aggregate.PrimaryKey;
 
             //each command must produce at least one event unless it failed
-            if(events.Count == 0 && !execContext.CommandHasFailed)
+            if(events.Count == 0 && !iResultBuilder.CommandHasFailed)
             {
                 var e = new Exception(string.Format("Each command must produce at least one event. Aggregate type: '{0}'; Command Type: '{1}'.",
                     aggregate.GetType().FullName, cmd.GetType().FullName));
@@ -417,7 +417,7 @@ namespace FeiEventStore.Domain
             while(reTry)
             {
                 reTry = false;
-                _executorFactory.ExecuteInScope<IDomainCommandExecutionContext, DomainCommandResult>((execScope) => {
+                _executorFactory.ExecuteInScope<IResultBuilder, DomainCommandResult>((execScope) => {
                     try
                     {
                         result = Execute(commandBatch, execScope, origin);

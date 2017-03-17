@@ -1,9 +1,7 @@
-﻿using EventStoreIntegrationTester.Domain.EMessage.Messages;
-using EventStoreIntegrationTester.Domain.UserGroup;
-using EventStoreIntegrationTester.Domain.UserGroup.Messages;
-using FeiEventStore.Domain;
+﻿using FeiEventStore.Domain;
+using FeiEventStore.IntegrationTests.Domain.EMessage.Messages;
 
-namespace EventStoreIntegrationTester.Domain.EMessage
+namespace FeiEventStore.IntegrationTests.Domain.EMessage
 {
     public class EMessageCommandHandler : ICreatedByCommand<CreateEMessage>
         , IHandleCommand<CreateEMessage, EMessageAggregate>

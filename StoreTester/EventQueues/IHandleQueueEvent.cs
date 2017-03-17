@@ -1,7 +1,7 @@
 ﻿using System;
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.EventQueues
+namespace FeiEventStore.IntegrationTests.EventQueues
 {
 
     public interface IHandleQueueEvent<in TEvent>

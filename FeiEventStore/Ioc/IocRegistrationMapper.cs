@@ -22,7 +22,7 @@ namespace FeiEventStore.Ioc
             { new Tuple<Type, Type>(typeof(IAggregateStateRepository), typeof(AggregateStateRepository.AggregateStateRepository)), IocRegistrationType.RegisterServicePerContainerLifetime },
 
             //per scope!
-            { new Tuple<Type, Type>(typeof(IDomainCommandExecutionContext), typeof(DomainCommandExecutionContext)), IocRegistrationType.RegisterServicePerScopeLifetime },
+            { new Tuple<Type, Type>(typeof(IResultBuilder), typeof(ResultBuilder)), IocRegistrationType.RegisterServicePerScopeLifetime },
 
             //in production expected to be overridden/handled by in-fact persistent engine mapper
             { new Tuple<Type, Type>(typeof(IPersistenceEngine), typeof(InMemoryPersistenceEngine)), IocRegistrationType.RegisterServicePerContainerLifetime },

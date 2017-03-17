@@ -1,8 +1,8 @@
-﻿using EventStoreIntegrationTester.Domain.UserEMessage.Messages;
-using FeiEventStore.Core;
+﻿using FeiEventStore.Core;
 using FeiEventStore.Domain;
+using FeiEventStore.IntegrationTests.Domain.UserEMessage.Messages;
 
-namespace EventStoreIntegrationTester.Domain.UserEMessage
+namespace FeiEventStore.IntegrationTests.Domain.UserEMessage
 {
     [PermanentType("user.emessage.aggregate")]
     public class UserEMessageAggregate : BaseAggregate<UserEMessage>
@@ -12,11 +12,11 @@ namespace EventStoreIntegrationTester.Domain.UserEMessage
         , IHandleCommand<CreateSentUserEMessage, UserEMessageAggregate>
 
     {
-        private readonly IDomainCommandExecutionContext _ctx;
+        private readonly IResultBuilder _resultBuilder;
 
-        public UserEMessageAggregate(IDomainCommandExecutionContext ctx)
+        public UserEMessageAggregate(IResultBuilder resultBuilder)
         {
-            _ctx = ctx;
+            _resultBuilder = resultBuilder;
         }
 
         public void HandleCommand(CreateUserEMessage cmd, UserEMessageAggregate aggregate)

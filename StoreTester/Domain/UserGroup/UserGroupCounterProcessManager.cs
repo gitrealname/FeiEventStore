@@ -1,10 +1,10 @@
 ﻿using System;
-using EventStoreIntegrationTester.Domain.Counter.Messages;
-using EventStoreIntegrationTester.Domain.UserGroup.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
+using FeiEventStore.IntegrationTests.Domain.Counter.Messages;
+using FeiEventStore.IntegrationTests.Domain.UserGroup.Messages;
 
-namespace EventStoreIntegrationTester.Domain.UserGroup
+namespace FeiEventStore.IntegrationTests.Domain.UserGroup
 {
     [PermanentType("user.group.counter")]
     public class UserGroupCounter : IState

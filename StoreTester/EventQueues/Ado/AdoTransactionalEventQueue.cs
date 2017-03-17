@@ -1,23 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.SQLite;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Transactions;
-using EventStoreIntegrationTester.EventQueues.Ado;
-using EventStoreIntegrationTester.EventQueues.Ado.DbModel;
-using EventStoreIntegrationTester.EventQueues.Ado.Handlers;
 using FeiEventStore.Core;
 using FeiEventStore.EventQueue;
 using FeiEventStore.Events;
-using NLog;
+using FeiEventStore.IntegrationTests.EventQueues.Ado.DbModel;
+using FeiEventStore.IntegrationTests.EventQueues.Ado.Handlers;
 using SqlFu;
 using SqlFu.Configuration;
 using SqlFu.Providers.Sqlite;
 
-namespace EventStoreIntegrationTester.EventQueues.Ado
+namespace FeiEventStore.IntegrationTests.EventQueues.Ado
 {
     public interface IAdoTransactionalEventQueue { } //just a marker to simplify IOC registration
 

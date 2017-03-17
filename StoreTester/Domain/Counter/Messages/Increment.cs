@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Domain.Counter.Messages
+namespace FeiEventStore.IntegrationTests.Domain.Counter.Messages
 {
     public class Increment : ICommand
     {

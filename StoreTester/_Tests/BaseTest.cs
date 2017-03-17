@@ -1,8 +1,9 @@
-﻿using FeiEventStore.Core;
+﻿using FeiEventStore.AggregateStateRepository;
+using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
 
-namespace EventStoreIntegrationTester._Tests
+namespace FeiEventStore.IntegrationTests._Tests
 {
     public interface ITest
     {
@@ -14,12 +15,14 @@ namespace EventStoreIntegrationTester._Tests
     {
         protected readonly IDomainCommandExecutor CommandExecutor;
         protected readonly IEventStore EventStore;
+        protected readonly IAggregateStateRepository StateRepository;
         protected readonly MessageOrigin Origin = new MessageOrigin(Const.OriginSystemId, null);
 
-        protected BaseTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore, string name)
+        protected BaseTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository, string name)
         {
             CommandExecutor = commandExecutor;
             EventStore = eventStore;
+            StateRepository = stateRepository;
             Name = name;
         }
         public abstract bool Run();

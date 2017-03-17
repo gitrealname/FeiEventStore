@@ -1,8 +1,8 @@
-﻿using EventStoreIntegrationTester.Domain.Counter.Messages;
-using FeiEventStore.Core;
+﻿using FeiEventStore.Core;
 using FeiEventStore.Domain;
+using FeiEventStore.IntegrationTests.Domain.Counter.Messages;
 
-namespace EventStoreIntegrationTester.Domain.Counter
+namespace FeiEventStore.IntegrationTests.Domain.Counter
 {
     [PermanentType("counter.aggregate")]
     public class CounterAggregate : BaseAggregate<Domain.Counter.Counter>
@@ -10,11 +10,11 @@ namespace EventStoreIntegrationTester.Domain.Counter
         , IHandleCommand<Increment, CounterAggregate>
         , IHandleCommand<Decrement, CounterAggregate>
     {
-        private readonly IDomainCommandExecutionContext _ctx;
+        private readonly IResultBuilder _resultBuilder;
 
-        public CounterAggregate(IDomainCommandExecutionContext ctx)
+        public CounterAggregate(IResultBuilder resultBuilder)
         {
-            _ctx = ctx;
+            _resultBuilder = resultBuilder;
         }
         public void HandleCommand(Increment cmd, CounterAggregate aggregate)
         {

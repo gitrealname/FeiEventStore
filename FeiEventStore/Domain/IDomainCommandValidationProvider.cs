@@ -9,6 +9,6 @@ namespace FeiEventStore.Domain
 {
     public interface IDomainCommandValidationProvider
     {
-        void ValidateCommand(ICommand cmd, IAggregate aggregate, MessageOrigin origin, IDomainCommandExecutionContext executionContext);
+        void ValidateCommand(ICommand cmd, IAggregate aggregate, MessageOrigin origin, IResultBuilder executionContext);
     }
 }

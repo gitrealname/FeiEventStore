@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.Ioc.LightInje
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.Ioc", "FeiEventStore.Ioc\FeiEventStore.Ioc.csproj", "{F92992F2-1684-45A7-BD4B-16560B592AA8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStoreIntegrationTester", "StoreTester\EventStoreIntegrationTester.csproj", "{D07BB9BC-C8CE-4BE4-832C-2A7580966790}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.IntegrationTests", "StoreTester\FeiEventStore.IntegrationTests.csproj", "{D07BB9BC-C8CE-4BE4-832C-2A7580966790}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "efproto", "efproto\efproto.csproj", "{4F9CEB3B-EA3F-4A1A-840E-FC2C51E8A36D}"
 EndProject

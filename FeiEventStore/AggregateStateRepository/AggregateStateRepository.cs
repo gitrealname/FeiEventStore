@@ -15,11 +15,11 @@ namespace FeiEventStore.AggregateStateRepository
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly IEventStore _eventStore;
+        private readonly IDomainEventStore _eventStore;
 
         public AggregateStateRepository(IEventStore eventStore)
         {
-            _eventStore = eventStore;
+            _eventStore = (IDomainEventStore)eventStore;
         }
         public TAggregateState Get<TAggregateState>(Guid id, bool swallowNotFoundException = true) where TAggregateState : class, IState 
         {

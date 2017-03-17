@@ -7,8 +7,8 @@
     <ProjectGuid>{D07BB9BC-C8CE-4BE4-832C-2A7580966790}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>EventStoreIntegrationTester</RootNamespace>
-    <AssemblyName>EventStoreIntegrationTester</AssemblyName>
+    <RootNamespace>FeiEventStore.IntegrationTests</RootNamespace>
+    <AssemblyName>FeiEventStore.IntegrationTests</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

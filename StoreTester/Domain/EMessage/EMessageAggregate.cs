@@ -1,23 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using EventStoreIntegrationTester.Domain.EMessage.Messages;
-using EventStoreIntegrationTester.Domain.UserGroup.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
-using FeiEventStore.Persistence;
+using FeiEventStore.IntegrationTests.Domain.EMessage.Messages;
 
-namespace EventStoreIntegrationTester.Domain.EMessage
+namespace FeiEventStore.IntegrationTests.Domain.EMessage
 {
     [PermanentType("e.message.aggregate")]
     public class EMessageAggregate : BaseAggregate<EMessage>
         , ICreatedByCommand<CreateEMessage>
 
     {
-        private readonly IDomainCommandExecutionContext _ctx;
+        private readonly IResultBuilder _resultBuilder;
 
-        public EMessageAggregate(IDomainCommandExecutionContext ctx)
+        public EMessageAggregate(IResultBuilder resultBuilder)
         {
-            _ctx = ctx;
+            _resultBuilder = resultBuilder;
         }
 
         private void CheckIsSent()

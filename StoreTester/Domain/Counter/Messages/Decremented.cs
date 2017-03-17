@@ -1,6 +1,6 @@
 ﻿using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Domain.Counter.Messages
+namespace FeiEventStore.IntegrationTests.Domain.Counter.Messages
 {
     [PermanentType("counter.decremented")]
     public class Decremented : IEvent

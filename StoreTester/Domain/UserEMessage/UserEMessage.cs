@@ -1,7 +1,7 @@
 ﻿using System;
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Domain.UserEMessage
+namespace FeiEventStore.IntegrationTests.Domain.UserEMessage
 {
     [PermanentType("user.emessage")]
     public class UserEMessage : IState

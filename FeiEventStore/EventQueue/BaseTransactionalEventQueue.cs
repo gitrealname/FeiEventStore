@@ -160,7 +160,7 @@ namespace FeiEventStore.EventQueue
                     }
 
                 }
-                var events = _eventStore.GetEventsSinceStoreVersion(_version + 1, count);
+                var events = _eventStore.GetEvents(_version + 1, count);
                 if(events.Count == 0)
                 {
                     return;

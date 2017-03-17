@@ -36,3 +36,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
 [assembly: InternalsVisibleTo("FeiEventStore.Tests")]
+[assembly: InternalsVisibleTo("FeiEventStore.IntegrationTests")]

@@ -1,7 +1,7 @@
 using System.Threading;
 using FeiEventStore.EventQueue;
 
-namespace EventStoreIntegrationTester.EventQueues
+namespace FeiEventStore.IntegrationTests.EventQueues
 {
     public interface ITestingEventQueue : IEventQueue
     {

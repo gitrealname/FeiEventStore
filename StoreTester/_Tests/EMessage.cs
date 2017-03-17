@@ -1,24 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using EventStoreIntegrationTester.Domain.Counter;
-using EventStoreIntegrationTester.Domain.Counter.Messages;
-using EventStoreIntegrationTester.Domain.EMessage.Messages;
-using EventStoreIntegrationTester._Tests;
+using FeiEventStore.AggregateStateRepository;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
-using FeiEventStore.Persistence;
+using FeiEventStore.IntegrationTests.Domain.EMessage.Messages;
 using FluentAssertions;
 
-namespace EventStoreIntegrationTester._Tests
+namespace FeiEventStore.IntegrationTests._Tests
 {
-    [Only]
+    //[Only]
     public class EMessageCreation: BaseTest
     {
-        public EMessageCreation(IDomainCommandExecutor commandExecutor, IEventStore eventStore):base(commandExecutor, eventStore, "EMessage creation"){}
+        public EMessageCreation(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository) :base(commandExecutor, eventStore, stateRepository, "EMessage creation"){}
         public override bool Run()
         {
             var batch = new List<ICommand>()

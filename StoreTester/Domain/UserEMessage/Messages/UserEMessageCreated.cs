@@ -1,7 +1,7 @@
 using System;
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Domain.UserEMessage.Messages
+namespace FeiEventStore.IntegrationTests.Domain.UserEMessage.Messages
 {
     [PermanentType("user.message.created")]
     public class UserEMessageCreated : IEvent

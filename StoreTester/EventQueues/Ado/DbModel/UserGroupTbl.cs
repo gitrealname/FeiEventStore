@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace EventStoreIntegrationTester.EventQueues.Ado.DbModel
+namespace FeiEventStore.IntegrationTests.EventQueues.Ado.DbModel
 {
     public class UserGroupTbl
     {

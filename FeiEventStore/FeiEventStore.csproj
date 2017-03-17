@@ -73,11 +73,11 @@
     <Compile Include="Core\TypeExtensions.cs" />
     <Compile Include="Domain\AggregateNotFoundException.cs" />
     <Compile Include="Domain\ByEventCountSnapshotStrategy.cs" />
-    <Compile Include="Domain\DomainCommandExecutionContext.cs" />
+    <Compile Include="Domain\ResultBuilder.cs" />
     <Compile Include="Domain\DomainCommandExecutor.cs" />
     <Compile Include="Domain\DomainObjectCache.cs" />
     <Compile Include="Domain\IDomainCommandExecutor.cs" />
-    <Compile Include="Domain\IDomainCommandExecutionContext.cs" />
+    <Compile Include="Domain\IResultBuilder.cs" />
     <Compile Include="Domain\IDomainCommandValidationProvider.cs" />
     <Compile Include="Domain\ICreatedByCommand.cs" />
     <Compile Include="Core\IScopedExecutionContextFactory.cs" />
@@ -93,6 +93,7 @@
     <Compile Include="EventQueue\IEventQueueConfiguration.cs" />
     <Compile Include="EventQueue\InMemoryVersionTrackingStore.cs" />
     <Compile Include="EventQueue\IVersionTrackingStore.cs" />
+    <Compile Include="Events\IDomainEventStore.cs" />
     <Compile Include="Events\IPermanentlyTypedObjectService.cs" />
     <Compile Include="Events\MultipleTypeInstancesException.cs" />
     <Compile Include="Events\PermanentlyTypedObjectService.cs" />
@@ -108,7 +109,6 @@
     <Compile Include="Persistence\ProcessConcurrencyViolationException.cs" />
     <Compile Include="Persistence\AggregateConstraintViolationException.cs" />
     <Compile Include="Persistence\AggregatePrimaryKeyViolationException.cs" />
-    <Compile Include="Persistence\Constraint.cs" />
     <Compile Include="Persistence\AggregateConcurrencyViolationException.cs" />
     <Compile Include="Persistence\ProcessRecord.cs" />
     <Compile Include="Events\IEventStore.cs" />

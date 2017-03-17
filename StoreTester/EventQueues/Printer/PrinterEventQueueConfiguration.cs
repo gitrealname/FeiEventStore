@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
-using FeiEventStore.EventQueue;
 
-namespace EventStoreIntegrationTester.EventQueues.Ado
+namespace FeiEventStore.IntegrationTests.EventQueues.Printer
 {
     public interface IPrinterEventQueueConfiguration : ITestingIEventQueueConfiguration
     {

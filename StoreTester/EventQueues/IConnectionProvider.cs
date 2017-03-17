@@ -1,6 +1,6 @@
 ﻿using System.Data;
 
-namespace EventStoreIntegrationTester.EventQueues
+namespace FeiEventStore.IntegrationTests.EventQueues
 {
     public interface IConnectionProvider
     {

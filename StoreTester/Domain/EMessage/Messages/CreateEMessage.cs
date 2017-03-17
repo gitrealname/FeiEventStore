@@ -1,7 +1,6 @@
 ﻿using System;
-using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Domain.EMessage.Messages
+namespace FeiEventStore.IntegrationTests.Domain.EMessage.Messages
 {
     public class CreateEMessage : BaseCommand
     {

@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace EventStoreIntegrationTester
+namespace FeiEventStore.IntegrationTests
 {
     /// <summary>
     /// When applied on ITest class, only those test cases that are marked with this attribute will be executed.

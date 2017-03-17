@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace FeiEventStore.Domain
 {
-    public interface IDomainCommandExecutionContext
+    public interface IResultBuilder
     {
 
         /// <summary>
@@ -27,8 +27,7 @@ namespace FeiEventStore.Domain
 
         void ReportInfo(string infoMessage);
 
-        DomainCommandResult BuildResult(long eventStoreVersion);
-
         bool CommandHasFailed { get; }
+        DomainCommandResult BuildResult(long eventStoreVersion);
     }
 }

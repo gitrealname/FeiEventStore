@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-using FeiEventStore.EventQueue;
+﻿using System.Threading;
 
-namespace EventStoreIntegrationTester.EventQueues.Ado
+namespace FeiEventStore.IntegrationTests.EventQueues.Ado
 {
     public interface IAdoEventQueueConfiguration : ITestingIEventQueueConfiguration
     {

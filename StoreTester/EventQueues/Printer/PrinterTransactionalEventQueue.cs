@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using EventStoreIntegrationTester.EventQueues.Ado;
 using FeiEventStore.Core;
 using FeiEventStore.EventQueue;
 using FeiEventStore.Events;
 
-namespace EventStoreIntegrationTester.EventQueues.Printer
+namespace FeiEventStore.IntegrationTests.EventQueues.Printer
 {
     [PermanentType("printer.event.queue")]
     public class PrinterTransactionalEventQueue : BaseTransactionalEventQueue, ITestingEventQueue

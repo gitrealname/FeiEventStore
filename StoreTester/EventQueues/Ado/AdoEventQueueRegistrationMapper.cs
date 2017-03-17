@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using EventStoreIntegrationTester.EventQueues.Ado.DbModel;
-using EventStoreIntegrationTester.EventQueues.Ado.Handlers;
+using FeiEventStore.IntegrationTests.EventQueues.Ado.DbModel;
+using FeiEventStore.IntegrationTests.EventQueues.Ado.Handlers;
 using FeiEventStore.Ioc;
 
-namespace EventStoreIntegrationTester.EventQueues.Ado
+namespace FeiEventStore.IntegrationTests.EventQueues.Ado
 {
     public class AdoEventQueueRegistrationMapper : IIocRegistrationMapper
     {

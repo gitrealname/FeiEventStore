@@ -13,7 +13,7 @@ namespace FeiEventStore.Events
     /// Event store implementation.
     /// </summary>
     /// <seealso cref="FeiEventStore.Events.IEventStore" />
-    public class EventStore : IEventStore
+    public class EventStore : IDomainEventStore
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -254,7 +254,7 @@ namespace FeiEventStore.Events
             return result;
         }
 
-        public IList<IEventEnvelope> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount)
+        public IList<IEventEnvelope> GetEvents(long startingStoreVersion, long? takeEventsCount)
         {
             var eventRecords = _engine.GetEventsSinceStoreVersion(startingStoreVersion, takeEventsCount);
             var result = LoadEventRecords(eventRecords);

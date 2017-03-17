@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Domain.EMessage
+namespace FeiEventStore.IntegrationTests.Domain.EMessage
 {
     [PermanentType("e.message")]
     public class EMessage : IState

@@ -1,7 +1,6 @@
-using System;
 using FeiEventStore.Core;
 
-namespace EventStoreIntegrationTester.Domain.EMessage.Messages
+namespace FeiEventStore.IntegrationTests.Domain.EMessage.Messages
 {
     [PermanentType("e.message.subject.revised")]
     public class EMessageSubjectRevised : IEvent

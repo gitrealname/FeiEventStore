@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace EventStoreIntegrationTester.Domain.UserEMessage.Messages
+namespace FeiEventStore.IntegrationTests.Domain.UserEMessage.Messages
 {
     public class CreateUserEMessage : BaseCommand
     {

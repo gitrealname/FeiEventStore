@@ -12,13 +12,6 @@ namespace FeiEventStore.Domain
     /// </summary>
     public class DomainCommandResult
     {
-        public class ExceptionInfo
-        {
-            public string Message { get; set; }
-
-            public string StackTrace { get; set; }
-        }
-
         public DomainCommandResult()
         {
             Errors = new List<string>();
@@ -29,7 +22,7 @@ namespace FeiEventStore.Domain
         public long EventStoreVersion { get; set; }
         public bool CommandHasFailed { get; set; }
 
-        public ExceptionInfo Exception { get; set; }
+        public string ExceptionStackTrace { get; set; }
         public List<string> Errors { get; set; }
         public List<string> Warnings { get; set; }
         public List<string> Infos { get; set; }

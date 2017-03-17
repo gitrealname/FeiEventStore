@@ -1,10 +1,10 @@
 ﻿using System;
-using EventStoreIntegrationTester.Domain.UserGroup.Messages;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
+using FeiEventStore.IntegrationTests.Domain.UserGroup.Messages;
 using FeiEventStore.Persistence;
 
-namespace EventStoreIntegrationTester.Domain.UserGroup
+namespace FeiEventStore.IntegrationTests.Domain.UserGroup
 {
     [PermanentType("user.group.aggregate")]
     public class UserGroupAggregate : BaseAggregate<Domain.UserGroup.UserGroup>
@@ -12,13 +12,13 @@ namespace EventStoreIntegrationTester.Domain.UserGroup
         , ICreatedByCommand<CreateUserGroup>
 
     {
-        private readonly IDomainCommandExecutionContext _ctx;
+        private readonly IResultBuilder _resultBuilder;
 
         public override string PrimaryKey { get { return State.Name; } }
 
-        public UserGroupAggregate(IDomainCommandExecutionContext ctx)
+        public UserGroupAggregate(IResultBuilder resultBuilder)
         {
-            _ctx = ctx;
+            _resultBuilder = resultBuilder;
         }
         public void Create(string name, Guid? groupCounterId = null)
         {
