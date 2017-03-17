@@ -1,9 +1,12 @@
-﻿using FeiEventStore.Core;
+﻿using System;
+using FeiEventStore.Core;
 
 namespace FeiEventStore.IntegrationTests.Domain.UserGroup
 {
     [PermanentType("user.group")]
-    public class UserGroup : IState
+    [Serializable]
+
+    public class UserGroup : IAggregateState
     {
         public string Name { get; set; }
     }

@@ -73,7 +73,7 @@ namespace FeiEventStore.Events
                     sr.AggregateVersion = aggregate.Version;
                     sr.AggregateId = aggregate.Id;
                     sr.AggregateTypeId = _service.GetPermanentTypeIdForType(aggregate.GetType());
-                    var state = aggregate.GetState();
+                    var state = aggregate.GetStateReference();
                     sr.AggregateStateTypeId = _service.GetPermanentTypeIdForType(state.GetType());
                     var payload = _engine.SerializePayload(state);
                     sr.State = payload;
@@ -126,7 +126,7 @@ namespace FeiEventStore.Events
                             if(head)
                             {
                                 head = false;
-                                var state = p.GetState();
+                                var state = p.GetStateReference();
                                 pr.ProcessStateTypeId = _service.GetPermanentTypeIdForType(state.GetType());
                                 var payload = _engine.SerializePayload(state);
                                 pr.State = payload;

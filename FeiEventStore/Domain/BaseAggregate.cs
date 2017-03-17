@@ -4,7 +4,7 @@ using FeiEventStore.Core;
 
 namespace FeiEventStore.Domain
 {
-    public abstract class BaseAggregate<TState> : IAggregate<TState> where TState : IState, new()
+    public abstract class BaseAggregate<TState> : IAggregate<TState> where TState : IAggregateState, new()
     {
         public readonly List<IEvent> Changes = new List<IEvent>();
 
@@ -67,9 +67,9 @@ namespace FeiEventStore.Domain
             State = new TState();
         }
 
-        IState IStateHolder.GetState()
+        IState IStateHolder.GetStateReference()
         {
-            return GetState();
+            return GetStateReference();
         }
 
         public void RestoreFromState(object state)
@@ -77,7 +77,7 @@ namespace FeiEventStore.Domain
             RestoreFromState((TState)state);
         }
 
-        public virtual TState GetState()
+        public virtual TState GetStateReference()
         {
             return State;
         }

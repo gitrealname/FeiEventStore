@@ -8,7 +8,12 @@ namespace FeiEventStore.Core
 {
     public interface IStateHolder
     {
-        IState GetState();
+        /// <summary>
+        /// Gets the reference to the state.
+        /// IMPORTANT: Must be used with extreme care to prevent any changes to the returned state.
+        /// </summary>
+        /// <returns></returns>
+        IState GetStateReference();
 
         void RestoreFromState(IState state);
     }

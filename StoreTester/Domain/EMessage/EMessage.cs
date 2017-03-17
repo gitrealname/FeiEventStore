@@ -5,7 +5,9 @@ using FeiEventStore.Core;
 namespace FeiEventStore.IntegrationTests.Domain.EMessage
 {
     [PermanentType("e.message")]
-    public class EMessage : IState
+    [Serializable]
+
+    public class EMessage : IAggregateState
     {
         public EMessage()
         {

@@ -87,7 +87,8 @@ namespace PrototypeValidator
             return;
         }
 
-        class AggregateState : IState {}
+        [Serializable]
+        class AggregateState : IAggregateState {}
         class TestAggregate : BaseAggregate<AggregateState> { }
 
         private static void ExtractTypeOfTheState()

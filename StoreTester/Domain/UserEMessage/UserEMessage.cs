@@ -4,7 +4,9 @@ using FeiEventStore.Core;
 namespace FeiEventStore.IntegrationTests.Domain.UserEMessage
 {
     [PermanentType("user.emessage")]
-    public class UserEMessage : IState
+    [Serializable]
+
+    public class UserEMessage : IAggregateState
     {
         public Guid EMessageId { get; set; }
         public Guid UserId { get; set; }

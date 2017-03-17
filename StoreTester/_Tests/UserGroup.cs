@@ -40,7 +40,7 @@ namespace FeiEventStore.IntegrationTests._Tests
             group.Version.ShouldBeEquivalentTo(2); //2 instead of 1 is because first increment generates two events
 
             var counter = (CounterAggregate)((IDomainEventStore)EventStore).LoadAggregate(Const.FirstCounterId, typeof(CounterAggregate));
-            var state = counter.GetState();
+            var state = counter.GetStateReference();
             state.Value.ShouldBeEquivalentTo(1); 
             counter.Version.ShouldBeEquivalentTo(2);
 
@@ -84,10 +84,10 @@ namespace FeiEventStore.IntegrationTests._Tests
             var pm1 = (UserGroupCounterProcessManager)((IDomainEventStore)EventStore).LoadProcess(typeof(UserGroupCounterProcessManager), Const.FirstUserGroup);
             var pm2 = (UserGroupCounterProcessManager)((IDomainEventStore)EventStore).LoadProcess(typeof(UserGroupCounterProcessManager), Const.FirstCounterId);
 
-            var state = pm1.GetState();
+            var state = pm1.GetStateReference();
             state.LongRunning.ShouldBeEquivalentTo(true);
             state.ProcessedEventCount.ShouldBeEquivalentTo(4);
-            state = pm2.GetState();
+            state = pm2.GetStateReference();
             state.ProcessedEventCount.ShouldBeEquivalentTo(4);
 
             //terminate process by incrementing counter by 100 (see CreateUserGroupCounterProcessManager)

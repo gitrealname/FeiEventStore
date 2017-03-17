@@ -41,9 +41,9 @@ namespace FeiEventStore.Domain
             IsComplete = true; /*make is complete by default, as we expect that majority of process managers to be of non-long running kind*/
         }
 
-        IState IStateHolder.GetState()
+        IState IStateHolder.GetStateReference()
         {
-            return GetState();
+            return GetStateReference();
         }
 
         public void RestoreFromState(IState state)
@@ -51,7 +51,7 @@ namespace FeiEventStore.Domain
             RestoreFromState((TState) state);
         }
 
-        public virtual TState GetState()
+        public virtual TState GetStateReference()
         {
             return (TState)State;
         }

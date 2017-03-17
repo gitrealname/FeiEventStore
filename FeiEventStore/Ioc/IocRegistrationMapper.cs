@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using FeiEventStore.AggregateStateRepository;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
@@ -106,6 +107,17 @@ namespace FeiEventStore.Ioc
                 {
                     throw new Exception(string.Format("Type '{0}' must be derived from '{1}', as '{2}' and '{3}' can only be used in such a case",
                         implementationType.FullName, typeof(IProcessManager).FullName, typeof(IStartedByEvent).FullName, typeof(IHandleEvent).FullName));
+                }
+            }
+
+            //IAggregateState must have serializable attribute
+            if(typeof(IAggregateState).IsAssignableFrom(implementationType))
+            {
+                var s = implementationType.GetCustomAttributes(typeof(SerializableAttribute), false).FirstOrDefault();
+                if(s == null)
+                {
+                    throw new Exception(string.Format("Aggregate State type '{0}' must be marked with [Serializable] attribute",
+                        implementationType.FullName));
                 }
             }
         }

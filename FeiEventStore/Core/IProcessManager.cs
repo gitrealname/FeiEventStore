@@ -33,7 +33,7 @@ namespace FeiEventStore.Core
 
     public interface IProcessManager<TState> : IProcessManager where TState : IState, new()
     {
-        new TState GetState();
+        new TState GetStateReference();
 
         void RestoreFromState(TState state);
     }

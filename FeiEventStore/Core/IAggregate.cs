@@ -19,9 +19,9 @@ namespace FeiEventStore.Core
 
     }
 
-    public interface IAggregate<TState> : IAggregate where TState : IState, new()
+    public interface IAggregate<TState> : IAggregate where TState : IAggregateState, new()
     {
-        new TState GetState();
+        new TState GetStateReference();
 
         void RestoreFromState(TState state);
     }
