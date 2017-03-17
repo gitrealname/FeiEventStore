@@ -22,7 +22,7 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
         {
             if(State.IsSent)
             {
-                throw new Exception("Message can not be modified, it has been sent");
+                throw new DomainException("Message can not be modified, it has been sent");
             }
         }
 

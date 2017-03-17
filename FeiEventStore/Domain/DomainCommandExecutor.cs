@@ -148,7 +148,7 @@ namespace FeiEventStore.Domain
             }
         }
 
-        private void TranslateAndReportError(BaseAggregateException exception, IResultBuilder execScope, DomainObjectCache cache )
+        private void TranslateAndReportError(BaseAggregateException exception, IResultBuilder resultBuilder, DomainObjectCache cache )
         {
             var aggregate = cache.LookupAggregate(exception.AggregateId);
             string errorMessage;
@@ -161,7 +161,7 @@ namespace FeiEventStore.Domain
                 errorMessage = exception.Message;
             }
 
-            execScope.ReportFatalError(errorMessage);
+            resultBuilder.ReportFatalError(errorMessage);
             Logger.Fatal(exception);
         }
 
@@ -417,10 +417,10 @@ namespace FeiEventStore.Domain
             while(reTry)
             {
                 reTry = false;
-                _executorFactory.ExecuteInScope<IResultBuilder, DomainCommandResult>((execScope) => {
+                _executorFactory.ExecuteInScope<IResultBuilder, DomainCommandResult>((resultBuilder) => {
                     try
                     {
-                        result = Execute(commandBatch, execScope, origin);
+                        result = Execute(commandBatch, resultBuilder, origin);
                     }
                     catch(AggregateConcurrencyViolationException ex)
                     {
@@ -438,14 +438,19 @@ namespace FeiEventStore.Domain
                             Logger.Info(ex);
                         }
                     }
+                    catch(DomainException ex)
+                    {
+                        resultBuilder.ReportFatalError(ex.Message);
+                        Logger.Fatal(ex);
+                    }
                     catch(Exception ex)
                     {
-                        execScope.ReportException(ex);
+                        resultBuilder.ReportException(ex);
                         Logger.Fatal(ex);
                     }
                     finally
                     {
-                        result = result ?? execScope.BuildResult(-1L);
+                        result = result ?? resultBuilder.BuildResult(-1L);
                     }
                     return result;
                 });

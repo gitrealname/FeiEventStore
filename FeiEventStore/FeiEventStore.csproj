@@ -56,6 +56,7 @@
     <Compile Include="Core\IMessage.cs" />
     <Compile Include="Core\IStateHolder.cs" />
     <Compile Include="Core\TypeId.cs" />
+    <Compile Include="Domain\DomainException.cs" />
     <Compile Include="Domain\BaseAggregateException.cs" />
     <Compile Include="Domain\BaseProcess.cs" />
     <Compile Include="Domain\BaseAggregate.cs" />
