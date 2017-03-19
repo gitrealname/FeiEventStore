@@ -23,13 +23,13 @@ namespace FeiEventStore.IntegrationTests.EventQueues.Ado
         private readonly IAdoEventQueueConfiguration _config;
         private readonly IAdoModelGenerator _modelGenerator;
         private readonly IAdoConnectionProvider _connProvider;
-        private readonly IObjectFactory _factory;
+        private readonly IServiceLocator _factory;
 
         private bool _configured = false;
 
         public AdoTransactionalEventQueue(IAdoEventQueueConfiguration config, 
             IEventStore eventStore, IVersionTrackingStore verstionStore, 
-            IAdoModelGenerator modelGenerator, IAdoConnectionProvider connProvider, IObjectFactory factory) 
+            IAdoModelGenerator modelGenerator, IAdoConnectionProvider connProvider, IServiceLocator factory) 
             : base(config, eventStore, verstionStore)
         {
             _config = config;

@@ -12,6 +12,14 @@ using NLog;
 namespace FeiEventStore.Ioc
 {
 
+    /// <summary>
+    /// Registration type:
+    /// ...Service... - registers single service implementation, 
+    ///     IMPORTANT: 1) only one service implementation is allowed! 
+    ///                2) scanner insures that first registered implementation wins, all following registration of the given service type will be ignored.
+    /// ...Type.... - registers object type and all its interfaces. 
+    ///     IMPORTANT: 1) Multiple/all implementations of the interface/service must be supplied by container when available.
+    /// </summary>
     public enum IocRegistrationType
     {
         /// <summary>

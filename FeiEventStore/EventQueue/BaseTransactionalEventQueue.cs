@@ -45,9 +45,12 @@ namespace FeiEventStore.EventQueue
                 Logger.Warn("Event Queue Processing or type id '{0}' is getting behind. New Events are dropped as outstanding queue size reached {1} events.",
                     _typeId, _blockingQueue.Count);
             }
-            foreach(var @event in eventBatch)
+            else
             {
-                _blockingQueue.Add(@event);
+                foreach(var @event in eventBatch)
+                {
+                    _blockingQueue.Add(@event);
+                }
             }
         }
 
@@ -121,21 +124,26 @@ namespace FeiEventStore.EventQueue
 
         protected virtual void StartProcessingTransaction(ICollection<IEventEnvelope> events)
         {
-            try
+            bool reTry = true;
+            while(reTry)
             {
-                using(var tx = new TransactionScope())
+                try
                 {
-                    var finalVersion = events.Last().StoreVersion;
-                    HandleEvents(events);
-                    _verstionStore.Set(_typeId, finalVersion);
-                    _version = finalVersion;
-                    tx.Complete();
+                    using(var tx = new TransactionScope())
+                    {
+                        var finalVersion = events.Last().StoreVersion;
+                        HandleEvents(events);
+                        _verstionStore.Set(_typeId, finalVersion);
+                        _version = finalVersion;
+                        tx.Complete();
+                    }
                 }
-            }
-            catch(Exception e)
-            {
-                Logger.Fatal(e);
-                Thread.Sleep(1000);
+                catch(Exception e)
+                {
+                    Logger.Fatal(e);
+                    Thread.Sleep(1000);
+                }
+                reTry = false;
             }
         }
 

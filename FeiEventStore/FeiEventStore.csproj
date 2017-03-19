@@ -63,7 +63,7 @@
     <Compile Include="Domain\BaseAggregate.cs" />
     <Compile Include="Core\EventEnvelope.cs" />
     <Compile Include="Core\IState.cs" />
-    <Compile Include="Core\IObjectFactory.cs" />
+    <Compile Include="Core\IServiceLocator.cs" />
     <Compile Include="Core\IReplace.cs" />
     <Compile Include="Core\PermanentTypeAttribute.cs" />
     <Compile Include="Core\IAggregate.cs" />

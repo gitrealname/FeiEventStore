@@ -125,9 +125,9 @@ namespace PrototypeValidator
         {
             var containerOptions = new ContainerOptions();
             var container = new LightInject.ServiceContainer(containerOptions);
-            container.Register<IObjectFactory>((serviceFactory) => new LightInjectObjectFactory(serviceFactory), new PerContainerLifetime());
+            container.Register<IServiceLocator>((serviceFactory) => new LightInjectObjectFactory(serviceFactory), new PerContainerLifetime());
 
-            var factory = container.GetAllInstances<IObjectFactory>();
+            var factory = container.GetAllInstances<IServiceLocator>();
             return factory;
         }
         private static void Prog1()
@@ -149,7 +149,7 @@ namespace PrototypeValidator
             //    return true;
             //});
             container.Register<IPermanentlyTypedRegistry, Registry>( new PerContainerLifetime());
-            container.Register<IObjectFactory>((serviceFactory) => new LightInjectObjectFactory(serviceFactory), new PerContainerLifetime());
+            container.Register<IServiceLocator>((serviceFactory) => new LightInjectObjectFactory(serviceFactory), new PerContainerLifetime());
             container.Register<IPermanentlyTypedObjectService, PermanentlyTypedObjectService>(new PerContainerLifetime());
 
             foreach(var type in typeof(Event1).Assembly.GetTypes())
@@ -170,10 +170,10 @@ namespace PrototypeValidator
             var event2Replacers = container.GetAllInstances(event2ReplacerType);
 
             var permanentTypedRegistry = container.GetAllInstances <IPermanentlyTypedRegistry>();
-            var resolvers = container.GetAllInstances<IObjectFactory>();
+            var resolvers = container.GetAllInstances<IServiceLocator>();
             var svc = container.GetAllInstances<IPermanentlyTypedObjectService>();
 
-            var myFactory = container.GetInstance<IObjectFactory>();
+            var myFactory = container.GetInstance<IServiceLocator>();
             var event1Replacers2 = myFactory.GetAllInstances(event1ReplacerType).Cast<IMyType>();
             return;
         }

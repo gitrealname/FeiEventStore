@@ -9,7 +9,7 @@ namespace FeiEventStore.Core
     /// <summary>
     /// IOC specific dependency resolver and object factory
     /// </summary>
-    public interface IObjectFactory
+    public interface IServiceLocator
     {
         /// <summary>
         /// Gets all instances.

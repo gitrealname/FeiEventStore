@@ -8,7 +8,7 @@ namespace FeiEventStore.Ioc.LightInject
     using System.Collections.Generic;
     using FeiEventStore.Core;
 
-    public class LightInjectObjectFactory : IObjectFactory
+    public class LightInjectObjectFactory : IServiceLocator
     {
         private readonly IServiceFactory _serviceFactory;
 

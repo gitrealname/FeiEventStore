@@ -15,14 +15,14 @@ namespace FeiEventStore.Domain
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly IObjectFactory _factory;
+        private readonly IServiceLocator _factory;
         private readonly IScopedExecutionContextFactory _executorFactory;
         private readonly IDomainEventStore _eventStore;
         private readonly IList<IEventQueue> _eventDispatchQueues;
         private readonly ISnapshotStrategy _snapshotStrategy;
         private readonly IList<ICommandValidator> _commandValidators;
 
-        public DomainCommandExecutor(IObjectFactory factory, IScopedExecutionContextFactory executorFactory,
+        public DomainCommandExecutor(IServiceLocator factory, IScopedExecutionContextFactory executorFactory,
             IEventStore eventStore, 
             ISnapshotStrategy snapshotStrategy,
             IEnumerable<ICommandValidator> validationProviders,

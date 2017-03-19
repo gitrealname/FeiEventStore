@@ -15,9 +15,9 @@ namespace FeiEventStore.Events
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly IPermanentlyTypedRegistry _registry;
-        private readonly IObjectFactory _factory;
+        private readonly IServiceLocator _factory;
 
-        public PermanentlyTypedObjectService(IPermanentlyTypedRegistry registry, IObjectFactory factory)
+        public PermanentlyTypedObjectService(IPermanentlyTypedRegistry registry, IServiceLocator factory)
         {
             _registry = registry;
             _factory = factory;
