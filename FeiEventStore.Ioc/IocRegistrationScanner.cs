@@ -102,6 +102,7 @@ namespace FeiEventStore.Ioc
         private readonly List<IIocRegistrationMapper> _mappers;
         private readonly AppDomain _appDomain;
         private readonly string _baseDirectory;
+        private HashSet<Type> _serviceMap;
 
         private IocRegistrationScanner()
         {
@@ -180,6 +181,8 @@ namespace FeiEventStore.Ioc
                 throw new Exception("It has to be one or more filter specified.");
             }
 
+            _serviceMap = new HashSet<Type>();
+
             //translate assembly patterns into Regexp
             var rxs = _assemblyPatterns
                .Select(PatternToRegex)
@@ -236,6 +239,8 @@ namespace FeiEventStore.Ioc
                                 //whole type has been registered, stop service processing
                                 break;
                             }
+
+                            //
                             if(ignoreSubTypes == 1)
                             {
                                 foreach(var subTypeInterface in i.GetInterfaces())
@@ -247,7 +252,7 @@ namespace FeiEventStore.Ioc
                     }
                 }
             }
-
+            _serviceMap = null; //clean up temporary service map
         }
 
         private int ProcessType(Type serviceType, Type type)
@@ -263,18 +268,26 @@ namespace FeiEventStore.Ioc
                 if(action.RegistrationType != IocRegistrationType.Swallow)
                 {
                     //convert to Registration lifetime
-                    _registrar.Register(serviceType, type, action);
                     if(action.RegistrationType == IocRegistrationType.RegisterTypeTransientLifetime 
                         || action.RegistrationType == IocRegistrationType.RegisterTypePerContainerLifetime 
                         || action.RegistrationType == IocRegistrationType.RegisterTypePerScopeLifetime)
                     {
-                        Logger.Debug("Registered type '{0}' with lifetime {1}.", type.FullName, action.RegistrationType.ToString());
+                        Logger.Debug("Registering type '{0}' with lifetime {1}.", type.FullName, action.RegistrationType.ToString());
                         ignoreSubTypes = 2;
                     } else
                     {
-                        Logger.Debug("Registered type '{0}' as service of type '{1}' with lifetime {2}.", type.FullName, serviceType.FullName, action.RegistrationType.ToString());
                         ignoreSubTypes = 1;
+                        if(!_serviceMap.Add(serviceType))
+                        {
+                            Logger.Debug("Skipped! Type Registration '{0}' as service of type '{1}' - service is already registered.", type.FullName, serviceType.FullName);
+                            return ignoreSubTypes;
+                        }
+                        else
+                        {
+                            Logger.Debug("Registering type '{0}' as service of type '{1}' with lifetime {2}.", type.FullName, serviceType.FullName, action.RegistrationType.ToString());
+                        }
                     }
+                    _registrar.Register(serviceType, type, action);
 
                     //notify mappers about registration
                     foreach(var m in _mappers)
