@@ -96,7 +96,9 @@
     <Compile Include="EventQueue\IEventQueue.cs" />
     <Compile Include="EventQueue\IEventQueueConfiguration.cs" />
     <Compile Include="EventQueue\InMemoryVersionTrackingStore.cs" />
+    <Compile Include="EventQueue\IEventQueueAwaiter.cs" />
     <Compile Include="EventQueue\IVersionTrackingStore.cs" />
+    <Compile Include="EventQueue\EventQueueAwaiter.cs" />
     <Compile Include="Events\IDomainEventStore.cs" />
     <Compile Include="Events\IPermanentlyTypedObjectService.cs" />
     <Compile Include="Events\MultipleTypeInstancesException.cs" />

@@ -22,11 +22,12 @@ namespace FeiEventStore.EventQueue
         protected readonly IEventStore _eventStore;
         protected readonly IVersionTrackingStore _verstionStore;
         protected readonly BlockingCollection<IEventEnvelope> _blockingQueue;
+        protected readonly IEventQueueAwaiter _queueAwaiter;
         protected readonly TypeId _typeId;
         protected Thread _thread;
         protected long _version; //last processed version
 
-        protected BaseTransactionalEventQueue(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore)
+        protected BaseTransactionalEventQueue(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore, IEventQueueAwaiter queueAwaiter)
         {
             _baseConfig = baseConfig;
             _eventStore = eventStore;
@@ -35,6 +36,7 @@ namespace FeiEventStore.EventQueue
             _typeId = this.GetType().GetPermanentTypeId();
             _version = _verstionStore.Get(_typeId);
             _blockingQueue = new BlockingCollection<IEventEnvelope>(_baseConfig.MaxQueueCapacity);
+            _queueAwaiter = queueAwaiter;
         }
 
 
@@ -67,6 +69,7 @@ namespace FeiEventStore.EventQueue
                 Logger.Debug("Starting Event Queue of type id {0}", _typeId);    
             }
 
+            RestoreQueueState();
             RecoverFromEventStore();
 
             List<IEventEnvelope> events = new List<IEventEnvelope>();
@@ -122,6 +125,12 @@ namespace FeiEventStore.EventQueue
         {
         }
 
+        protected virtual void RestoreQueueState()
+        {
+            _version = _verstionStore.Get(_typeId);
+            _queueAwaiter.Post(_typeId, _version);
+        }
+
         protected virtual void StartProcessingTransaction(ICollection<IEventEnvelope> events)
         {
             bool reTry = true;
@@ -134,8 +143,9 @@ namespace FeiEventStore.EventQueue
                         var finalVersion = events.Last().StoreVersion;
                         HandleEvents(events);
                         _verstionStore.Set(_typeId, finalVersion);
-                        _version = finalVersion;
                         tx.Complete();
+                        _version = finalVersion;
+                        _queueAwaiter.Post(_typeId, finalVersion);
                     }
                 }
                 catch(Exception e)

@@ -21,6 +21,7 @@ namespace FeiEventStore.Ioc
             { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocRegistrationType.RegisterServicePerContainerLifetime },
             { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocRegistrationType.RegisterServicePerContainerLifetime },
             { new Tuple<Type, Type>(typeof(IAggregateStateRepository), typeof(AggregateStateRepository.AggregateStateRepository)), IocRegistrationType.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IEventQueueAwaiter), typeof(EventQueueAwaiter)), IocRegistrationType.RegisterServicePerContainerLifetime },
 
             //per scope!
             { new Tuple<Type, Type>(typeof(IDomainExecutionScopeService), typeof(DomainExecutionScopeService)), IocRegistrationType.RegisterServicePerScopeLifetime },

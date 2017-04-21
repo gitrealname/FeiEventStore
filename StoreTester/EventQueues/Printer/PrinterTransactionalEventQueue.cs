@@ -12,8 +12,8 @@ namespace FeiEventStore.IntegrationTests.EventQueues.Printer
     {
         private readonly IPrinterEventQueueConfiguration _config;
 
-        public PrinterTransactionalEventQueue(IPrinterEventQueueConfiguration config, IEventStore eventStore, IVersionTrackingStore verstionStore) 
-            : base(config, eventStore, verstionStore)
+        public PrinterTransactionalEventQueue(IPrinterEventQueueConfiguration config, IEventStore eventStore, IVersionTrackingStore verstionStore, IEventQueueAwaiter queueAwaiter) 
+            : base(config, eventStore, verstionStore, queueAwaiter)
         {
             _config = config;
         }

@@ -28,9 +28,9 @@ namespace FeiEventStore.IntegrationTests.EventQueues.Ado
         private bool _configured = false;
 
         public AdoTransactionalEventQueue(IAdoEventQueueConfiguration config, 
-            IEventStore eventStore, IVersionTrackingStore verstionStore, 
+            IEventStore eventStore, IVersionTrackingStore verstionStore, IEventQueueAwaiter queueAwaiter,
             IAdoModelGenerator modelGenerator, IAdoConnectionProvider connProvider, IServiceLocator factory) 
-            : base(config, eventStore, verstionStore)
+            : base(config, eventStore, verstionStore, queueAwaiter)
         {
             _config = config;
             _modelGenerator = modelGenerator;

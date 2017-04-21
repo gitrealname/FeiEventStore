@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "efproto", "efproto\efproto.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlFu", "SqlFu\src\SqlFu\SqlFu.csproj", "{CC6D8079-500F-457B-9FF2-CE0A68EDCCF0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectionAwaiter", "ProjectionAwaiter\ProjectionAwaiter.csproj", "{90A93CAA-7409-4A82-913D-DFCABE513D46}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{CC6D8079-500F-457B-9FF2-CE0A68EDCCF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC6D8079-500F-457B-9FF2-CE0A68EDCCF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC6D8079-500F-457B-9FF2-CE0A68EDCCF0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90A93CAA-7409-4A82-913D-DFCABE513D46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90A93CAA-7409-4A82-913D-DFCABE513D46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90A93CAA-7409-4A82-913D-DFCABE513D46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90A93CAA-7409-4A82-913D-DFCABE513D46}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

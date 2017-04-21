@@ -21,8 +21,8 @@ namespace FeiEventStore.EventQueue
     public abstract class BaseNonTransactionalEventQueue : BaseTransactionalEventQueue
     {
 
-        protected BaseNonTransactionalEventQueue(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore) 
-            : base(baseConfig, eventStore, verstionStore)
+        protected BaseNonTransactionalEventQueue(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore, IEventQueueAwaiter queueAwaiter) 
+            : base(baseConfig, eventStore, verstionStore, queueAwaiter)
         {
         }
 
@@ -35,6 +35,7 @@ namespace FeiEventStore.EventQueue
                     var finalVersion = events.Last().StoreVersion;
                     HandleEvents(events);
                     _version = finalVersion;
+                    _queueAwaiter.Post(_typeId, finalVersion);
                 }
                 catch(Exception e)
                 {
@@ -44,11 +45,18 @@ namespace FeiEventStore.EventQueue
             }
         }
 
+        protected override void RestoreQueueState()
+        {
+            _version = 0;
+            _queueAwaiter.Post(_typeId, _version);
+        }
+
         protected override void RecoverFromEventStore(long? untilVersion = null)
         {
             if(untilVersion.HasValue)
             {
                 _version = untilVersion.Value;
+                _queueAwaiter.Post(_typeId, _version);
             }
         }
     }
