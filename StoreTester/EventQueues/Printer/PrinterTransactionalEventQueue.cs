@@ -23,7 +23,7 @@ namespace FeiEventStore.IntegrationTests.EventQueues.Printer
             foreach(var e in events)
             {
                 var msg = string.Format("({0}) Event type id '{1}' source stream Id '{2}' stream version {3}"
-                    , e.StoreVersion, e.Payload.GetType().GetPermanentTypeId(), e.StreamId, e.StreamVersion);
+                    , e.StoreVersion, e.Payload.GetType().GetPermanentTypeId(), e.AggregateId, e.AggregateVersion);
 
                 _config.Output.Add(msg);
                 if(_config.PrintToConsole)

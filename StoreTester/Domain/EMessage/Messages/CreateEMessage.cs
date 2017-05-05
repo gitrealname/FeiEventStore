@@ -4,13 +4,13 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage.Messages
 {
     public class CreateEMessage : BaseCommand
     {
-        public CreateEMessage(Guid messageId, Guid authorId) : base(messageId)
+        public CreateEMessage(Guid messageId, string authorId) : base(messageId)
         {
             AuthorId = authorId;
 
         }
 
-        public Guid AuthorId { get; set; }
+        public string AuthorId { get; set; }
 
     }
 }

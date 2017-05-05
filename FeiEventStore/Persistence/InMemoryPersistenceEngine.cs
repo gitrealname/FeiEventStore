@@ -54,10 +54,10 @@ namespace FeiEventStore.Persistence
 
         public void InitializeStorage()
         {
-            Purge();
+            DestroyStorage();
         }
 
-        public void Purge()
+        public void DestroyStorage()
         {
             _dispatchedStoreVersion = 0;
             _storeVersion = 0;
@@ -75,7 +75,7 @@ namespace FeiEventStore.Persistence
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
             HashSet<Guid> processIdsToBeDeleted = null,
-            IList<StreamPrimaryKeyRecord> primaryKeyChanges = null)
+            IList<AggregatePrimaryKeyRecord> primaryKeyChanges = null)
         {
             var stats_events = 0;
             var stats_snapshots = 0;
@@ -105,23 +105,23 @@ namespace FeiEventStore.Persistence
                         string key;
                         if(pk.PrimaryKey == null)
                         {
-                            if(_primaryKeyByAggregateId.TryGetValue(pk.StreamId, out key))
+                            if(_primaryKeyByAggregateId.TryGetValue(pk.AggregateId, out key))
                             {
                                 _primaryKey.Remove(key);
-                                _primaryKeyByAggregateId.Remove(pk.StreamId);
+                                _primaryKeyByAggregateId.Remove(pk.AggregateId);
                             }
 
                         }
                         else
                         {
-                            key = pk.PrimaryKey + ":" + pk.StreamTypeId;
+                            key = pk.PrimaryKey + ":" + pk.AggregateTypeId;
                             if(!_primaryKey.Add(key))
                             {
-                                var ex = new AggregatePrimaryKeyViolationException(pk.StreamId, pk.StreamTypeId, pk.PrimaryKey);
+                                var ex = new AggregatePrimaryKeyViolationException(pk.AggregateId, pk.AggregateTypeId, pk.PrimaryKey);
                                 Logger.Fatal(ex);
                                 throw ex;
                             }
-                            _primaryKeyByAggregateId[pk.StreamId] = key;
+                            _primaryKeyByAggregateId[pk.AggregateId] = key;
                         }
                     }
                 }
@@ -130,10 +130,10 @@ namespace FeiEventStore.Persistence
                 foreach(var e in events)
                 {
                     //check aggregate version
-                    var currentVersion = GetAggregateVersion(e.StreamId);
-                    if(currentVersion >= e.StreamVersion)
+                    var currentVersion = GetAggregateVersion(e.AggregateId);
+                    if(currentVersion >= e.AggregateVersion)
                     {
-                        var ex = new AggregateConcurrencyViolationException(e.StreamId, e.StreamVersion, currentVersion);
+                        var ex = new AggregateConcurrencyViolationException(e.AggregateId, e.AggregateVersion, currentVersion);
                         Logger.Warn(ex);
                         throw ex;
                     }
@@ -188,14 +188,14 @@ namespace FeiEventStore.Persistence
                     if(Logger.IsDebugEnabled)
                     {
                         Logger.Debug("Preparing event for persistence: Store Version: {0}, Aggregate Id: {2} Aggregate Version: {3}",
-                            e.StoreVersion, e.StreamId, e.StreamVersion);
+                            e.StoreVersion, e.AggregateId, e.AggregateVersion);
                     }
                     _events.Add(e);
-                    if(!_eventsByAggregateId.ContainsKey(e.StreamId))
+                    if(!_eventsByAggregateId.ContainsKey(e.AggregateId))
                     {
-                        _eventsByAggregateId.Add(e.StreamId, new List<Tuple<EventRecord, int>>());
+                        _eventsByAggregateId.Add(e.AggregateId, new List<Tuple<EventRecord, int>>());
                     }
-                    _eventsByAggregateId[e.StreamId].Add(new Tuple<EventRecord, int>(e, endPos));
+                    _eventsByAggregateId[e.AggregateId].Add(new Tuple<EventRecord, int>(e, endPos));
                     endPos++;
                     stats_events = events.Count;
                 }
@@ -265,7 +265,7 @@ namespace FeiEventStore.Persistence
                 return 0;
             }
 
-            return aggregateEvents.Last().Item1.StreamVersion;
+            return aggregateEvents.Last().Item1.AggregateVersion;
         }
 
         public IEnumerable<EventRecord> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion)
@@ -275,7 +275,7 @@ namespace FeiEventStore.Persistence
                 return new List<EventRecord>();
             }
             var result = _eventsByAggregateId[aggregateId]
-                .Where(r => r.Item1.StreamVersion >= fromAggregateVersion && (!toAggregateVersion.HasValue || r.Item1.StreamVersion <= toAggregateVersion.Value))
+                .Where(r => r.Item1.AggregateVersion >= fromAggregateVersion && (!toAggregateVersion.HasValue || r.Item1.AggregateVersion <= toAggregateVersion.Value))
                 .Select(t => t.Item1);
             return result;
         }
@@ -392,16 +392,6 @@ namespace FeiEventStore.Persistence
         public void UpdateDispatchVersion(long version)
         {
             _dispatchedStoreVersion = version;
-        }
-
-        public void Purge(Guid aggregateId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Drop()
-        {
-            Purge();
         }
 
         public object SerializePayload(object payload)

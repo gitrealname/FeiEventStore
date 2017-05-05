@@ -19,15 +19,13 @@
         /// </summary>
         public long StoreVersion { get; set; }
 
-        public Guid? OriginUserId { get; set; }
+        public string OriginUserId { get; set; }
 
-        public Guid? OriginSystemId { get; set; }
+        public Guid AggregateId { get; set; }
 
-        public Guid StreamId { get; set; }
+        public long AggregateVersion { get; set; }
 
-        public long StreamVersion { get; set; }
-
-        public TypeId StreamTypeId { get; set; }
+        public TypeId AggregateTypeId { get; set; }
 
         /// <summary>
         /// Gets or sets the Unique Key per Aggregate Type. 

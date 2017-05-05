@@ -37,14 +37,14 @@ namespace FeiEventStore.Domain
         {
             foreach(var e in history)
             {
-                if(e.StreamVersion != (Version + 1))
+                if(e.AggregateVersion != (Version + 1))
                 {
                     throw new Exception(string.Format("Events are out of order for aggregate id {0}; Aggregate version: {1}, Event version: {2}",
-                        e.StreamId, Version, e.StreamVersion));
+                        e.AggregateId, Version, e.AggregateVersion));
                 }
-                if(e.StreamId != Id)
+                if(e.AggregateId != Id)
                 {
-                    throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Id, e.StreamId));
+                    throw new Exception(string.Format("Aggregate Id {0} doesn't match Event's Id {1} ", Id, e.AggregateId));
                 }
                 RaiseEvent((IEvent)e.Payload, true);
             }

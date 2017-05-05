@@ -8,7 +8,7 @@ namespace FeiEventStore.IntegrationTests.EventQueues.Ado.DbModel
         {
         }
         public Guid Id { get; set; }
-        public Guid AuthorId { get; set; }
+        public string AuthorId { get; set; }
         public string Subject { get; set; }
         public string MessageBody { get; set; }
         public bool IsSent { get; set; }

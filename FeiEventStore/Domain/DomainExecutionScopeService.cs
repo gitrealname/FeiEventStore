@@ -14,10 +14,10 @@ namespace FeiEventStore.Domain
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         internal DomainExecutionScopeContext Context { get; set; }
-        internal void Init(DomainExecutionScopeContext ctx, MessageOrigin origin)
+        internal void Init(DomainExecutionScopeContext ctx, string originUserId)
         {
             Context = ctx;
-            Origin = origin;
+            OriginUserId = originUserId;
         }
 
         internal bool CommandHasFailed { get { return Context.ExecutionResult.CommandHasFailed;  } }
@@ -77,6 +77,6 @@ namespace FeiEventStore.Domain
             return result;
         }
 
-        public MessageOrigin Origin { get; protected set; }
+        public string OriginUserId { get; protected set; }
     }
 }

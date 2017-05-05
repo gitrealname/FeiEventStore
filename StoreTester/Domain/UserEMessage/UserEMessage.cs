@@ -9,7 +9,7 @@ namespace FeiEventStore.IntegrationTests.Domain.UserEMessage
     public class UserEMessage : IAggregateState
     {
         public Guid EMessageId { get; set; }
-        public Guid UserId { get; set; }
+        public string UserId { get; set; }
         public bool IsRead { get; set; }
 
         public bool Flagged { get; set; }

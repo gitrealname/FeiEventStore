@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlFu", "SqlFu\src\SqlFu\Sq
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectionAwaiter", "ProjectionAwaiter\ProjectionAwaiter.csproj", "{90A93CAA-7409-4A82-913D-DFCABE513D46}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.Persistence.Sql", "FeiEventStore.Persistence.Sql\FeiEventStore.Persistence.Sql.csproj", "{0314479A-47F7-4D18-B195-9AC74567870B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeiEventStore.Persistence.Sql.Test", "FeiEventStore.Persistence.Sql.Test\FeiEventStore.Persistence.Sql.Test.csproj", "{0AE32150-BF45-48EC-B256-6E6FC5F4AFB6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +67,14 @@ Global
 		{90A93CAA-7409-4A82-913D-DFCABE513D46}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90A93CAA-7409-4A82-913D-DFCABE513D46}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90A93CAA-7409-4A82-913D-DFCABE513D46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0314479A-47F7-4D18-B195-9AC74567870B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0314479A-47F7-4D18-B195-9AC74567870B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0314479A-47F7-4D18-B195-9AC74567870B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0314479A-47F7-4D18-B195-9AC74567870B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0AE32150-BF45-48EC-B256-6E6FC5F4AFB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0AE32150-BF45-48EC-B256-6E6FC5F4AFB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0AE32150-BF45-48EC-B256-6E6FC5F4AFB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0AE32150-BF45-48EC-B256-6E6FC5F4AFB6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

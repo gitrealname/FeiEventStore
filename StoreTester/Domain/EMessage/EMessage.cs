@@ -11,15 +11,15 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
     {
         public EMessage()
         {
-            ToRecepients = new List<Guid>();
-            CcRecepients = new List<Guid>();
+            ToRecepients = new List<string>();
+            CcRecepients = new List<string>();
         }
-        public Guid AuthorId { get; set; }
+        public string AuthorId { get; set; }
         public string Subject { get; set; }
         public string MessageBody { get; set; }
 
-        public List<Guid> ToRecepients { get; set; }
-        public List<Guid> CcRecepients { get; set; }
+        public List<string> ToRecepients { get; set; }
+        public List<string> CcRecepients { get; set; }
 
         public bool IsSent { get; set; }
 

@@ -8,7 +8,7 @@ namespace FeiEventStore.IntegrationTests.Domain.UserEMessage.Messages
     {
         public Guid MessageId { get; set; }
 
-        public Guid UserId { get; set; }
+        public string UserId { get; set; }
 
         public string FolderTag { get; set; }
 

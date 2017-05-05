@@ -5,15 +5,13 @@
     public class EventEnvelope<TEvent> : IEventEnvelope<TEvent> where TEvent : IEvent, new()
     {
 
-        public Guid? OriginUserId { get; set; }
-
-        public Guid? OriginSystemId { get; set; }
+        public string OriginUserId { get; set; }
 
         public MessageOrigin Origin { get; set; }
         public long StoreVersion { get; set; }
-        public Guid StreamId { get; set; }
-        public long StreamVersion { get; set; }
-        public TypeId StreamTypeId { get; set; }
+        public Guid AggregateId { get; set; }
+        public long AggregateVersion { get; set; }
+        public TypeId AggregateTypeId { get; set; }
 
         public DateTimeOffset Timestapm { get; set; }
 

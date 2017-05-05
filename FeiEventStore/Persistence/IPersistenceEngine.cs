@@ -11,7 +11,7 @@ namespace FeiEventStore.Persistence
     ///         Violation of the this key should result in <see cref="EventStoreConcurrencyViolationException"/>,
     ///         which can be used by event store to re-try the commit.
     ///         
-    ///     2. It has to be an unique index on <see cref="EventRecord.StreamId"/> and <see cref="EventRecord.StreamVersion"/>,
+    ///     2. It has to be an unique index on <see cref="EventRecord.AggregateId"/> and <see cref="EventRecord.AggregateVersion"/>,
     ///         This is required to perform lookup and load an Aggregate. 
     ///         Violation of this index is not expected as all collisions are handled using #1.
     ///         
@@ -69,7 +69,7 @@ namespace FeiEventStore.Persistence
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,
             HashSet<Guid> processIdsToBeDeleted = null,
-            IList<StreamPrimaryKeyRecord> primaryKeyChanges = null);
+            IList<AggregatePrimaryKeyRecord> primaryKeyChanges = null);
 
         /// <summary>
         /// Serializes the payload.
@@ -173,20 +173,9 @@ namespace FeiEventStore.Persistence
         void DeleteProcess(Guid processId);
 
         /// <summary>
-        ///     Completely DESTROYS the contents of ANY and ALL aggregates that have been successfully persisted.  Use with caution.
-        /// </summary>
-        void Purge();
-
-        /// <summary>
-        ///     Completely DESTROYS the contents of ANY and ALL aggregates that have been successfully persisted
-        ///     for the specified aggregate (aggregate) Id.  Use with caution.
-        /// </summary>
-        void Purge(Guid aggregateId);
-
-        /// <summary>
         ///     Completely DESTROYS the contents and schema (if applicable) containing ANY and ALL aggregates that have been
         ///     successfully persisted.  Use with caution.
         /// </summary>
-        void Drop();
+        void DestroyStorage();
     }
 }

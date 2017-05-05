@@ -39,14 +39,14 @@ namespace FeiEventStore.Events
         {
 
             //prepare primary key changes
-            var keyRecords = new List<StreamPrimaryKeyRecord>();
+            var keyRecords = new List<AggregatePrimaryKeyRecord>();
             if(primaryKeyChanges != null)
             {
                 foreach(var tuple in primaryKeyChanges)
                 {
-                    var pk = new StreamPrimaryKeyRecord() {
-                        StreamId = tuple.Item1,
-                        StreamTypeId = tuple.Item2,
+                    var pk = new AggregatePrimaryKeyRecord() {
+                        AggregateId = tuple.Item1,
+                        AggregateTypeId = tuple.Item2,
                         PrimaryKey = tuple.Item3
                     };
                     keyRecords.Add(pk);
@@ -233,7 +233,7 @@ namespace FeiEventStore.Events
                 Logger.Debug("Loaded {0} events for aggregate id {1} up until version {2}", 
                     result.Count, 
                     aggregateId, 
-                    result.Last().StreamVersion);
+                    result.Last().AggregateVersion);
             }
 
             return result;
@@ -263,7 +263,7 @@ namespace FeiEventStore.Events
                 Logger.Debug("Loaded {0} events starting with event store version {1} up until {2}",
                     result.Count,
                     startingStoreVersion,
-                    result.Last().StreamVersion);
+                    result.Last().AggregateVersion);
             }
 
             return result;
@@ -310,7 +310,7 @@ namespace FeiEventStore.Events
             }
             if(aggregateType == null && aggregate == null)
             {
-                var mostRecentAggregateTypeId = @events.Last().StreamTypeId;
+                var mostRecentAggregateTypeId = @events.Last().AggregateTypeId;
                 aggregateType = _service.LookupTypeByPermanentTypeId(mostRecentAggregateTypeId);
             }
             if(aggregate == null)
@@ -442,15 +442,14 @@ namespace FeiEventStore.Events
         private EventRecord CreateEventRecordFromEvent ( IEventEnvelope @event )
         {
             var er = new EventRecord();
-            er.OriginSystemId = @event.OriginSystemId;
             er.OriginUserId = @event.OriginUserId;
             er.StoreVersion = 0; //will be set during commit()
             var payload = @event.Payload;
             er.EventPayloadTypeId = _service.GetPermanentTypeIdForType(payload.GetType());
             er.Payload = _engine.SerializePayload(payload);
-            er.StreamId = @event.StreamId;
-            er.StreamVersion = @event.StreamVersion;
-            er.StreamTypeId = @event.StreamTypeId;
+            er.AggregateId = @event.AggregateId;
+            er.AggregateVersion = @event.AggregateVersion;
+            er.AggregateTypeId = @event.AggregateTypeId;
             er.EventTimestamp = @event.Timestapm;
 
             return er;
@@ -458,12 +457,11 @@ namespace FeiEventStore.Events
 
         private IEventEnvelope InitEventFromEventRecord(IEventEnvelope @event, EventRecord record) {
 
-            @event.OriginSystemId = record.OriginSystemId;
             @event.OriginUserId = record.OriginUserId;
             @event.StoreVersion = record.StoreVersion;
-            @event.StreamId = record.StreamId;
-            @event.StreamVersion = record.StreamVersion;
-            @event.StreamTypeId = record.StreamTypeId;
+            @event.AggregateId = record.AggregateId;
+            @event.AggregateVersion = record.AggregateVersion;
+            @event.AggregateTypeId = record.AggregateTypeId;
             @event.Timestapm = record.EventTimestamp;
 
             return @event;

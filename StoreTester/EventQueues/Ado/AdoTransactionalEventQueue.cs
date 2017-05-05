@@ -114,7 +114,7 @@ namespace FeiEventStore.IntegrationTests.EventQueues.Ado
                 foreach(var tuple in eventHandlers)
                 {
                     var env = tuple.Item1;
-                    tuple.Item2.AsDynamic().Handle(env.Payload, env.StreamId, env.StreamVersion, env.StreamTypeId);
+                    tuple.Item2.AsDynamic().Handle(env.Payload, env.AggregateId, env.AggregateVersion, env.AggregateTypeId);
                 }
 
             }

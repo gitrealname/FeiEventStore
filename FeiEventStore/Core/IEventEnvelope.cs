@@ -4,17 +4,15 @@
 
     public interface IEventEnvelope : IMessage
     {
-        Guid? OriginUserId { get; set; }
-
-        Guid? OriginSystemId { get; set; }
+        string OriginUserId { get; set; }
 
         long StoreVersion { get; set; }
 
-        long StreamVersion { get; set; }
+        Guid AggregateId { get; set; }
 
-        Guid StreamId { get; set; }
+        long AggregateVersion { get; set; }
 
-        TypeId StreamTypeId { get; set; }
+        TypeId AggregateTypeId { get; set; }
 
         DateTimeOffset Timestapm { get; set; }
 

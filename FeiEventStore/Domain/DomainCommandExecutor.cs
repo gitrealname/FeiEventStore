@@ -187,11 +187,11 @@ namespace FeiEventStore.Domain
                 if(i < handlersCount)
                 {
                     //search for cached process that handles the event for given aggregate
-                    process = svc.Context.LookupRunningProcess(handler.GetType(), e.StreamId);
+                    process = svc.Context.LookupRunningProcess(handler.GetType(), e.AggregateId);
                     if(process == null)
                     {
                         //try loading process from the store
-                        process = _eventStore.LoadProcess(handler.GetType(), e.StreamId, false);
+                        process = _eventStore.LoadProcess(handler.GetType(), e.AggregateId, false);
                         if(process != null)
                         {
                             process.Version++;
@@ -204,22 +204,22 @@ namespace FeiEventStore.Domain
                     }
                     if(process != null)
                     {
-                        process.AsDynamic().HandleEvent(e.Payload, e.StreamId, e.StreamVersion, e.StreamTypeId);
+                        process.AsDynamic().HandleEvent(e.Payload, e.AggregateId, e.AggregateVersion, e.AggregateTypeId);
                     }
                 }
                 if(process == null && iStartByEventType.IsInstanceOfType(handler))
                 {
                     process = (IProcessManager)handler;
                     process.Id = Guid.NewGuid();
-                    process.InvolvedAggregateIds.Add(e.StreamId);
-                    process.AsDynamic().StartByEvent(e.Payload, e.StreamId, e.StreamVersion, e.StreamTypeId);
+                    process.InvolvedAggregateIds.Add(e.AggregateId);
+                    process.AsDynamic().StartByEvent(e.Payload, e.AggregateId, e.AggregateVersion, e.AggregateTypeId);
                     if(Logger.IsInfoEnabled)
                     {
                         Logger.Info("Started new Process Manager id {0}; Runtime type: '{1}', By event type: '{2}', Source Aggregate id: {3}",
                             process.Id,
                             process.GetType(),
                             e.GetType(),
-                            e.StreamId);
+                            e.AggregateId);
                     }
                 }
 
@@ -375,11 +375,10 @@ namespace FeiEventStore.Domain
                 initialAggregateVersion++;
                 var envelopeType =  typeof(EventEnvelope<>).MakeGenericType(e.GetType());
                 var envelope = (IEventEnvelope)Activator.CreateInstance(envelopeType);
-                envelope.OriginSystemId = svc.Origin.SystemId;
-                envelope.OriginUserId = svc.Origin.UserId;
-                envelope.StreamId = aggregate.Id;
-                envelope.StreamTypeId = aggregate.TypeId;
-                envelope.StreamVersion = initialAggregateVersion;
+                envelope.OriginUserId = svc.OriginUserId;
+                envelope.AggregateId = aggregate.Id;
+                envelope.AggregateTypeId = aggregate.TypeId;
+                envelope.AggregateVersion = initialAggregateVersion;
                 envelope.StoreVersion = 0; // it will be set by event store
                 envelope.Timestapm = DateTimeOffset.UtcNow;
                 envelope.Payload = e;
@@ -413,31 +412,31 @@ namespace FeiEventStore.Domain
             }
         }
 
-        public Task<DomainCommandResult> ExecuteCommandBatchAsync(IList<ICommand> commandBatch, MessageOrigin origin)
+        public Task<DomainCommandResult> ExecuteCommandBatchAsync(IList<ICommand> commandBatch, string originUserId)
         {
-            var result =  Task.FromResult<DomainCommandResult>(this.ExecuteCommandBatch(commandBatch, origin));
+            var result =  Task.FromResult<DomainCommandResult>(this.ExecuteCommandBatch(commandBatch, originUserId));
             return result;
         }
 
-        public Task<DomainCommandResult> ExecuteCommandAsync(ICommand command, MessageOrigin origin)
+        public Task<DomainCommandResult> ExecuteCommandAsync(ICommand command, string originUserId)
         {
-            var result = ExecuteCommandBatchAsync(new List<ICommand>() { command }, origin);
+            var result = ExecuteCommandBatchAsync(new List<ICommand>() { command }, originUserId);
             return result;
         }
 
-        public DomainCommandResult ExecuteCommand(ICommand command, MessageOrigin origin)
+        public DomainCommandResult ExecuteCommand(ICommand command, string originUserId)
         {
-            var result = ExecuteCommandBatch(new List<ICommand>() { command }, origin);
+            var result = ExecuteCommandBatch(new List<ICommand>() { command }, originUserId);
             return result;
         }
-        public DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch, MessageOrigin origin)
+        public DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch, string originUserId)
         {
             var svc = new DomainExecutionScopeService();
             var ctx = new DomainExecutionScopeContext();
             DomainCommandResult result = null;
             var reTry = true;
 
-            svc.Init(ctx, origin);
+            svc.Init(ctx, originUserId);
 
 
             while(reTry)
@@ -455,7 +454,7 @@ namespace FeiEventStore.Domain
                             throw e;
                         }
                         //initialize service
-                        svc.Init(ctx, origin);
+                        svc.Init(ctx, originUserId);
                         result = Execute(commandBatch, svc);
                     }
                     catch(InvalidDomainExecutionServiceExcepiton)

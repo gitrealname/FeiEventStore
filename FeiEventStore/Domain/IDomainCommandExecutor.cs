@@ -16,12 +16,12 @@ namespace FeiEventStore.Domain
     /// </summary>
     public interface IDomainCommandExecutor
     {
-        Task<DomainCommandResult> ExecuteCommandBatchAsync(IList<ICommand> commandBatch, MessageOrigin origin);
+        Task<DomainCommandResult> ExecuteCommandBatchAsync(IList<ICommand> commandBatch, string originUserId);
 
-        Task<DomainCommandResult> ExecuteCommandAsync(ICommand command, MessageOrigin origin);
+        Task<DomainCommandResult> ExecuteCommandAsync(ICommand command, string originUserId);
 
-        DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch, MessageOrigin origin);
+        DomainCommandResult ExecuteCommandBatch(IList<ICommand> commandBatch, string originUserId);
 
-        DomainCommandResult ExecuteCommand(ICommand commandBatch, MessageOrigin origin);
+        DomainCommandResult ExecuteCommand(ICommand commandBatch, string originUserId);
     }
 }

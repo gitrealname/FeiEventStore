@@ -78,7 +78,7 @@ namespace FeiEventStore.IntegrationTests
                     i++;
                     Exception exception = null;
                     var success = true;
-                    persistenceEngine.Purge();
+                    persistenceEngine.DestroyStorage();
                     StartQueues();
 
                     sw.Restart();

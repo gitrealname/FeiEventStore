@@ -7,12 +7,12 @@ namespace FeiEventStore.Persistence
     /// <summary>
     /// IMPORTANT: when Key == null, the record should be deleted if exists
     /// </summary>
-    public class StreamPrimaryKeyRecord
+    public class AggregatePrimaryKeyRecord
     {
-        public Guid StreamId { get; set; }
+        public Guid AggregateId { get; set; }
 
         public string PrimaryKey { get; set; }
 
-        public TypeId StreamTypeId { get; set; }
+        public TypeId AggregateTypeId { get; set; }
     }
 }

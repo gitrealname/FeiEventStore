@@ -13,7 +13,7 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
     {
         private readonly IDomainExecutionScopeService _executionScopeService;
 
-        public Guid AuthorId { get { return State.AuthorId;  } }
+        public string AuthorId { get { return State.AuthorId;  } }
 
         public EMessageAggregate(IDomainExecutionScopeService executionScopeService)
         {
@@ -28,7 +28,7 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
             }
         }
 
-        public void Create(Guid authorId)
+        public void Create(string authorId)
         {
             var e = new EMessageCreated() { AuthorId = authorId };
             RaiseEvent(e);
@@ -44,7 +44,7 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
             RaiseEvent(e);
         }
 
-        public void ReviseToList(List<Guid> toList )
+        public void ReviseToList(List<string> toList )
         {
             CheckIsSent();
             var e = new EMessageToRecepientListRevised() {

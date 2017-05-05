@@ -4,15 +4,15 @@
 
     public sealed class MessageOrigin : BaseValueObject<MessageOrigin>
     {
-        public Guid? SystemId { get; private set; }
-        public Guid? UserId { get; private set; }
+        public string SystemId { get; private set; }
+        public string UserId { get; private set; }
 
         public MessageOrigin(MessageOrigin other) : this(other.SystemId, other.UserId)
         {
             
         }
 
-        public MessageOrigin(Guid? systemId, Guid? userId)
+        public MessageOrigin(string systemId, string userId)
         {
             if(systemId == null && userId == null)
             {

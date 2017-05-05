@@ -7,6 +7,6 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage.Messages
     [PermanentType("e.message.tolist.revised")]
     public class EMessageToRecepientListRevised : IEvent
     {
-        public List<Guid> ToRecepientList { get; set; }
+        public List<string> ToRecepientList { get; set; }
     }
 }

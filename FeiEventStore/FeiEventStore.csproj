@@ -111,7 +111,7 @@
     <Compile Include="Events\PermanentTypeImplementationNotFoundException.cs" />
     <Compile Include="Events\EventStore.cs" />
     <Compile Include="Ioc\IocRegistrationMapper.cs" />
-    <Compile Include="Persistence\StreamPrimaryKeyRecord.cs" />
+    <Compile Include="Persistence\AggregatePrimaryKeyRecord.cs" />
     <Compile Include="Persistence\ProcessConcurrencyViolationException.cs" />
     <Compile Include="Persistence\AggregateConstraintViolationException.cs" />
     <Compile Include="Persistence\AggregatePrimaryKeyViolationException.cs" />

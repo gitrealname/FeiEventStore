@@ -31,12 +31,12 @@ namespace FeiEventStore.Domain
         void ReportInfo(string infoMessage);
 
         /// <summary>
-        /// Gets the origin of the command/batch that Execution Scope
+        /// Gets the originator user id of the command/batch
         /// </summary>
         /// <value>
         /// The origin.
         /// </value>
-        MessageOrigin Origin { get; }
+        string OriginUserId { get; }
 
         /// <summary>
         /// Gets the immutable state of the aggregate. 
