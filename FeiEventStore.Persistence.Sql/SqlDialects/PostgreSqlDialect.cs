@@ -12,11 +12,11 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
     /// PostgreSql dialect implementation
     /// </summary>
     /// <seealso cref="FeiEventStore.Persistence.Sql.CommonSqlDialect" />
-    public class PgSqlDialect : CommonSqlDialect
+    public class PostgreSqlDialect : CommonSqlDialect
     {
         private readonly string _connectionString;
 
-        public PgSqlDialect(string connectionString)
+        public PostgreSqlDialect(string connectionString)
         {
             _connectionString = connectionString;
         }
@@ -42,7 +42,7 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
                 + @")"
                 + @";";
 
-            var eventsIndex = $"CREATE INDEX IF NOT EXISTS events_event_timestamp_idx ON {this.TableEvents} USING BTREE  (event_timestamp);";
+            var eventsIndex = $"CREATE INDEX IF NOT EXISTS {this.TableEvents}_event_timestamp_idx ON {this.TableEvents} USING BTREE  (event_timestamp);";
 
             var dispatch = $"CREATE TABLE IF NOT EXISTS {this.TableDispatch} ("
                 + @"store_version BIGINT NOT NULL"
@@ -62,13 +62,15 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
             var processes = $"CREATE TABLE IF NOT EXISTS {this.TableProcesses} ("
                 + @"process_id UUID NOT NULL,"
                 + @"involved_aggregate_id UUID NOT NULL,"
-                + @"process_version BIGINT NOT NULL,"
                 + @"process_type_id CHARACTER VARYING NOT NULL,"
+                + @"process_version BIGINT NOT NULL,"
                 + @"process_state_type_id CHARACTER VARYING,"
                 + @"state JSON,"
-                + $"CONSTRAINT {this.TableProcesses}_process_id_involved_aggregate_id_process_version_pkey PRIMARY KEY (process_id, involved_aggregate_id, process_version)"
+                + $"CONSTRAINT {this.TableProcesses}_process_id_involved_aggregate_id_pkey PRIMARY KEY (process_id, involved_aggregate_id)"
                 + @")"
                 + @";";
+
+            var processesIndex = $"CREATE INDEX IF NOT EXISTS {this.TableProcesses}_process_type_id_involved_aggregate_id_idx ON {this.TableProcesses} USING BTREE  (process_type_id, involved_aggregate_id);";
 
             var pk = $"CREATE TABLE IF NOT EXISTS {this.TableAggregateKey} ("
                 + @"aggregate_type_id CHARACTER VARYING NOT NULL,"
@@ -79,7 +81,7 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
                 + @")"
                 + @";";
 
-            return events + eventsIndex + dispatch + snapshots + processes + pk;
+            return events + eventsIndex + dispatch + snapshots + processes + processesIndex + pk;
         }
 
         protected override string CreateUpsertStatement(string tableName, int pkColumnsCount, ParametersManager pm, params KeyValuePair<string, object>[] values)
@@ -87,7 +89,22 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
             var sb = new StringBuilder(1024);
             var allKeys = values.Select(v => v.Key).ToList();
             var allVals = values.Select(v => v.Value).ToList();
-            var allParams = allVals.Select(v => { pm.AddValues(v); return "@" + (pm.CurrentIndex - 1); }).ToList();
+            var allParams = allVals.Select(v =>
+            {
+                var tv = v as Tuple<object, Func<string, string>>;
+                Func<string,string> cast = (s) => s;
+                if(tv != null)
+                {
+                    v = tv.Item1;
+                    cast = tv.Item2;
+                }
+                if(v == null)
+                {
+                    return "NULL";
+                }
+                pm.AddValues(v);
+                return cast("@" + (pm.CurrentIndex - 1));
+            }).ToList();
             var allKeysStr = string.Join(",", allKeys);
             var allParamsStr = string.Join(",", allParams);
             var pkKeysStr = string.Join(",", allKeys.GetRange(0, pkColumnsCount));
@@ -103,10 +120,10 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
             {
                 var k = allKeys[pkColumnsCount + i];
                 var p = allParams[pkColumnsCount + i];
-                kv.Add($"{k} = {p}");
+                kv.Add($"{k}={p}");
             }
 
-            sb.Append(string.Join(", ", kv));
+            sb.Append(string.Join(",", kv));
             sb.Append(';');
 
             return sb.ToString();

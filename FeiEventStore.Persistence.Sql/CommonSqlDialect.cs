@@ -119,6 +119,84 @@ namespace FeiEventStore.Persistence.Sql
             return sql;
         }
 
+        public virtual string BuildSqlSnapshot(SnapshotRecord snapshotRecord, ParametersManager pm)
+        {
+            var sql = "";
+            if(snapshotRecord.State == null)
+            {
+                sql = $"DELETE FROM {this.TableSnapshots} WHERE aggregate_id = @{pm.CurrentIndex};";
+                pm.AddValues(snapshotRecord.AggregateId);
+            }
+            else
+            {
+                sql = this.CreateUpsertStatement(this.TableSnapshots, 1, pm
+                    , new KeyValuePair<string, object>("aggregate_id", snapshotRecord.AggregateId)
+                    , new KeyValuePair<string, object>("aggregate_version", snapshotRecord.AggregateVersion)
+                    , new KeyValuePair<string, object>("aggregate_type_id", snapshotRecord.AggregateTypeId.ToString())
+                    , new KeyValuePair<string, object>("aggregate_state_type_id", snapshotRecord.AggregateStateTypeId.ToString())
+                    , new KeyValuePair<string, object>("state", new Tuple<object,Func<string,string>>(snapshotRecord.State, CastParamToJson)));
+            }
+            return sql;
+        }
+
+        public virtual string BuildSqlProcess(ProcessRecord processRecord, ParametersManager pm)
+        {
+            var sql = this.CreateUpsertStatement(this.TableProcesses, 2, pm
+                , new KeyValuePair<string, object>("process_id", processRecord.ProcessId)
+                , new KeyValuePair<string, object>("involved_aggregate_id", processRecord.InvolvedAggregateId)
+                , new KeyValuePair<string, object>("process_type_id", processRecord.ProcessTypeId.ToString())
+                , new KeyValuePair<string, object>("process_version", processRecord.ProcessVersion)
+                , new KeyValuePair<string, object>("process_state_type_id", processRecord.ProcessStateTypeId?.ToString())
+                , new KeyValuePair<string, object>("state", new Tuple<object, Func<string, string>>(processRecord.State, CastParamToJson)));
+            return sql;
+        }
+
+        public virtual string BuildSqlDeleteProcess(Guid processId, ParametersManager pm)
+        {
+            var sql = $"DELETE FROM {this.TableProcesses} WHERE process_id = @{pm.CurrentIndex};";
+            pm.AddValues(processId);
+            return sql;
+        }
+
+        protected virtual string CreateSelectStatement(string tableName, ParametersManager pm, params object[] colsOrCriteria)
+        {
+            var sb = new StringBuilder(1024);
+            var allColumns = new List<string>();
+            var allConditions = new List<string>();
+
+            foreach(var c in colsOrCriteria)
+            {
+                Tuple<string, string, object> cond = c as Tuple<string, string, object>; //<field> <compare_condition> <value>
+                string colName = null;
+                if(cond != null)
+                {
+                    colName = cond.Item1;
+                    if(cond.Item3 != null)
+                    {
+                        var condition = $"{colName} {cond.Item2} @{pm.CurrentIndex}";
+                        allConditions.Add(condition);
+                        pm.AddValues(cond.Item3);
+                    }
+                }
+                else
+                {
+                    colName = c.ToString();
+                }
+                allColumns.Add(colName);
+            }
+            var allColumnsStr = string.Join(",", allColumns);
+            var allConditionsStr = string.Join(" AND ", allConditions);
+            sb.Append($"SELECT {allColumnsStr} FROM {tableName}");
+            if(allConditions.Count > 0)
+            {
+                sb.Append(" WHERE ");
+                sb.Append(allConditionsStr);
+            }
+            sb.Append(";");
+            return sb.ToString();
+        }
+
+
         public abstract void PrepareParameter(IDbCommand cmd, ParametersManager pm);
 
         public abstract Exception TranslateException(Exception ex, IList<AggregatePrimaryKeyRecord> primaryKeyChanges);

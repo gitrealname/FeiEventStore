@@ -13,7 +13,7 @@ namespace FeiEventStore.Persistence.Sql.Test
     {
         static void Main(string[] args)
         {
-            var engine = new SqlPersistenceEngine(new PgSqlDialect("Host=localhost;Port=5432;Username=postgres;Password=postgres;Database=estest"));
+            var engine = new SqlPersistenceEngine(new PostgreSqlDialect("Host=localhost;Port=5432;Username=postgres;Password=postgres;Database=estest"));
             try
             {
                 Console.WriteLine("---- Cold Run ----");
@@ -29,6 +29,13 @@ namespace FeiEventStore.Persistence.Sql.Test
                     TimeIt("EventsInsert", () => EventsInsert(engine));
                     TimeIt("EventsStoreVersionViolation", () => EventsStoreVersionViolation(engine));
                     TimeIt("EventsAggregateVersionViolation", () => EventsAggregateVersionViolation(engine));
+
+                    TimeIt("SnapshotInsert", () => SnapshotInsert(engine));
+                    TimeIt("SnapshotUpdate", () => SnapshotUpdate(engine));
+
+                    TimeIt("ProcessInsert", () => ProcessInsert(engine));
+                    TimeIt("ProcessUpdate", () => ProcessUpdate(engine));
+                    TimeIt("ProcessDelete", () => ProcessDelete(engine));
                     Console.WriteLine("---- Hot Run ----");
                 }
             }
@@ -52,6 +59,128 @@ namespace FeiEventStore.Persistence.Sql.Test
             engine.DestroyStorage();
             engine.InitializeStorage();
         }
+        static void ProcessDelete(SqlPersistenceEngine engine)
+        {
+            ProcessInsert(engine, 20);
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20);
+            var processesToDelete = new HashSet<Guid>();
+            processesToDelete.Add(g1);
+            engine.Commit(null, null, null, processesToDelete, null);
+
+        }
+        static void ProcessUpdate(SqlPersistenceEngine engine)
+        {
+            ProcessInsert(engine, 10);
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10);
+            var g2 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11);
+            var processes = new List<ProcessRecord>()
+            {
+                new ProcessRecord()
+                {
+                    ProcessId = g1,
+                    InvolvedAggregateId = g2,
+                    ProcessVersion = 2,
+                    ProcessTypeId = "process.type.1",
+                    ProcessStateTypeId = "process.state.type.10",
+                    State = @"{""val"":""process.state.updated""}",
+                },
+                new ProcessRecord()
+                {
+                    ProcessId = g1,
+                    InvolvedAggregateId = g1,
+                    ProcessVersion = 2,
+                    ProcessTypeId = "process.type.1",
+                    ProcessStateTypeId = null,
+                    State = null,
+                },
+            };
+            engine.Commit(null, null, processes, null, null);
+
+        }
+        static void ProcessInsert(SqlPersistenceEngine engine, byte id = 1)
+        {
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, id);
+            var g2 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)(id + 1));
+            var processes = new List<ProcessRecord>()
+            {
+                new ProcessRecord()
+                {
+                    ProcessId = g1,
+                    InvolvedAggregateId = g1,
+                    ProcessVersion = 1,
+                    ProcessTypeId = "process.type.1",
+                    ProcessStateTypeId = "process.state.type.1",
+                    State = @"{""val"":""process.state.1""}",
+                },
+                new ProcessRecord()
+                {
+                    ProcessId = g1,
+                    InvolvedAggregateId = g2,
+                    ProcessVersion = 1,
+                    ProcessTypeId = "process.type.1",
+                    ProcessStateTypeId = null,
+                    State = null,
+                },
+            };
+            engine.Commit(null, null, processes, null, null);
+        }
+
+        static void SnapshotInsert(SqlPersistenceEngine engine)
+        {
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
+            var g2 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2);
+            var snapshots = new List<SnapshotRecord>()
+            {
+                new SnapshotRecord()
+                {
+                    AggregateId = g1,
+                    AggregateVersion = 100,
+                    AggregateTypeId = "snapshot.insert.aggregate.type.1",
+                    AggregateStateTypeId = "snapshot.insert.state.type.1",
+                    State = @"{""val"":""state.1""}",
+                },
+                new SnapshotRecord()
+                {
+                    AggregateId = g2,
+                    AggregateVersion = 200,
+                    AggregateTypeId = "snapshot.insert.aggregate.type.2",
+                    AggregateStateTypeId = "snapshot.insert.state.type.2",
+                    State = @"{""val"":""state.2""}",
+                },
+            };
+            engine.Commit(null, snapshots, null, null, null);
+        }
+
+        static void SnapshotUpdate(SqlPersistenceEngine engine)
+        {
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10);
+            var snapshots = new List<SnapshotRecord>()
+            {
+                new SnapshotRecord()
+                {
+                    AggregateId = g1,
+                    AggregateVersion = 300,
+                    AggregateTypeId = "snapshot.update.aggregate.type.1",
+                    AggregateStateTypeId = "snapshot.update.state.type.1",
+                    State = @"{""val"":""state.1""}",
+                },
+            };
+            engine.Commit(null, snapshots, null, null, null);
+
+            snapshots = new List<SnapshotRecord>()
+            {
+                new SnapshotRecord()
+                {
+                    AggregateId = g1,
+                    AggregateVersion = 301,
+                    AggregateTypeId = "snapshot.insert.update.type.1",
+                    AggregateStateTypeId = "snapshot.update.state.type.1",
+                    State = @"{""val"":""state.1.updated""}",
+                },
+            };
+            engine.Commit(null, snapshots, null, null, null);
+        }
+
         static void EventsInsert(SqlPersistenceEngine engine)
         {
             var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);

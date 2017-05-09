@@ -121,8 +121,8 @@ namespace FeiEventStore.Events
                                 ProcessVersion = p.Version,
                                 ProcessId = p.Id,
                                 InvolvedAggregateId = aggregateId,
-                                ProcessTypeId = _service.GetPermanentTypeIdForType(p.GetType())
-                            };
+                                ProcessTypeId = _service.GetPermanentTypeIdForType(p.GetType()),
+                        };
                             if(head)
                             {
                                 head = false;

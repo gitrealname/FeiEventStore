@@ -56,7 +56,7 @@
     <Compile Include="CommonSqlDialect.cs" />
     <Compile Include="ISqlDialect.cs" />
     <Compile Include="ParameterManager.cs" />
-    <Compile Include="SqlDialects\PgSqlDialect.cs" />
+    <Compile Include="SqlDialects\PostgreSqlDialect.cs" />
     <Compile Include="SqlPersistenceEngine.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

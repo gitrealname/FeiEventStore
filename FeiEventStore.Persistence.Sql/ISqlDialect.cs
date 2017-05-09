@@ -21,6 +21,12 @@ namespace FeiEventStore.Persistence.Sql
 
         string BuildSqlEvent(EventRecord eventRecord, ParametersManager pm);
 
+        string BuildSqlSnapshot(SnapshotRecord snapshotRecord, ParametersManager pm);
+
+        string BuildSqlProcess(ProcessRecord processRecord, ParametersManager pm);
+
+        string BuildSqlDeleteProcess(Guid processId, ParametersManager pm);
+
         void PrepareParameter(IDbCommand cmd, ParametersManager pm);
 
         Exception TranslateException(Exception ex, IList<AggregatePrimaryKeyRecord> primaryKeyChanges);

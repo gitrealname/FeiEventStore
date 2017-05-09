@@ -20,9 +20,9 @@ namespace FeiEventStore.Persistence
     /// 
     ///     4. It has to be a non-unique index on <see cref="EventRecord.EventTimestamp"/> to accommodate time related events lookup 
     /// 
-    /// ProcessTable:
-    ///     1. Unique index should be set on <see cref="ProcessRecord.ProcessVersion"/>, <see cref="ProcessRecord.ProcessId"/>
-    ///     and <see cref="ProcessRecord.InvolvedAggregateId"/>
+    /// ProcessTable Constrains:
+    ///     1. it can be only one Aggregate instance per Process (index: <see cref="ProcessRecord.InvolvedAggregateId"/> and <see cref="ProcessRecord.ProcessId"/>"/>
+    ///     2. Aggregate can participate only in one process of any given type (index: <see cref="ProcessRecord.InvolvedAggregateId"/> and <see cref="ProcessRecord.ProcessTypeId"/>/>
     /// NOTE: When process is stored, record gets created for each unique combination of ProcessId and AggregateId!!!, 
     /// Storage type specific persistence 
     /// TODO: 

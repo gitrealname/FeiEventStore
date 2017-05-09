@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using FeiEventStore.Core;
 using Newtonsoft.Json;
@@ -13,6 +14,7 @@ namespace FeiEventStore.Persistence.Sql
     {
         private readonly ISqlDialect _dialect;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
+        private long _storeVersion;
 
         public SqlPersistenceEngine(ISqlDialect dialect)
         {
@@ -46,14 +48,18 @@ namespace FeiEventStore.Persistence.Sql
             });
         }
 
-        public long StoreVersion { get; private set; }
+        public long StoreVersion
+        {
+            get { return _storeVersion; }
+        }
+
         public long DispatchedStoreVersion { get; private set; }
 
         public long Commit(IList<EventRecord> events, IList<SnapshotRecord> snapshots = null, IList<ProcessRecord> processes = null, HashSet<Guid> processIdsToBeDeleted = null,
             IList<AggregatePrimaryKeyRecord> primaryKeyChanges = null)
         {
 
-            var sb = new StringBuilder(1024);
+            var sb = new StringBuilder(8*1024);
             var pm = _dialect.CreateParametersManager();
             if(primaryKeyChanges != null)
             {
@@ -62,25 +68,47 @@ namespace FeiEventStore.Persistence.Sql
                     sb.Append(_dialect.BuildSqlPrimaryKey(pk, pm));
                 }
             }
-            var lastStoreVersion = 0L;
+            var lastEventStoreVersion = 0L;
             if(events != null)
             {
                 foreach(var e in events)
                 {
                     sb.Append(_dialect.BuildSqlEvent(e, pm));
-                    lastStoreVersion = e.StoreVersion;
+                    lastEventStoreVersion = e.StoreVersion;
+                }
+            }
+            if(snapshots != null)
+            {
+                foreach(var s in snapshots)
+                {
+                    sb.Append(_dialect.BuildSqlSnapshot(s, pm));
+                }
+            }
+            if(processIdsToBeDeleted != null)
+            {
+                foreach(var pid in processIdsToBeDeleted)
+                {
+                    sb.Append(_dialect.BuildSqlDeleteProcess(pid, pm));
+                }
+            }
+            if(processes != null)
+            {
+                foreach(var p in processes)
+                {
+                    sb.Append(_dialect.BuildSqlProcess(p, pm));
                 }
             }
             //execute batch
             try
             {
+                var prevVersion = StoreVersion;
                 _dialect.CreateExecutionScope(true, (conn) => {
                     var cmd = conn.CreateCommand();
                     cmd.CommandText = sb.ToString();
                     _dialect.PrepareParameter(cmd, pm);
                     cmd.ExecuteNonQuery();
                 });
-                StoreVersion = lastStoreVersion;
+                Interlocked.CompareExchange(ref _storeVersion, lastEventStoreVersion, prevVersion);
             }
             catch(Exception ex)
             {
