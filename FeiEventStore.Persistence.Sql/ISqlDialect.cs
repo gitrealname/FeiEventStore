@@ -11,9 +11,19 @@ namespace FeiEventStore.Persistence.Sql
     {
         void CreateExecutionScope(bool inTransaction, Action<IDbConnection> dbActions);
 
+        ParametersManager CreateParametersManager();
+
         string BuildSqlDbSchema();
 
         string BuildSqlDestroy();
+
+        string BuildSqlPrimaryKey(AggregatePrimaryKeyRecord pk, ParametersManager pm);
+
+        string BuildSqlEvent(EventRecord eventRecord, ParametersManager pm);
+
+        void PrepareParameter(IDbCommand cmd, ParametersManager pm);
+
+        Exception TranslateException(Exception ex, IList<AggregatePrimaryKeyRecord> primaryKeyChanges);
 
     }
 }

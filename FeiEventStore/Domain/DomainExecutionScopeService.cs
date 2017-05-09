@@ -66,7 +66,7 @@ namespace FeiEventStore.Domain
         /// <returns></returns>
         public TAggregateState GetImmutableAggregateState<TAggregateState>(Guid aggregateId) where TAggregateState : class, IAggregateState
         {
-            var state = Context.CreateAndTrackAggregateStateCone(aggregateId);
+            var state = Context.CreateAndTrackAggregateStateClone(aggregateId);
             var result = state as TAggregateState;
             if(result == null)
             {

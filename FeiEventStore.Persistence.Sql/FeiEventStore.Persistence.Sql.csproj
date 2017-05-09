@@ -30,6 +30,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Npgsql, Version=3.2.2.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
       <HintPath>..\packages\Npgsql.3.2.2\lib\net451\Npgsql.dll</HintPath>
       <Private>True</Private>
@@ -51,6 +55,7 @@
   <ItemGroup>
     <Compile Include="CommonSqlDialect.cs" />
     <Compile Include="ISqlDialect.cs" />
+    <Compile Include="ParameterManager.cs" />
     <Compile Include="SqlDialects\PgSqlDialect.cs" />
     <Compile Include="SqlPersistenceEngine.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -95,7 +95,7 @@ namespace FeiEventStore.Domain
             ChangedPrimaryKeyMap[aggregateId] = newPrimaryKey;
         }
 
-        public IAggregateState CreateAndTrackAggregateStateCone(Guid aggregateId)
+        public IAggregateState CreateAndTrackAggregateStateClone(Guid aggregateId)
         {
             if(AggregateStateCloneCache.ContainsKey(aggregateId))
             {

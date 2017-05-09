@@ -10,16 +10,12 @@ namespace FeiEventStore.Persistence
     public class AggregateConcurrencyViolationException : System.Exception
     {
         public Guid AggregateId { get; }
-        public long ExpectedVersion { get; }
-        public long PersistedVersion { get; }
-
-        public AggregateConcurrencyViolationException(Guid aggregateId, long expectedVersion, long persistedVersion)
-            : base(string.Format("Aggregate id {0} version collision; expected aggregate version {0}, persisted aggregate version {1}.", 
-                expectedVersion, persistedVersion))
+        public long Version { get; }
+        public AggregateConcurrencyViolationException(Guid aggregateId, long version)
+            : base(string.Format("Aggregate id {0} version {1} already exists.", aggregateId, version))
         {
             AggregateId = aggregateId;
-            ExpectedVersion = expectedVersion;
-            PersistedVersion = persistedVersion;
+            Version = version;
         }
     }
 }

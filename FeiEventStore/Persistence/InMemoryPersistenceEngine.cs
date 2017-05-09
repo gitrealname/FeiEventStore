@@ -92,7 +92,7 @@ namespace FeiEventStore.Persistence
                 var expectedPersistedStoreVersion = events.First().StoreVersion - 1;
                 if(_storeVersion != expectedPersistedStoreVersion)
                 {
-                    var ex = new EventStoreConcurrencyViolationException(expectedPersistedStoreVersion, _storeVersion);
+                    var ex = new EventStoreConcurrencyViolationException();
                     Logger.Warn(ex);
                     throw ex;
                 }
@@ -133,7 +133,7 @@ namespace FeiEventStore.Persistence
                     var currentVersion = GetAggregateVersion(e.AggregateId);
                     if(currentVersion >= e.AggregateVersion)
                     {
-                        var ex = new AggregateConcurrencyViolationException(e.AggregateId, e.AggregateVersion, currentVersion);
+                        var ex = new AggregateConcurrencyViolationException(e.AggregateId, e.AggregateVersion);
                         Logger.Warn(ex);
                         throw ex;
                     }

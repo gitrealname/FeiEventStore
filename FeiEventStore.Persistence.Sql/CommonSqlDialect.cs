@@ -20,6 +20,8 @@ namespace FeiEventStore.Persistence.Sql
         protected virtual string TableDispatch => "dispatch";
         protected virtual string TableAggregateKey => "aggregate_key";
 
+        protected abstract string CreateUpsertStatement(string tableName, int pkColumnsCount, ParametersManager pm, params KeyValuePair<string, object>[] values);
+
         public void CreateExecutionScope(bool inTransaction, Action<IDbConnection> dbActions)
         {
             using(var conn = this.CreateDbConnection())
@@ -42,6 +44,11 @@ namespace FeiEventStore.Persistence.Sql
 
         public abstract string BuildSqlDbSchema();
 
+        public virtual ParametersManager CreateParametersManager()
+        {
+            return new ParametersManager();
+        }
+
         public virtual string BuildSqlDestroy()
         {
             var events = $"DROP TABLE IF EXISTS {this.TableEvents};";
@@ -52,5 +59,68 @@ namespace FeiEventStore.Persistence.Sql
 
             return events + dispatch + snapshots + processes + pk;
         }
+
+        public virtual string BuildSqlPrimaryKey(AggregatePrimaryKeyRecord pk, ParametersManager pm)
+        {
+            var sql = "";
+            if(pk.PrimaryKey == null)
+            {
+                sql = $"DELETE FROM {this.TableAggregateKey} WHERE aggregate_id = @{pm.CurrentIndex};";
+                pm.AddValues(pk.AggregateId);
+            }
+            else
+            {
+                sql = this.CreateUpsertStatement(this.TableAggregateKey, 1, pm
+                    , new KeyValuePair<string, object>("aggregate_id", pk.AggregateId)
+                    , new KeyValuePair<string, object>("aggregate_type_id", pk.AggregateTypeId.ToString())
+                    , new KeyValuePair<string, object>("key", pk.PrimaryKey));
+            }
+            return sql;
+        }
+
+        protected virtual string CastParamToJson(string param)
+        {
+            return param;
+        }
+
+        public virtual string BuildSqlEvent(EventRecord er, ParametersManager pm)
+        {
+
+            var parr = new List<string>();
+            var delta = 2;
+            var current = pm.CurrentIndex;
+            var optFields = "";
+            if(er.AggregateTypeUniqueKey != null)
+            {
+                delta--;
+                pm.AddValues(er.AggregateTypeUniqueKey);
+                optFields += "aggregate_type_unique_key,";
+            }
+            if(er.OriginUserId != null)
+            {
+                delta--;
+                pm.AddValues(er.OriginUserId);
+                optFields += "origin_user_id,";
+            }
+            for(var i = current; i < 9 + current - delta; i++)
+            {
+                parr.Add("@" + i);
+            }
+
+            parr[parr.Count - 1] = CastParamToJson(parr[parr.Count - 1]); //cast payload to json
+
+            var parrStr = string.Join(",", parr);
+            var sql = $"INSERT INTO {this.TableEvents} ({optFields}"
+                + @"store_version,aggregate_id,aggregate_version,aggregate_type_id,event_payload_type_id,event_timestamp,payload"
+                + $") VALUES ({parrStr});";
+
+            pm.AddValues(er.StoreVersion, er.AggregateId, er.AggregateVersion, er.AggregateTypeId.ToString(), er.EventPayloadTypeId.ToString(), er.EventTimestamp, er.Payload);
+
+            return sql;
+        }
+
+        public abstract void PrepareParameter(IDbCommand cmd, ParametersManager pm);
+
+        public abstract Exception TranslateException(Exception ex, IList<AggregatePrimaryKeyRecord> primaryKeyChanges);
     }
 }
