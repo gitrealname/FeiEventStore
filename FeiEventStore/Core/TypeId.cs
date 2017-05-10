@@ -12,6 +12,11 @@ namespace FeiEventStore.Core
 
         public TypeId(string str)
         {
+            if(string.IsNullOrWhiteSpace(str))
+            {
+                Value = null;
+                return;
+            }
             var parts = str.Trim().ToLowerInvariant().Split(new char[] { '.', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             Value = string.Join(".", parts);
         }

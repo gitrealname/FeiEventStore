@@ -12,17 +12,12 @@ namespace FeiEventStore.Persistence
     {
         public TypeId ProcessTypeId { get; }
         public Guid ProcessId { get; }
-        public long ExpectedVersion { get; }
-        public long PersistedVersion { get; }
-
-        public ProcessConcurrencyViolationException(Guid processId, TypeId processTypeId, long expectedVersion, long persistedVersion)
-            : base(string.Format("Process id {0} type '{1}. Version collision; expected process version {2}, persisted process version {3}.", 
-                processId, processTypeId, expectedVersion, persistedVersion))
+        public ProcessConcurrencyViolationException(Guid processId, TypeId processTypeId)
+            : base(string.Format("Process id {0} type '{1}' Version collision.", 
+                processId, processTypeId))
         {
             ProcessTypeId = processTypeId;
             ProcessId = processId;
-            ExpectedVersion = expectedVersion;
-            PersistedVersion = persistedVersion;
         }
     }
 }

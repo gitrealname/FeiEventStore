@@ -164,7 +164,7 @@ namespace FeiEventStore.Persistence
                                 var currentProcess = _processByProcessId[p.ProcessId];
                                 if(currentProcess.ProcessVersion >= p.ProcessVersion)
                                 {
-                                    var ex = new ProcessConcurrencyViolationException(p.ProcessId, p.ProcessTypeId, p.ProcessVersion, currentProcess.ProcessVersion);
+                                    var ex = new ProcessConcurrencyViolationException(p.ProcessId, p.ProcessTypeId);
                                     Logger.Warn(ex);
                                     throw ex;
 
@@ -280,13 +280,13 @@ namespace FeiEventStore.Persistence
             return result;
         }
 
-        public IEnumerable<EventRecord> GetEventsByTimeRange(DateTimeOffset from, DateTimeOffset? to)
+        public IEnumerable<EventRecord> GetEvents(DateTimeOffset from, DateTimeOffset? to)
         {
             var result = _events.Where(r => r.EventTimestamp >= from && (!to.HasValue || r.EventTimestamp <= to));
             return result;
         }
 
-        public IEnumerable<EventRecord> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount)
+        public IEnumerable<EventRecord> GetEvents(long startingStoreVersion, long? takeEventsCount)
         {
             IEnumerable<EventRecord> result;
             if(takeEventsCount.HasValue)

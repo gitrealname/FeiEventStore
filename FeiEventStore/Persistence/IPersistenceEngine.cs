@@ -101,7 +101,7 @@ namespace FeiEventStore.Persistence
         /// <param name="from">From.</param>
         /// <param name="to">To.</param>
         /// <returns></returns>
-        IEnumerable<EventRecord> GetEventsByTimeRange(DateTimeOffset from, DateTimeOffset? to);
+        IEnumerable<EventRecord> GetEvents(DateTimeOffset from, DateTimeOffset? to);
 
         /// <summary>
         /// Gets the events since commit.
@@ -109,7 +109,7 @@ namespace FeiEventStore.Persistence
         /// <param name="startingStoreVersion">The commit identifier.</param>
         /// <param name="takeEventsCount">The number of events to read. can be null to get up until end of the store</param>
         /// <returns></returns>
-        IEnumerable<EventRecord> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount);
+        IEnumerable<EventRecord> GetEvents(long startingStoreVersion, long? takeEventsCount);
 
         /// <summary>
         /// Gets the latest version number. This call may be required to fast check version of any aggregate for validation purposes.

@@ -16,6 +16,24 @@ namespace FeiEventStore.Persistence.Sql
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private long _storeVersion;
 
+        private class ProcessInfo
+        {
+            public readonly Guid ProcessId;
+            public readonly TypeId ProcessTypeId;
+            public readonly StringBuilder Sb;
+            public readonly ParametersManager Pm;
+            public int Count { get; set; }
+
+            public ProcessInfo(Guid processId, TypeId processTypeId, ParametersManager pm)
+            {
+                ProcessId = processId;
+                ProcessTypeId = processTypeId;
+                Sb = new StringBuilder(512);
+                Pm = pm;
+                Count = 0;
+            }
+        }
+
         public SqlPersistenceEngine(ISqlDialect dialect)
         {
             _dialect = dialect;
@@ -59,7 +77,7 @@ namespace FeiEventStore.Persistence.Sql
             IList<AggregatePrimaryKeyRecord> primaryKeyChanges = null)
         {
 
-            var sb = new StringBuilder(8*1024);
+            var sb = new StringBuilder(4*1024);
             var pm = _dialect.CreateParametersManager();
             if(primaryKeyChanges != null)
             {
@@ -91,11 +109,23 @@ namespace FeiEventStore.Persistence.Sql
                     sb.Append(_dialect.BuildSqlDeleteProcess(pid, pm));
                 }
             }
+
+            List<ProcessInfo> procInfo = null;
+            ProcessInfo curInfo = null;
+            var lastProcessId = Guid.Empty;
             if(processes != null)
             {
+                procInfo = new List<ProcessInfo>();
                 foreach(var p in processes)
                 {
-                    sb.Append(_dialect.BuildSqlProcess(p, pm));
+                    if(lastProcessId != p.ProcessId)
+                    {
+                        curInfo = new ProcessInfo(p.ProcessId, p.ProcessTypeId, _dialect.CreateParametersManager());
+                        procInfo.Add(curInfo);
+                        lastProcessId = p.ProcessId;
+                    }
+                    curInfo.Count++;
+                    curInfo.Sb.Append(_dialect.BuildSqlProcess(p, curInfo.Pm));
                 }
             }
             //execute batch
@@ -107,8 +137,29 @@ namespace FeiEventStore.Persistence.Sql
                     cmd.CommandText = sb.ToString();
                     _dialect.PrepareParameter(cmd, pm);
                     cmd.ExecuteNonQuery();
+
+                    if(procInfo != null)
+                    {
+                        //each processes id gets updated by dedicated command as we need to see if number of records effected matches number of process records
+                        //in case of mismatch we can assume that process version violation has occurred. 
+                        foreach(var pi in procInfo)
+                        {
+                            cmd = conn.CreateCommand();
+                            cmd.CommandText = pi.Sb.ToString();
+                            _dialect.PrepareParameter(cmd, pi.Pm);
+                            var effected = cmd.ExecuteNonQuery();
+
+                            if(effected != pi.Count)
+                            {
+                                throw new ProcessConcurrencyViolationException(pi.ProcessId, pi.ProcessTypeId);
+                            }
+                        }
+                    }
                 });
-                Interlocked.CompareExchange(ref _storeVersion, lastEventStoreVersion, prevVersion);
+                if(lastEventStoreVersion > 0)
+                {
+                    Interlocked.CompareExchange(ref _storeVersion, lastEventStoreVersion, prevVersion);
+                }
             }
             catch(Exception ex)
             {
@@ -139,17 +190,67 @@ namespace FeiEventStore.Persistence.Sql
 
         public IEnumerable<EventRecord> GetEvents(Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion)
         {
-            throw new NotImplementedException();
+            var sb = new StringBuilder();
+            var pm = new ParametersManager();
+
+            sb.Append(_dialect.BuildSqlSelectEvents(pm, aggregateId, fromAggregateVersion, toAggregateVersion));
+
+            List<EventRecord> result = null;
+
+            _dialect.CreateExecutionScope(false, (conn) => {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sb.ToString();
+                _dialect.PrepareParameter(cmd, pm);
+                using(var reader = cmd.ExecuteReader())
+                {
+                    result = _dialect.ReadEvents(reader);
+                    //reader.NextResult();
+                    //result2 = _dialect.Read...(reader);
+                }
+            });
+            return result;
         }
 
-        public IEnumerable<EventRecord> GetEventsByTimeRange(DateTimeOffset @from, DateTimeOffset? to)
+        public IEnumerable<EventRecord> GetEvents(DateTimeOffset @from, DateTimeOffset? to)
         {
-            throw new NotImplementedException();
+            var sb = new StringBuilder();
+            var pm = new ParametersManager();
+
+            sb.Append(_dialect.BuildSqlSelectEvents(pm, @from, to));
+
+            List<EventRecord> result = null;
+
+            _dialect.CreateExecutionScope(false, (conn) => {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sb.ToString();
+                _dialect.PrepareParameter(cmd, pm);
+                using(var reader = cmd.ExecuteReader())
+                {
+                    result = _dialect.ReadEvents(reader);
+                }
+            });
+            return result;
         }
 
-        public IEnumerable<EventRecord> GetEventsSinceStoreVersion(long startingStoreVersion, long? takeEventsCount)
+        public IEnumerable<EventRecord> GetEvents(long startingStoreVersion, long? takeEventsCount)
         {
-            throw new NotImplementedException();
+            var sb = new StringBuilder();
+            var pm = new ParametersManager();
+
+            sb.Append(_dialect.BuildSqlSelectEvents(pm, startingStoreVersion, takeEventsCount));
+
+            List<EventRecord> result = null;
+
+            _dialect.CreateExecutionScope(false, (conn) => {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sb.ToString();
+                _dialect.PrepareParameter(cmd, pm);
+                using(var reader = cmd.ExecuteReader())
+                {
+                    result = _dialect.ReadEvents(reader);
+                }
+            });
+            return result;
         }
 
         public long GetAggregateVersion(Guid aggregateId)
@@ -174,12 +275,48 @@ namespace FeiEventStore.Persistence.Sql
 
         public IList<ProcessRecord> GetProcessRecords(Guid processId)
         {
-            throw new NotImplementedException();
+            var sb = new StringBuilder();
+            var pm = new ParametersManager();
+
+            sb.Append(_dialect.BuildSqlSelectProcesses(pm, processId));
+
+            List<ProcessRecord> result = null;
+
+            _dialect.CreateExecutionScope(false, (conn) => {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sb.ToString();
+                _dialect.PrepareParameter(cmd, pm);
+                using(var reader = cmd.ExecuteReader())
+                {
+                    result = _dialect.ReadProcesses(reader);
+                }
+            });
+            return result;
         }
 
         public IList<ProcessRecord> GetProcessRecords(TypeId processTypeId, Guid aggregateId, bool throwNotFound = true)
         {
-            throw new NotImplementedException();
+            var sb = new StringBuilder();
+            var pm = new ParametersManager();
+
+            sb.Append(_dialect.BuildSqlSelectProcesses(pm, processTypeId, aggregateId));
+
+            List<ProcessRecord> result = null;
+
+            _dialect.CreateExecutionScope(false, (conn) => {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sb.ToString();
+                _dialect.PrepareParameter(cmd, pm);
+                using(var reader = cmd.ExecuteReader())
+                {
+                    result = _dialect.ReadProcesses(reader);
+                }
+            });
+            if(throwNotFound && result.Count == 0)
+            {
+                throw new ProcessNotFoundException(processTypeId, aggregateId);
+            }
+            return result;
         }
 
         public void UpdateDispatchVersion(long version)

@@ -84,11 +84,11 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
             return events + eventsIndex + dispatch + snapshots + processes + processesIndex + pk;
         }
 
-        protected override string CreateUpsertStatement(string tableName, int pkColumnsCount, ParametersManager pm, params KeyValuePair<string, object>[] values)
+        protected override string CreateUpsertStatement(string tableName, int pkColumnsCount, ParametersManager pm, string extraUpdateCondition, params Tuple<string, object>[] values)
         {
             var sb = new StringBuilder(1024);
-            var allKeys = values.Select(v => v.Key).ToList();
-            var allVals = values.Select(v => v.Value).ToList();
+            var allKeys = values.Select(v => v.Item1).ToList();
+            var allVals = values.Select(v => v.Item2).ToList();
             var allParams = allVals.Select(v =>
             {
                 var tv = v as Tuple<object, Func<string, string>>;
@@ -122,8 +122,12 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
                 var p = allParams[pkColumnsCount + i];
                 kv.Add($"{k}={p}");
             }
-
             sb.Append(string.Join(",", kv));
+            if(extraUpdateCondition != null)
+            {
+                sb.Append($" WHERE {extraUpdateCondition}");
+            }
+
             sb.Append(';');
 
             return sb.ToString();

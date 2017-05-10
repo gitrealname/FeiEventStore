@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FeiEventStore.Core;
 
 namespace FeiEventStore.Persistence.Sql
 {
@@ -26,6 +27,20 @@ namespace FeiEventStore.Persistence.Sql
         string BuildSqlProcess(ProcessRecord processRecord, ParametersManager pm);
 
         string BuildSqlDeleteProcess(Guid processId, ParametersManager pm);
+
+        string BuildSqlSelectEvents(ParametersManager pm, Guid aggregateId, long fromAggregateVersion, long? toAggregateVersion);
+
+        string BuildSqlSelectEvents(ParametersManager pm, DateTimeOffset @from, DateTimeOffset? to);
+
+        string BuildSqlSelectEvents(ParametersManager pm, long startingStoreVersion, long? takeEventsCount);
+
+        string BuildSqlSelectProcesses(ParametersManager pm, Guid processId);
+
+        string BuildSqlSelectProcesses(ParametersManager pm, TypeId processTypeId, Guid aggregateId);
+
+        List<EventRecord> ReadEvents(IDataReader reader);
+
+        List<ProcessRecord> ReadProcesses(IDataReader reader);
 
         void PrepareParameter(IDbCommand cmd, ParametersManager pm);
 

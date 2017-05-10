@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FeiEventStore.Core;
 using FeiEventStore.Persistence.Sql.SqlDialects;
 using FluentAssertions;
 
@@ -27,8 +28,8 @@ namespace FeiEventStore.Persistence.Sql.Test
                     TimeIt("PkViolation", () => PkViolation(engine));
 
                     TimeIt("EventsInsert", () => EventsInsert(engine));
-                    TimeIt("EventsStoreVersionViolation", () => EventsStoreVersionViolation(engine));
-                    TimeIt("EventsAggregateVersionViolation", () => EventsAggregateVersionViolation(engine));
+                    TimeIt("EventsConcurrencyViolation", () => EventsConcurrencyViolation(engine)); 
+                    TimeIt("EventsAggregateConcurrencyViolation", () => EventsAggregateConcurrencyViolation(engine));
 
                     TimeIt("SnapshotInsert", () => SnapshotInsert(engine));
                     TimeIt("SnapshotUpdate", () => SnapshotUpdate(engine));
@@ -36,6 +37,14 @@ namespace FeiEventStore.Persistence.Sql.Test
                     TimeIt("ProcessInsert", () => ProcessInsert(engine));
                     TimeIt("ProcessUpdate", () => ProcessUpdate(engine));
                     TimeIt("ProcessDelete", () => ProcessDelete(engine));
+                    TimeIt("ProcessConcurrencyViolation", () => ProcessConcurrencyViolation(engine));
+
+                    TimeIt("EventsGetByAggregate", () => EventsGetByAggregate(engine));
+                    TimeIt("EventsGetByTimeRange", () => EventsGetByTimeRange(engine));
+                    TimeIt("EventsGetByStoreVersion", () => EventsGetByStoreVersion(engine));
+
+                    TimeIt("ProcessesGetByProcessId", () => ProcessesGetByProcessId(engine));
+                    TimeIt("ProcessesGetByProcessTypeAndAggregateId", () => ProcessesGetByProcessTypeAndAggregateId(engine));
                     Console.WriteLine("---- Hot Run ----");
                 }
             }
@@ -51,7 +60,8 @@ namespace FeiEventStore.Persistence.Sql.Test
             sw.Start();
             action();
             sw.Stop();
-            Console.WriteLine($"{name}: {sw.ElapsedMilliseconds}/{sw.ElapsedTicks} msc/ticks.");
+            //Console.WriteLine($"{name}: {sw.ElapsedMilliseconds}/{sw.ElapsedTicks} msc/ticks.");
+            Console.WriteLine($"{name}: {sw.Elapsed.TotalMilliseconds} msc.");
         }
 
         static void ReCreateSchema(SqlPersistenceEngine engine)
@@ -97,7 +107,63 @@ namespace FeiEventStore.Persistence.Sql.Test
             engine.Commit(null, null, processes, null, null);
 
         }
-        static void ProcessInsert(SqlPersistenceEngine engine, byte id = 1)
+        static void ProcessConcurrencyViolation(SqlPersistenceEngine engine)
+        {
+            ProcessInsert(engine, 30);
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30);
+            var exception = false;
+            try
+            {
+                ProcessInsert(engine, 30);
+            }
+            catch(ProcessConcurrencyViolationException ex)
+            {
+                //ignore, expected
+                exception = true;
+                ex.ProcessId.ShouldBeEquivalentTo(g1);
+            }
+            exception.ShouldBeEquivalentTo(true);
+        }
+
+        static void ProcessesGetByProcessTypeAndAggregateId(SqlPersistenceEngine engine)
+        {
+            byte id = 60;
+            var procTypeId = "ProcessesGetByProcessTypeAndAggregateId";
+            ProcessInsert(engine, id, procTypeId);
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, id);
+            var g = Guid.Empty;
+
+            var list1 = engine.GetProcessRecords(procTypeId, g1, true).ToList();
+            var list2 = engine.GetProcessRecords(procTypeId, g, false).ToList();
+
+            list1.Count.ShouldBeEquivalentTo(2);
+            list2.Count.ShouldBeEquivalentTo(0);
+
+            var exception = false;
+            try
+            {
+                engine.GetProcessRecords(procTypeId, g, true);
+            }
+            catch(ProcessNotFoundException ex)
+            {
+                //ignore, expected
+                exception = true;
+            }
+            exception.ShouldBeEquivalentTo(true);
+        }
+
+        static void ProcessesGetByProcessId(SqlPersistenceEngine engine)
+        {
+            byte id = 50;
+            ProcessInsert(engine, id);
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, id);
+
+            var list1 = engine.GetProcessRecords(g1).ToList();
+
+            list1.Count.ShouldBeEquivalentTo(2);
+        }
+
+        static void ProcessInsert(SqlPersistenceEngine engine, byte id = 1, string processTypeId = "process.type.1")
         {
             var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, id);
             var g2 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)(id + 1));
@@ -108,7 +174,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     ProcessId = g1,
                     InvolvedAggregateId = g1,
                     ProcessVersion = 1,
-                    ProcessTypeId = "process.type.1",
+                    ProcessTypeId = processTypeId,
                     ProcessStateTypeId = "process.state.type.1",
                     State = @"{""val"":""process.state.1""}",
                 },
@@ -117,7 +183,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     ProcessId = g1,
                     InvolvedAggregateId = g2,
                     ProcessVersion = 1,
-                    ProcessTypeId = "process.type.1",
+                    ProcessTypeId = processTypeId,
                     ProcessStateTypeId = null,
                     State = null,
                 },
@@ -181,10 +247,60 @@ namespace FeiEventStore.Persistence.Sql.Test
             engine.Commit(null, snapshots, null, null, null);
         }
 
-        static void EventsInsert(SqlPersistenceEngine engine)
+
+        static void EventsGetByAggregate(SqlPersistenceEngine engine)
         {
-            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
-            var g2 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2);
+            byte id = 40;
+            EventsInsert(engine, id);
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, id);
+            var g2 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)(id + 1));
+
+            var list1 = engine.GetEvents(g1, 0, null).ToList();
+            var list2 = engine.GetEvents(g2, 0, null).ToList();
+            var list3 = engine.GetEvents(g1, 1, 1).ToList();
+
+            list1.Count.ShouldBeEquivalentTo(2);
+            list2.Count.ShouldBeEquivalentTo(1);
+            list3.Count.ShouldBeEquivalentTo(1);
+        }
+        static void EventsGetByTimeRange(SqlPersistenceEngine engine)
+        {
+            var t0 = DateTimeOffset.UtcNow;
+            EventsInsert(engine, 50);
+            System.Threading.Thread.Sleep(1);
+            var t1 = DateTimeOffset.UtcNow;
+            EventsInsert(engine, 60);
+            var t2 = DateTimeOffset.UtcNow;
+
+            var list1 = engine.GetEvents(t0, null).ToList();
+            var list2 = engine.GetEvents(t1, t2).ToList();
+            var list3 = engine.GetEvents(t0, t2).ToList();
+
+            list1.Count.ShouldBeEquivalentTo(6);
+            list2.Count.ShouldBeEquivalentTo(3);
+            list3.Count.ShouldBeEquivalentTo(6);
+        }
+
+        static void EventsGetByStoreVersion(SqlPersistenceEngine engine)
+        {
+            var v0 = engine.StoreVersion + 1;
+            EventsInsert(engine, 70);
+            var v1 = engine.StoreVersion;
+            EventsInsert(engine, 80);
+
+            var list1 = engine.GetEvents(v0, null).ToList();
+            var list2 = engine.GetEvents(v1, 3).ToList();
+            var list3 = engine.GetEvents(v0, 6).ToList();
+
+            list1.Count.ShouldBeEquivalentTo(6);
+            list2.Count.ShouldBeEquivalentTo(3);
+            list3.Count.ShouldBeEquivalentTo(6);
+        }
+
+        static void EventsInsert(SqlPersistenceEngine engine, byte id = 1)
+        {
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, id);
+            var g2 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)(id + 1));
             var events = new List<EventRecord>()
             {
                 new EventRecord()
@@ -194,7 +310,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     AggregateVersion = 1,
                     AggregateTypeId = "event.insert.1",
                     EventPayloadTypeId = "payload.type.1",
-                    Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
+                    Payload = @"{""val"":""payload.ver.1""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
                 },
                 new EventRecord()
                 {
@@ -203,7 +319,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     AggregateVersion = 2,
                     AggregateTypeId = "event.insert.1",
                     EventPayloadTypeId = "payload.type.2",
-                    Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
+                    Payload = @"{""val"":""payload.ver.2""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
                 },
                 new EventRecord()
                 {
@@ -212,7 +328,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     AggregateVersion = 1,
                     AggregateTypeId = "event.insert.1",
                     EventPayloadTypeId = "payload.type.1",
-                    Payload = @"{""val"":""payload.3""}", AggregateTypeUniqueKey = null, OriginUserId = "user.1", EventTimestamp = DateTimeOffset.UtcNow,
+                    Payload = @"{""val"":""payload.ver.1""}", AggregateTypeUniqueKey = null, OriginUserId = "user.1", EventTimestamp = DateTimeOffset.UtcNow,
                 },
             };
             var expectedVersion = engine.StoreVersion + 3;
@@ -220,7 +336,7 @@ namespace FeiEventStore.Persistence.Sql.Test
             ver.ShouldBeEquivalentTo(expectedVersion);
         }
 
-        static void EventsStoreVersionViolation(SqlPersistenceEngine engine)
+        static void EventsConcurrencyViolation(SqlPersistenceEngine engine)
         {
             var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10);
             var g2 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20);
@@ -252,6 +368,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
                 },
             };
+            var exception = false;
             try
             {
                 engine.Commit(events, null, null, null, null);
@@ -259,10 +376,12 @@ namespace FeiEventStore.Persistence.Sql.Test
             catch(EventStoreConcurrencyViolationException)
             {
                 //ignore, is expected
+                exception = true;
             }
             engine.StoreVersion.ShouldBeEquivalentTo(expectedVersion);
+            exception.ShouldBeEquivalentTo(true, "EventStoreConcurrencyViolationException is excepted.");
         }
-        static void EventsAggregateVersionViolation(SqlPersistenceEngine engine)
+        static void EventsAggregateConcurrencyViolation(SqlPersistenceEngine engine)
         {
             var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30);
             var events = new List<EventRecord>()
@@ -293,6 +412,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
                 },
             };
+            var exception = false;
             try
             {
                 engine.Commit(events, null, null, null, null);
@@ -300,8 +420,10 @@ namespace FeiEventStore.Persistence.Sql.Test
             catch(AggregateConcurrencyViolationException)
             {
                 //ignore, is expected
+                exception = true;
             }
             engine.StoreVersion.ShouldBeEquivalentTo(expectedVersion);
+            exception.ShouldBeEquivalentTo(true, "AggregateConcurrencyViolationException is excepted.");
         }
 
         static void PkInsert(SqlPersistenceEngine engine)
@@ -416,6 +538,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     PrimaryKey = "key.will.be.violated",
                 },
             };
+            var exception = false;
             try
             {
                 engine.Commit(null, null, null, null, pks);
@@ -423,7 +546,9 @@ namespace FeiEventStore.Persistence.Sql.Test
             catch(AggregatePrimaryKeyViolationException)
             {
                 //ignore, it is expected!
+                exception = true;
             }
+            exception.ShouldBeEquivalentTo(true, "AggregatePrimaryKeyViolationException is excepted.");
         }
     }
 }

@@ -241,7 +241,7 @@ namespace FeiEventStore.Events
 
         public IList<IEventEnvelope> GetEventsByTimeRange(DateTimeOffset from, DateTimeOffset? to)
         {
-            var eventRecords = _engine.GetEventsByTimeRange(from, to);
+            var eventRecords = _engine.GetEvents(from, to);
             var result = LoadEventRecords(eventRecords);
             if(Logger.IsDebugEnabled && result.Count > 0)
             {
@@ -256,7 +256,7 @@ namespace FeiEventStore.Events
 
         public IList<IEventEnvelope> GetEvents(long startingStoreVersion, long? takeEventsCount)
         {
-            var eventRecords = _engine.GetEventsSinceStoreVersion(startingStoreVersion, takeEventsCount);
+            var eventRecords = _engine.GetEvents(startingStoreVersion, takeEventsCount);
             var result = LoadEventRecords(eventRecords);
             if(Logger.IsDebugEnabled && result.Count > 0)
             {
