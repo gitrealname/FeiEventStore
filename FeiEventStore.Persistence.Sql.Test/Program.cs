@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FeiEventStore.Core;
+using FeiEventStore.Domain;
 using FeiEventStore.Persistence.Sql.SqlDialects;
 using FluentAssertions;
 
@@ -45,6 +46,11 @@ namespace FeiEventStore.Persistence.Sql.Test
 
                     TimeIt("ProcessesGetByProcessId", () => ProcessesGetByProcessId(engine));
                     TimeIt("ProcessesGetByProcessTypeAndAggregateId", () => ProcessesGetByProcessTypeAndAggregateId(engine));
+
+                    TimeIt("SnapshotGetByAggregateId", () => SnapshotGetByAggregateId(engine));
+
+                    TimeIt("AggregateSnapshotProcessVersion", () => AggregateSnapshotProcessVersion(engine));
+
                     Console.WriteLine("---- Hot Run ----");
                 }
             }
@@ -62,6 +68,22 @@ namespace FeiEventStore.Persistence.Sql.Test
             sw.Stop();
             //Console.WriteLine($"{name}: {sw.ElapsedMilliseconds}/{sw.ElapsedTicks} msc/ticks.");
             Console.WriteLine($"{name}: {sw.Elapsed.TotalMilliseconds} msc.");
+        }
+
+        static void AggregateSnapshotProcessVersion(SqlPersistenceEngine engine)
+        {
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 90);
+            EventsInsert(engine, 90);
+            SnapshotInsert(engine, 90);
+            ProcessInsert(engine, 90);
+
+            var aggregateVersion = engine.GetAggregateVersion(g1);
+            var snapshotVersion = engine.GetSnapshotVersion(g1);
+            var processVersion = engine.GetProcessVersion(g1);
+
+            aggregateVersion.ShouldBeEquivalentTo(1);
+            snapshotVersion.ShouldBeEquivalentTo(1);
+            processVersion.ShouldBeEquivalentTo(1);
         }
 
         static void ReCreateSchema(SqlPersistenceEngine engine)
@@ -191,16 +213,47 @@ namespace FeiEventStore.Persistence.Sql.Test
             engine.Commit(null, null, processes, null, null);
         }
 
-        static void SnapshotInsert(SqlPersistenceEngine engine)
+        static void SnapshotGetByAggregateId(SqlPersistenceEngine engine)
         {
-            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
-            var g2 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2);
+            byte id = 50;
+            SnapshotInsert(engine, id);
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, id);
+            var g = Guid.Empty;
+
+            var s = engine.GetSnapshot(g1, true);
+            var s1 = engine.GetSnapshot(g, false); 
+
+            s.AggregateId.ShouldBeEquivalentTo(g1);
+            if(s1 != null)
+            {
+                throw new InvalidOperationException("s1 should be null.");
+            }
+
+            var exception = false;
+            try
+            {
+                engine.GetSnapshot(g, true);
+            }
+            catch(SnapshotNotFoundException ex)
+            {
+                //ignore, expected
+                exception = true;
+                ex.AggregateId.ShouldBeEquivalentTo(g);
+            }
+            exception.ShouldBeEquivalentTo(true);
+
+        }
+
+        static void SnapshotInsert(SqlPersistenceEngine engine, byte id = 1)
+        {
+            var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, id);
+            var g2 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)(id + 1));
             var snapshots = new List<SnapshotRecord>()
             {
                 new SnapshotRecord()
                 {
                     AggregateId = g1,
-                    AggregateVersion = 100,
+                    AggregateVersion = 1,
                     AggregateTypeId = "snapshot.insert.aggregate.type.1",
                     AggregateStateTypeId = "snapshot.insert.state.type.1",
                     State = @"{""val"":""state.1""}",
@@ -208,7 +261,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                 new SnapshotRecord()
                 {
                     AggregateId = g2,
-                    AggregateVersion = 200,
+                    AggregateVersion = 2,
                     AggregateTypeId = "snapshot.insert.aggregate.type.2",
                     AggregateStateTypeId = "snapshot.insert.state.type.2",
                     State = @"{""val"":""state.2""}",

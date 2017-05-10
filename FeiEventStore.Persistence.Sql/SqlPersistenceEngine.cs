@@ -255,22 +255,96 @@ namespace FeiEventStore.Persistence.Sql
 
         public long GetAggregateVersion(Guid aggregateId)
         {
-            throw new NotImplementedException();
+            var sb = new StringBuilder();
+            var pm = new ParametersManager();
+
+            long result = 0;
+            sb.Append(_dialect.BuildSqlGetAggregateVersion(pm, aggregateId));
+
+            _dialect.CreateExecutionScope(false, (conn) => {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sb.ToString();
+                _dialect.PrepareParameter(cmd, pm);
+                using(var reader = cmd.ExecuteReader())
+                {
+                    while(reader.Read())
+                    {
+                        result = (long)reader.GetInt64(0);
+                    }
+                }
+            });
+            return result;
         }
 
         public long GetSnapshotVersion(Guid aggregateId)
         {
-            throw new NotImplementedException();
+            var sb = new StringBuilder();
+            var pm = new ParametersManager();
+
+            long result = 0;
+            sb.Append(_dialect.BuildSqlGetSnapshotVersion(pm, aggregateId));
+
+            _dialect.CreateExecutionScope(false, (conn) => {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sb.ToString();
+                _dialect.PrepareParameter(cmd, pm);
+                using(var reader = cmd.ExecuteReader())
+                {
+                    while(reader.Read())
+                    {
+                        result = (long)reader.GetInt64(0);
+                    }
+                }
+            });
+            return result;
         }
 
         public SnapshotRecord GetSnapshot(Guid aggregateId, bool throwNotFound = true)
         {
-            throw new NotImplementedException();
+            var sb = new StringBuilder();
+            var pm = new ParametersManager();
+
+            sb.Append(_dialect.BuildSqlSelectSnapshots(pm, aggregateId));
+
+            List<SnapshotRecord> result = null;
+
+            _dialect.CreateExecutionScope(false, (conn) => {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sb.ToString();
+                _dialect.PrepareParameter(cmd, pm);
+                using(var reader = cmd.ExecuteReader())
+                {
+                    result = _dialect.ReadSnapshots(reader);
+                }
+            });
+            if(throwNotFound && result.Count == 0)
+            {
+                throw new SnapshotNotFoundException(aggregateId);
+            }
+            return result.FirstOrDefault();
         }
 
         public long GetProcessVersion(Guid processId)
         {
-            throw new NotImplementedException();
+            var sb = new StringBuilder();
+            var pm = new ParametersManager();
+
+            long result = 0;
+            sb.Append(_dialect.BuildSqlGetProcessVersion(pm, processId));
+
+            _dialect.CreateExecutionScope(false, (conn) => {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sb.ToString();
+                _dialect.PrepareParameter(cmd, pm);
+                using(var reader = cmd.ExecuteReader())
+                {
+                    while(reader.Read())
+                    {
+                        result = (long)reader.GetInt64(0);
+                    }
+                }
+            });
+            return result;
         }
 
         public IList<ProcessRecord> GetProcessRecords(Guid processId)
@@ -320,11 +394,6 @@ namespace FeiEventStore.Persistence.Sql
         }
 
         public void UpdateDispatchVersion(long version)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void DeleteProcess(Guid processId)
         {
             throw new NotImplementedException();
         }

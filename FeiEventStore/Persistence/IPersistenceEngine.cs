@@ -39,6 +39,12 @@ namespace FeiEventStore.Persistence
         void InitializeStorage();
 
         /// <summary>
+        ///     Completely DESTROYS the contents and schema (if applicable) containing ANY and ALL aggregates that have been
+        ///     successfully persisted.  Use with caution.
+        /// </summary>
+        void DestroyStorage();
+
+        /// <summary>
         /// Current store version.
         /// </summary>
         long StoreVersion { get; }
@@ -166,16 +172,5 @@ namespace FeiEventStore.Persistence
         /// <param name="version">The version.</param>
         void UpdateDispatchVersion(long version);
 
-        /// <summary>
-        /// Deletes the process.
-        /// </summary>
-        /// <param name="processId">The process identifier.</param>
-        void DeleteProcess(Guid processId);
-
-        /// <summary>
-        ///     Completely DESTROYS the contents and schema (if applicable) containing ANY and ALL aggregates that have been
-        ///     successfully persisted.  Use with caution.
-        /// </summary>
-        void DestroyStorage();
     }
 }

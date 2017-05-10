@@ -374,20 +374,20 @@ namespace FeiEventStore.Persistence
             return result;
         }
 
-        public void DeleteProcess(Guid processId)
-        {
-            ProcessRecord process;
-            if(_processByProcessId.TryGetValue(processId, out process))
-            {
-                return;
-            }
+        //public void DeleteProcess(Guid processId)
+        //{
+        //    ProcessRecord process;
+        //    if(_processByProcessId.TryGetValue(processId, out process))
+        //    {
+        //        return;
+        //    }
 
-            _processByProcessId.Remove(processId);
-            _processByProcessTypeIdAggregateId
-                .Where(kv => kv.Value.ProcessId == process.ProcessId)
-                .ToList()
-                .ForEach(kv => _processByProcessTypeIdAggregateId.Remove(kv.Key));
-        }
+        //    _processByProcessId.Remove(processId);
+        //    _processByProcessTypeIdAggregateId
+        //        .Where(kv => kv.Value.ProcessId == process.ProcessId)
+        //        .ToList()
+        //        .ForEach(kv => _processByProcessTypeIdAggregateId.Remove(kv.Key));
+        //}
 
         public void UpdateDispatchVersion(long version)
         {

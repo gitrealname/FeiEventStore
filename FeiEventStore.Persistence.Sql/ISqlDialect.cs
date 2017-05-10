@@ -38,9 +38,19 @@ namespace FeiEventStore.Persistence.Sql
 
         string BuildSqlSelectProcesses(ParametersManager pm, TypeId processTypeId, Guid aggregateId);
 
+        string BuildSqlSelectSnapshots(ParametersManager pm, Guid aggregateId);
+
+        string BuildSqlGetAggregateVersion(ParametersManager pm, Guid aggregateId);
+
+        string BuildSqlGetSnapshotVersion(ParametersManager pm, Guid aggregateId);
+
+        string BuildSqlGetProcessVersion(ParametersManager pm, Guid processId);
+
         List<EventRecord> ReadEvents(IDataReader reader);
 
         List<ProcessRecord> ReadProcesses(IDataReader reader);
+
+        List<SnapshotRecord> ReadSnapshots(IDataReader reader);
 
         void PrepareParameter(IDbCommand cmd, ParametersManager pm);
 

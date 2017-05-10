@@ -316,5 +316,57 @@ namespace FeiEventStore.Persistence.Sql
             return result;
         }
 
+        public virtual string BuildSqlSelectSnapshots(ParametersManager pm, Guid aggregateId)
+        {
+            var sb = new StringBuilder(512);
+            sb.Append(BuildSqlSelectSnapshotsCommon());
+            sb.Append(CreateWhereClause(pm
+                , new Tuple<string, string, object>("aggregate_id", "=", (object)aggregateId)
+            ));
+            sb.Append(";");
+            return sb.ToString();
+        }
+
+        protected virtual string BuildSqlSelectSnapshotsCommon()
+        {
+            return $"SELECT aggregate_id,aggregate_version,aggregate_type_id,aggregate_state_type_id,state FROM {this.TableSnapshots}";
+        }
+        public virtual List<SnapshotRecord> ReadSnapshots(IDataReader reader)
+        {
+            List<SnapshotRecord> result = new List<SnapshotRecord>();
+            while(reader.Read())
+            {
+                var s = new SnapshotRecord();
+                result.Add(s);
+
+                s.AggregateId = reader.GetGuid(0);
+                s.AggregateVersion = (long)reader.GetInt64(1);
+                s.AggregateTypeId = reader.GetString(2);
+                s.AggregateStateTypeId = reader.GetString(3);
+                s.State = reader.GetString(4);
+            }
+            return result;
+        }
+
+        public string BuildSqlGetAggregateVersion(ParametersManager pm, Guid aggregateId)
+        {
+            var sql = $"SELECT MAX(aggregate_version) FROM {this.TableEvents} WHERE aggregate_id = @{pm.CurrentIndex};";
+            pm.AddValues(aggregateId);
+            return sql;
+        }
+
+        public string BuildSqlGetSnapshotVersion(ParametersManager pm, Guid aggregateId)
+        {
+            var sql = $"SELECT MAX(aggregate_version) FROM {this.TableSnapshots} WHERE aggregate_id = @{pm.CurrentIndex};";
+            pm.AddValues(aggregateId);
+            return sql;
+        }
+
+        public string BuildSqlGetProcessVersion(ParametersManager pm, Guid processId)
+        {
+            var sql = $"SELECT MAX(process_version) FROM {this.TableProcesses} WHERE process_id = @{pm.CurrentIndex};";
+            pm.AddValues(processId);
+            return sql;
+        }
     }
 }
