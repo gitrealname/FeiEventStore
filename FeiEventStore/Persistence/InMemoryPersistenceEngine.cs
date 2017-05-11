@@ -71,6 +71,8 @@ namespace FeiEventStore.Persistence
             _primaryKeyByAggregateId = new Dictionary<Guid, string>();
         }
 
+        public void RestoreState() { }
+
         public long Commit(IList<EventRecord> events,
             IList<SnapshotRecord> snapshots = null,
             IList<ProcessRecord> processes = null,

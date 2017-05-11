@@ -14,9 +14,9 @@ namespace FeiEventStore.Persistence.Sql
 
         ParametersManager CreateParametersManager();
 
-        string BuildSqlDbSchema();
+        string BuildSqlDbSchema(ParametersManager pm);
 
-        string BuildSqlDestroy();
+        string BuildSqlDestroy(ParametersManager pm);
 
         string BuildSqlPrimaryKey(AggregatePrimaryKeyRecord pk, ParametersManager pm);
 
@@ -45,6 +45,12 @@ namespace FeiEventStore.Persistence.Sql
         string BuildSqlGetSnapshotVersion(ParametersManager pm, Guid aggregateId);
 
         string BuildSqlGetProcessVersion(ParametersManager pm, Guid processId);
+
+        string BuildSqlUpdateDispatchedVersion(ParametersManager pm, long version);
+
+        string BuildSqlGetDispatchedVersion();
+
+        string BuildSqlGetStoreVersion();
 
         List<EventRecord> ReadEvents(IDataReader reader);
 

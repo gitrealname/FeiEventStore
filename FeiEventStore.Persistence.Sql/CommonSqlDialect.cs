@@ -43,14 +43,14 @@ namespace FeiEventStore.Persistence.Sql
 
         }
 
-        public abstract string BuildSqlDbSchema();
+        public abstract string BuildSqlDbSchema(ParametersManager pm);
 
         public virtual ParametersManager CreateParametersManager()
         {
             return new ParametersManager();
         }
 
-        public virtual string BuildSqlDestroy()
+        public virtual string BuildSqlDestroy(ParametersManager pm)
         {
             var events = $"DROP TABLE IF EXISTS {this.TableEvents};";
             var dispatch = $"DROP TABLE IF EXISTS {this.TableDispatch};";
@@ -366,6 +366,24 @@ namespace FeiEventStore.Persistence.Sql
         {
             var sql = $"SELECT MAX(process_version) FROM {this.TableProcesses} WHERE process_id = @{pm.CurrentIndex};";
             pm.AddValues(processId);
+            return sql;
+        }
+
+        public string BuildSqlUpdateDispatchedVersion(ParametersManager pm, long version)
+        {
+            var sql = $"UPDATE {this.TableDispatch} SET store_version = {version} WHERE store_version < {version};";
+            return sql;
+        }
+
+        public string BuildSqlGetDispatchedVersion()
+        {
+            var sql = $"SELECT store_version FROM  {this.TableDispatch} WHERE id = 1;";
+            return sql;
+        }
+
+        public string BuildSqlGetStoreVersion()
+        {
+            var sql = $"SELECT MAX(store_version) FROM  {this.TableEvents};";
             return sql;
         }
     }

@@ -13,13 +13,15 @@ namespace FeiEventStore.Persistence.Sql.Test
 {
     class Program
     {
+        private const string ConnectionString = "Host=localhost;Port=5432;Username=postgres;Password=postgres;Database=estest";
+        private static readonly ISqlDialect Dialect = new PostgreSqlDialect(ConnectionString);
         static void Main(string[] args)
         {
-            var engine = new SqlPersistenceEngine(new PostgreSqlDialect("Host=localhost;Port=5432;Username=postgres;Password=postgres;Database=estest"));
+            var engine = new SqlPersistenceEngine(Dialect);
             try
             {
                 Console.WriteLine("---- Cold Run ----");
-                for(int i = 0; i < 1; i++)
+                for(int i = 0; i < 2; i++)
                 {
                     TimeIt("ReCreateSchema", () => ReCreateSchema(engine));
 
@@ -29,7 +31,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     TimeIt("PkViolation", () => PkViolation(engine));
 
                     TimeIt("EventsInsert", () => EventsInsert(engine));
-                    TimeIt("EventsConcurrencyViolation", () => EventsConcurrencyViolation(engine)); 
+                    TimeIt("EventsConcurrencyViolation", () => EventsConcurrencyViolation(engine));
                     TimeIt("EventsAggregateConcurrencyViolation", () => EventsAggregateConcurrencyViolation(engine));
 
                     TimeIt("SnapshotInsert", () => SnapshotInsert(engine));
@@ -51,6 +53,10 @@ namespace FeiEventStore.Persistence.Sql.Test
 
                     TimeIt("AggregateSnapshotProcessVersion", () => AggregateSnapshotProcessVersion(engine));
 
+                    TimeIt("UpdateDispatchedVersion", () => UpdateDispatchedVersion(engine));
+
+                    TimeIt("RestoreState", () => RestoreState(engine));
+
                     Console.WriteLine("---- Hot Run ----");
                 }
             }
@@ -70,6 +76,25 @@ namespace FeiEventStore.Persistence.Sql.Test
             Console.WriteLine($"{name}: {sw.Elapsed.TotalMilliseconds} msc.");
         }
 
+        static void RestoreState(SqlPersistenceEngine engine)
+        {
+            engine.UpdateDispatchVersion(999);
+            var e = new SqlPersistenceEngine(Dialect);
+            e.RestoreState();
+            e.StoreVersion.Should().BeGreaterThan(0);
+            e.DispatchedStoreVersion.ShouldBeEquivalentTo(999);
+
+        }
+        static void UpdateDispatchedVersion(SqlPersistenceEngine engine)
+        {
+            engine.UpdateDispatchVersion(1L);
+            engine.DispatchedStoreVersion.ShouldBeEquivalentTo(1);
+            engine.UpdateDispatchVersion(10);
+            engine.DispatchedStoreVersion.ShouldBeEquivalentTo(10);
+            engine.UpdateDispatchVersion(5);
+            engine.DispatchedStoreVersion.ShouldBeEquivalentTo(10);
+        }
+
         static void AggregateSnapshotProcessVersion(SqlPersistenceEngine engine)
         {
             var g1 = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 90);
@@ -81,7 +106,7 @@ namespace FeiEventStore.Persistence.Sql.Test
             var snapshotVersion = engine.GetSnapshotVersion(g1);
             var processVersion = engine.GetProcessVersion(g1);
 
-            aggregateVersion.ShouldBeEquivalentTo(1);
+            aggregateVersion.ShouldBeEquivalentTo(2);
             snapshotVersion.ShouldBeEquivalentTo(1);
             processVersion.ShouldBeEquivalentTo(1);
         }

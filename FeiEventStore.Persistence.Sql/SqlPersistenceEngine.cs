@@ -15,6 +15,7 @@ namespace FeiEventStore.Persistence.Sql
         private readonly ISqlDialect _dialect;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private long _storeVersion;
+        private long _dispatchedStoreVersion;
 
         private class ProcessInfo
         {
@@ -49,29 +50,58 @@ namespace FeiEventStore.Persistence.Sql
         }
         public void InitializeStorage()
         {
+            var pm = _dialect.CreateParametersManager();
             _dialect.CreateExecutionScope(true, (conn) =>
             {
                 var cmd = conn.CreateCommand();
-                cmd.CommandText = _dialect.BuildSqlDbSchema();
+                cmd.CommandText = _dialect.BuildSqlDbSchema(pm);
+                _dialect.PrepareParameter(cmd, pm);
                 cmd.ExecuteNonQuery();
             });
         }
 
         public void DestroyStorage()
         {
+            var pm = _dialect.CreateParametersManager();
             _dialect.CreateExecutionScope(true, (conn) => {
                 var cmd = conn.CreateCommand();
-                cmd.CommandText = _dialect.BuildSqlDestroy();
+                cmd.CommandText = _dialect.BuildSqlDestroy(pm);
+                _dialect.PrepareParameter(cmd, pm);
                 cmd.ExecuteNonQuery();
             });
         }
 
-        public long StoreVersion
+        public void RestoreState()
         {
-            get { return _storeVersion; }
-        }
+            var sb = new StringBuilder(128);
 
-        public long DispatchedStoreVersion { get; private set; }
+            sb.Append(_dialect.BuildSqlGetStoreVersion());
+            sb.Append(_dialect.BuildSqlGetDispatchedVersion());
+
+            _dialect.CreateExecutionScope(false, (conn) => {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sb.ToString();
+                using(var reader = cmd.ExecuteReader())
+                {
+                    var storeVersion = 0L;
+                    var dispatchedVersion = 0L;
+                    while(reader.Read())
+                    {
+                        storeVersion = (long)reader.GetInt64(0);
+                    }
+                    reader.NextResult();
+                    while(reader.Read())
+                    {
+                        dispatchedVersion = (long)reader.GetInt64(0);
+                    }
+                    Interlocked.CompareExchange(ref _storeVersion, storeVersion, 0L);
+                    Interlocked.CompareExchange(ref _dispatchedStoreVersion, dispatchedVersion, 0L);
+                }
+            });
+        }
+        public long StoreVersion => _storeVersion;
+
+        public long DispatchedStoreVersion => _dispatchedStoreVersion;
 
         public long Commit(IList<EventRecord> events, IList<SnapshotRecord> snapshots = null, IList<ProcessRecord> processes = null, HashSet<Guid> processIdsToBeDeleted = null,
             IList<AggregatePrimaryKeyRecord> primaryKeyChanges = null)
@@ -153,6 +183,17 @@ namespace FeiEventStore.Persistence.Sql
                             {
                                 throw new ProcessConcurrencyViolationException(pi.ProcessId, pi.ProcessTypeId);
                             }
+                        }
+                    }
+
+                    //read last store version (in case it gets updated from other process)
+                    cmd = conn.CreateCommand();
+                    cmd.CommandText = _dialect.BuildSqlGetStoreVersion();
+                    using(var reader = cmd.ExecuteReader())
+                    {
+                        while(reader.Read())
+                        {
+                            lastEventStoreVersion = reader.GetInt64(0);
                         }
                     }
                 });
@@ -395,7 +436,32 @@ namespace FeiEventStore.Persistence.Sql
 
         public void UpdateDispatchVersion(long version)
         {
-            throw new NotImplementedException();
+            var pm = _dialect.CreateParametersManager();
+            _dialect.CreateExecutionScope(true, (conn) => {
+                var curVer = DispatchedStoreVersion;
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = _dialect.BuildSqlUpdateDispatchedVersion(pm, version);
+                _dialect.PrepareParameter(cmd, pm);
+                var effected = cmd.ExecuteNonQuery();
+                if(effected > 0)
+                {
+                    Interlocked.CompareExchange(ref _dispatchedStoreVersion, version, curVer);
+                } else
+                {
+                    //db data has been updated outside of the current process
+                    cmd = conn.CreateCommand();
+                    cmd.CommandText = _dialect.BuildSqlGetDispatchedVersion();
+                    curVer = DispatchedStoreVersion;
+                    using(var reader = cmd.ExecuteReader())
+                    {
+                        while(reader.Read())
+                        {
+                            version = reader.GetInt64(0);
+                            Interlocked.CompareExchange(ref _dispatchedStoreVersion, version, curVer);
+                        }
+                    }
+                }
+            });
         }
     }
 }

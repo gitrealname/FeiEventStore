@@ -45,6 +45,11 @@ namespace FeiEventStore.Persistence
         void DestroyStorage();
 
         /// <summary>
+        /// Restores the state. Prepares persistence engine for work
+        /// </summary>
+        void RestoreState();
+
+        /// <summary>
         /// Current store version.
         /// </summary>
         long StoreVersion { get; }

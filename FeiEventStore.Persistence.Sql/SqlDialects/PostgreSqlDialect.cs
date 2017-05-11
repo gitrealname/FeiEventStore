@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Text;
+using FeiEventStore.Core;
 using Npgsql;
 
 namespace FeiEventStore.Persistence.Sql.SqlDialects
@@ -25,7 +26,7 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
             return new NpgsqlConnection(_connectionString);
         }
 
-        public override string BuildSqlDbSchema()
+        public override string BuildSqlDbSchema(ParametersManager pm)
         {
             var events = $"CREATE TABLE IF NOT EXISTS {this.TableEvents} ("
                 + @"store_version BIGINT NOT NULL,"
@@ -36,7 +37,7 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
                 + @"aggregate_type_unique_key CHARACTER VARYING,"
                 + @"event_payload_type_id CHARACTER VARYING NOT NULL,"
                 + @"event_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,"
-                + @"payload JSON NOT NULL,"
+                + @"payload JSON,"
                 + $"CONSTRAINT {this.TableEvents}_store_version_pkey PRIMARY KEY (store_version),"
                 + $"CONSTRAINT {this.TableEvents}_aggregate_id_aggregate_version_key UNIQUE(aggregate_id, aggregate_version)"
                 + @")"
@@ -44,10 +45,28 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
 
             var eventsIndex = $"CREATE INDEX IF NOT EXISTS {this.TableEvents}_event_timestamp_idx ON {this.TableEvents} USING BTREE  (event_timestamp);";
 
+            //seed event table with dummy record
+            var eventsInsert = this.BuildSqlEvent(new EventRecord()
+            {
+                StoreVersion = 0,
+                OriginUserId = null,
+                AggregateId = Guid.Empty,
+                AggregateVersion = 0,
+                AggregateTypeId = new TypeId("_"), 
+                AggregateTypeUniqueKey = null,
+                EventPayloadTypeId = new TypeId("_"),
+                EventTimestamp = DateTimeOffset.UtcNow,
+                Payload = null,
+            }, pm);
+
             var dispatch = $"CREATE TABLE IF NOT EXISTS {this.TableDispatch} ("
-                + @"store_version BIGINT NOT NULL"
+                + @"id INT2 NOT NULL,"
+                + @"store_version BIGINT NOT NULL,"
+                + $"CONSTRAINT {this.TableDispatch}_id_pkey PRIMARY KEY (id)"
                 + @")"
                 + @";";
+
+            var dispatchInsert = $"INSERT INTO {this.TableDispatch} (id, store_version) VALUES (1, 0) ON CONFLICT DO NOTHING;";
 
             var snapshots = $"CREATE TABLE IF NOT EXISTS {this.TableSnapshots} ("
                 + @"aggregate_id UUID NOT NULL,"
@@ -81,7 +100,7 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
                 + @")"
                 + @";";
 
-            return events + eventsIndex + dispatch + snapshots + processes + processesIndex + pk;
+            return events + eventsIndex + eventsInsert + dispatch + dispatchInsert + snapshots + processes + processesIndex + pk;
         }
 
         protected override string CreateUpsertStatement(string tableName, int pkColumnsCount, ParametersManager pm, string extraUpdateCondition, params Tuple<string, object>[] values)
