@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 using FeiEventStore.Core;
 using FeiEventStore.Domain;
 using FeiEventStore.Events;
+using FeiEventStore.Logging.Logging;
 using FeiEventStore.Persistence;
-using NLog;
 
 namespace FeiEventStore.AggregateStateRepository
 {
     public class AggregateStateRepository : IAggregateStateRepository
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
         private readonly IDomainEventStore _eventStore;
 
@@ -31,15 +31,16 @@ namespace FeiEventStore.AggregateStateRepository
                 if(result == null && state != null)
                 {
                     var e = new InvalidAggregateStateTypeException(typeof(TAggregateState), state.GetType());
-                    Logger.Fatal(e);
+                    Logger.Fatal(() => e.Message);
                     throw e;
                 }
                 return result;
             }
-            catch(AggregateNotFoundException)
+            catch(AggregateNotFoundException ex)
             {
                 if(!swallowNotFoundException)
                 {
+                    Logger.Fatal(() => ex.Message);
                     throw;
                 }
             }

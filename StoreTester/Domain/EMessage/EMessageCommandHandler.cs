@@ -18,7 +18,7 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
         }
         private void CheckAuthor(EMessageAggregate aggregate)
         {
-            if(aggregate.AuthorId != _executionScopeService.OriginUserId)
+            if(aggregate.AuthorId != _executionScopeService.Origin)
             {
                 var e = new DomainException("Access Denied. Attempt to access somebody else's message.");
                 throw e;

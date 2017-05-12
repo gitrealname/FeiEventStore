@@ -13,10 +13,11 @@ namespace FeiEventStore.IntegrationTests._Tests
     //[Only]
     public class SingleEventTest : BaseTest
     {
-        public SingleEventTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository):base(commandExecutor, eventStore, stateRepository, "Single command"){}
+        public SingleEventTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository)
+            : base(commandExecutor, eventStore, stateRepository, "Single command"){}
         public override bool Run()
         {
-            var result = CommandExecutor.ExecuteCommand(new Increment(Const.FirstCounterId, 1), OriginUserId);
+            var result = CommandExecutor.ExecuteCommand(new Increment(Const.FirstCounterId, 1), Origin);
             var events = EventStore.GetEvents(Const.FirstCounterId, 0);
             var counterState = StateRepository.Get<Counter>(Const.FirstCounterId);
 
@@ -31,7 +32,8 @@ namespace FeiEventStore.IntegrationTests._Tests
     //[Only]
     public class CommandBatchTest : BaseTest
     {
-        public CommandBatchTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository) : base(commandExecutor, eventStore, stateRepository, "Command batch") { }
+        public CommandBatchTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository) 
+            : base(commandExecutor, eventStore, stateRepository, "Command batch") { }
         public override bool Run()
         {
             var batch = new List<ICommand>()
@@ -41,7 +43,7 @@ namespace FeiEventStore.IntegrationTests._Tests
                 new Decrement(Const.FirstCounterId, 2),
             };
 
-            var result = CommandExecutor.ExecuteCommandBatch(batch, OriginUserId);
+            var result = CommandExecutor.ExecuteCommandBatch(batch, Origin);
             var events = EventStore.GetEvents(Const.FirstCounterId, 0);
             var counterState = StateRepository.Get<Counter>(Const.FirstCounterId);
 
@@ -72,7 +74,7 @@ namespace FeiEventStore.IntegrationTests._Tests
                 batch.Add(cmd);
             }
 
-            var result = CommandExecutor.ExecuteCommandBatch(batch, OriginUserId);
+            var result = CommandExecutor.ExecuteCommandBatch(batch, Origin);
             var events = EventStore.GetEvents(Const.FirstCounterId, 0, 10);
             var snapshotVersion = ((IDomainEventStore)EventStore).GetSnapshotVersion(Const.FirstCounterId);
 

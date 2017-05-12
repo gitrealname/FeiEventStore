@@ -1,4 +1,5 @@
 ﻿using FeiEventStore.Domain;
+using FeiEventStore.Logging.Logging;
 
 namespace FeiEventStore.Events
 {
@@ -6,7 +7,6 @@ namespace FeiEventStore.Events
     using System.Collections.Generic;
     using Core;
     using Persistence;
-    using NLog;
     using System.Linq;
 
     /// <summary>
@@ -15,7 +15,7 @@ namespace FeiEventStore.Events
     /// <seealso cref="FeiEventStore.Events.IEventStore" />
     public class EventStore : IDomainEventStore
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
         private readonly IPersistenceEngine _engine;
         private readonly IPermanentlyTypedObjectService _service;
@@ -161,16 +161,16 @@ namespace FeiEventStore.Events
                 {
                     //warn and re-try attempt
                     reTry = true;
-                    if(Logger.IsWarnEnabled)
+                    if(Logger.IsWarnEnabled())
                     {
-                        Logger.Warn(ex);
+                        Logger.WarnException("{Exception}", ex, typeof(EventStoreConcurrencyViolationException).Name);
                     }
                 }
                 catch(Exception ex)
                 {
-                    if(Logger.IsFatalEnabled)
+                    if(Logger.IsFatalEnabled())
                     {
-                        Logger.Fatal(ex);
+                        Logger.FatalException("{Exception}", ex, ex.GetType().Name);
                     }
                     throw;
                 }
@@ -180,17 +180,14 @@ namespace FeiEventStore.Events
                     initialStoreVersion++;
                     @event.StoreVersion = initialStoreVersion;
                 }
-                if(Logger.IsDebugEnabled)
+                if(Logger.IsInfoEnabled())
                 {
-                    if(Logger.IsInfoEnabled)
-                    {
-                        Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes persisted: {2}, Processes deleted: {3}. Final store version: {4}",
-                            eventRecords.Count,
-                            snapshotRecords.Count,
-                            processPersistedCount,
-                            completeProcessIds.Count,
-                            initialStoreVersion);
-                    }
+                    Logger.InfoFormat("Commit statistics. Events: {EventsCount}, Snapshots: {SnapshotsCount}, Processes persisted: {ProcessesCount}, Processes deleted: {ProcessesDeletedCount}. Final store version: {StoreVersion}",
+                        eventRecords.Count,
+                        snapshotRecords.Count,
+                        processPersistedCount,
+                        completeProcessIds.Count,
+                        initialStoreVersion);
                 }
             }
 
@@ -228,9 +225,9 @@ namespace FeiEventStore.Events
             var eventRecords = _engine.GetEvents(aggregateId, fromAggregateVersion, toAggregateVersion);
             var result = LoadEventRecords(eventRecords);
 
-            if(Logger.IsDebugEnabled && result.Count > 0)
+            if(Logger.IsDebugEnabled() && result.Count > 0)
             {
-                Logger.Debug("Loaded {0} events for aggregate id {1} up until version {2}", 
+                Logger.DebugFormat("Loaded {EventsCount} events for aggregate id {AggregateId} up until version {AggregateVersion}", 
                     result.Count, 
                     aggregateId, 
                     result.Last().AggregateVersion);
@@ -243,11 +240,11 @@ namespace FeiEventStore.Events
         {
             var eventRecords = _engine.GetEvents(from, to);
             var result = LoadEventRecords(eventRecords);
-            if(Logger.IsDebugEnabled && result.Count > 0)
+            if(Logger.IsDebugEnabled() && result.Count > 0)
             {
-                Logger.Debug("Loaded {0} events emitted since {1:O} up until {2}", 
+                Logger.DebugFormat("Loaded {EventsCount} events emitted since {FromTimestamp} up until {ToTimestamp}", 
                     result.Count, 
-                    from, 
+                    from.ToString("O"), 
                     to.HasValue ? to.Value.ToString("O") : "now");
             }
 
@@ -258,9 +255,9 @@ namespace FeiEventStore.Events
         {
             var eventRecords = _engine.GetEvents(startingStoreVersion, takeEventsCount);
             var result = LoadEventRecords(eventRecords);
-            if(Logger.IsDebugEnabled && result.Count > 0)
+            if(Logger.IsDebugEnabled() && result.Count > 0)
             {
-                Logger.Debug("Loaded {0} events starting with event store version {1} up until {2}",
+                Logger.DebugFormat("Loaded {EventsCount} events starting with event store version {FromStoreVersion} up until {ToStoreVersion}",
                     result.Count,
                     startingStoreVersion,
                     result.Last().AggregateVersion);
@@ -280,7 +277,10 @@ namespace FeiEventStore.Events
                 {
                     var ex = new Exception(string.Format("Aggregate id {0} persisted type '{1}' doesn't match requested type '{2}'.",
                         aggregateId, persistedAggregateType.FullName, aggregateType.FullName));
-                    Logger.Fatal(ex);
+                    if(Logger.IsFatalEnabled())
+                    {
+                        Logger.FatalException("{Exception}", ex, ex.GetType().Name);
+                    }
                     throw ex;
                 }
                 aggregate = _service.GetSingleInstanceForConcreteType<IAggregate>(persistedAggregateType, typeof(IAggregate<>));
@@ -304,7 +304,10 @@ namespace FeiEventStore.Events
                 if(aggregateType == null && aggregate == null)
                 {
                     var e = new AggregateNotFoundException(aggregateId);
-                    Logger.Warn(e);
+                    if(Logger.IsWarnEnabled())
+                    {
+                        Logger.WarnException("{Exception}", e, e.GetType().Name);
+                    }
                     throw e;
                 }
             }
@@ -322,9 +325,9 @@ namespace FeiEventStore.Events
                 aggregate.LatestPersistedVersion = 0;
             }
             aggregate.LoadFromHistory(events);
-            if(Logger.IsDebugEnabled)
+            if(Logger.IsDebugEnabled())
             {
-                Logger.Debug("Loaded aggregate id {0} runtime type {1} starting from version {2} and applied {3} events",
+                Logger.DebugFormat("Loaded aggregate id {AggregateId} runtime type {AggregateType} starting from version {FromAggregateVersion} and applied {EventsCount} events",
                     aggregateId, aggregate.GetType().FullName, startingEventVersion, events.Count);
             }
 
@@ -386,25 +389,25 @@ namespace FeiEventStore.Events
                 }
                 else
                 {
-                    if(Logger.IsTraceEnabled)
+                    if(Logger.IsTraceEnabled())
                     {
-                        Logger.Trace("Process id '{0}' either completed or not started.", processId);
+                        Logger.TraceFormat("Process id '{ProcessId}' either completed or not started.", processId);
                     }
                     return null;
                 }
             }
             catch(ProcessNotFoundException)
             {
-                if(Logger.IsTraceEnabled)
+                if(Logger.IsTraceEnabled())
                 {
-                    Logger.Trace("Process id '{0}' either completed or not started.", processId);
+                    Logger.TraceFormat("Process id '{ProcessId}' either completed or not started.", processId);
                 }
                 throw;
             }
             process.Id = processId;
-            if(Logger.IsDebugEnabled)
+            if(Logger.IsDebugEnabled())
             {
-                Logger.Debug("Loaded process id '{0}' runtime type '{1}'", processId, process.GetType().FullName);
+                Logger.DebugFormat("Loaded process id '{ProcessId}' runtime type '{ProcessType}'", processId, process.GetType().FullName);
             }
 
             return (IProcessManager)process;
@@ -432,9 +435,9 @@ namespace FeiEventStore.Events
                 InitEventFromEventRecord(@event, er);
                 result.Add(@event);
             }
-            if(Logger.IsTraceEnabled)
+            if(Logger.IsTraceEnabled())
             {
-                Logger.Trace("Loaded {0} event records from the store.", result.Count);
+                Logger.TraceFormat("Loaded {EventsCount} event records from the store.", result.Count);
             }
             return result;
         }
@@ -442,7 +445,7 @@ namespace FeiEventStore.Events
         private EventRecord CreateEventRecordFromEvent ( IEventEnvelope @event )
         {
             var er = new EventRecord();
-            er.OriginUserId = @event.OriginUserId;
+            er.Origin = @event.Origin;
             er.StoreVersion = 0; //will be set during commit()
             var payload = @event.Payload;
             er.EventPayloadTypeId = _service.GetPermanentTypeIdForType(payload.GetType());
@@ -450,19 +453,19 @@ namespace FeiEventStore.Events
             er.AggregateId = @event.AggregateId;
             er.AggregateVersion = @event.AggregateVersion;
             er.AggregateTypeId = @event.AggregateTypeId;
-            er.EventTimestamp = @event.Timestapm;
+            er.EventTimestamp = @event.Timestamp;
 
             return er;
         }
 
         private IEventEnvelope InitEventFromEventRecord(IEventEnvelope @event, EventRecord record) {
 
-            @event.OriginUserId = record.OriginUserId;
+            @event.Origin = record.Origin;
             @event.StoreVersion = record.StoreVersion;
             @event.AggregateId = record.AggregateId;
             @event.AggregateVersion = record.AggregateVersion;
             @event.AggregateTypeId = record.AggregateTypeId;
-            @event.Timestapm = record.EventTimestamp;
+            @event.Timestamp = record.EventTimestamp;
 
             return @event;
         }

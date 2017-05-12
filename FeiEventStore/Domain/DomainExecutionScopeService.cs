@@ -5,19 +5,19 @@ using System.Text;
 using System.Threading.Tasks;
 using FeiEventStore.AggregateStateRepository;
 using FeiEventStore.Core;
-using NLog;
+using FeiEventStore.Logging.Logging;
 
 namespace FeiEventStore.Domain
 {
     internal class DomainExecutionScopeService : IDomainExecutionScopeService
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
         internal DomainExecutionScopeContext Context { get; set; }
-        internal void Init(DomainExecutionScopeContext ctx, string originUserId)
+        internal void Init(DomainExecutionScopeContext ctx, string origin)
         {
             Context = ctx;
-            OriginUserId = originUserId;
+            Origin = origin;
         }
 
         internal bool CommandHasFailed { get { return Context.ExecutionResult.CommandHasFailed;  } }
@@ -71,12 +71,15 @@ namespace FeiEventStore.Domain
             if(result == null)
             {
                 var e = new InvalidAggregateStateTypeException(typeof(TAggregateState), state.GetType());
-                Logger.Fatal(e);
+                if(Logger.IsFatalEnabled())
+                {
+                    Logger.FatalException("{Exception}", e, e.GetType().Name);
+                }
                 throw e;
             }
             return result;
         }
 
-        public string OriginUserId { get; protected set; }
+        public string Origin { get; protected set; }
     }
 }

@@ -19,7 +19,7 @@
         /// </summary>
         public long StoreVersion { get; set; }
 
-        public string OriginUserId { get; set; }
+        public string Origin { get; set; }
 
         public Guid AggregateId { get; set; }
 

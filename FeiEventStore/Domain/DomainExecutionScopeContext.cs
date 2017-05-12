@@ -40,14 +40,6 @@ namespace FeiEventStore.Domain
             AggregateStateCloneCache = new Dictionary<Guid, IAggregateState>();
         }
 
-        public void EnqueueList(IEnumerable<IMessage> messages)
-        {
-            foreach(var m in messages)
-            {
-                Queue.Enqueue(m);
-            }
-        }
-
         public IAggregate LookupAggregate(Guid aggregateId)
         {
             if(AggregateMap.ContainsKey(aggregateId))

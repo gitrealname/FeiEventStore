@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using FeiEventStore.EventQueue;
+using FeiEventStore.Logging.Logging;
 using FeiEventStore.Persistence;
 
 namespace FeiEventStore.Domain
@@ -9,11 +10,10 @@ namespace FeiEventStore.Domain
     using System.Collections.Generic;
     using FeiEventStore.Core;
     using FeiEventStore.Events;
-    using NLog;
 
     public class DomainCommandExecutor : IDomainCommandExecutor 
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
         private readonly IServiceLocator _factory;
         private readonly IScopedExecutionContextFactory _executorFactory;
@@ -42,26 +42,34 @@ namespace FeiEventStore.Domain
             var finalStoreVersion = -1L;
             var ctx = svc.Context;
 
-            ctx.EnqueueList(commandBatch);
-
             //main loop
             try
             {
-                while(svc.Context.Queue.Count > 0 && !svc.CommandHasFailed)
+                foreach(var command in commandBatch)
                 {
-                    var msg = ctx.Queue.Dequeue();
-                    if(msg is ICommand)
+                    ctx.Queue.Enqueue(command);
+
+                    while(ctx.Queue.Count > 0 && !svc.CommandHasFailed)
                     {
-                        ProcessCommand(msg as ICommand, svc);
+                        var msg = ctx.Queue.Dequeue();
+                        if(msg is ICommand)
+                        {
+                            ProcessCommand(msg as ICommand, svc);
+                        }
+                        else if(msg is IEventEnvelope)
+                        {
+                            ProcessEvent(msg as IEventEnvelope, svc);
+                        }
+                        else
+                        {
+                            var ex = new Exception(string.Format("Unexpected message type '{0}'; only ICommand or IEventEnvelope can be processed.", msg.GetType().FullName));
+                            throw ex;
+                        }
                     }
-                    else if(msg is IEventEnvelope)
+
+                    if(svc.CommandHasFailed)
                     {
-                        ProcessEvent(msg as IEventEnvelope, svc);
-                    }
-                    else
-                    {
-                        var ex = new Exception(string.Format("Unexpected message type '{0}'; only ICommand or IEvent can be processed.", msg.GetType().FullName));
-                        throw ex;
+                        break;
                     }
                 }
 
@@ -156,7 +164,10 @@ namespace FeiEventStore.Domain
             }
 
             svc.ReportFatalError(errorMessage);
-            Logger.Fatal(exception);
+            if(Logger.IsFatalEnabled())
+            {
+                Logger.FatalException("{Exception}", exception, exception.GetType().Name);
+            }
         }
 
         private void ProcessEvent(IEventEnvelope e, DomainExecutionScopeService svc)
@@ -213,9 +224,9 @@ namespace FeiEventStore.Domain
                     process.Id = Guid.NewGuid();
                     process.InvolvedAggregateIds.Add(e.AggregateId);
                     process.AsDynamic().StartByEvent(e.Payload, e.AggregateId, e.AggregateVersion, e.AggregateTypeId);
-                    if(Logger.IsInfoEnabled)
+                    if(Logger.IsInfoEnabled())
                     {
-                        Logger.Info("Started new Process Manager id {0}; Runtime type: '{1}', By event type: '{2}', Source Aggregate id: {3}",
+                        Logger.InfoFormat("Started new Process Manager id {ProcessId}; Runtime type: '{ProcessRuntimeType}', By event type: '{EventRuntimeType}', Source Aggregate id: {AggregateId}",
                             process.Id,
                             process.GetType(),
                             e.GetType(),
@@ -356,9 +367,13 @@ namespace FeiEventStore.Domain
             //each command must produce at least one event unless it failed
             if(events.Count == 0 && !svc.CommandHasFailed)
             {
-                var e = new Exception(string.Format("Each command must produce at least one event. Aggregate type: '{0}'; Command Type: '{1}'.",
-                    aggregate.GetType().FullName, cmd.GetType().FullName));
-                Logger.Fatal(e);
+                var template = "Each command must produce at least one event. Aggregate type: '{0}'; Command Type: '{1}'.";
+                var e = new InvalidOperationException(string.Format(template,aggregate.GetType().FullName, cmd.GetType().FullName));
+                if(Logger.IsFatalEnabled())
+                {
+                    var t = string.Format(template, "{AggregateType}", "{CommandType}");
+                    Logger.FatalFormat(t, template, aggregate.GetType().FullName, cmd.GetType().FullName);
+                }
                 throw e;
             }
 
@@ -375,12 +390,12 @@ namespace FeiEventStore.Domain
                 initialAggregateVersion++;
                 var envelopeType =  typeof(EventEnvelope<>).MakeGenericType(e.GetType());
                 var envelope = (IEventEnvelope)Activator.CreateInstance(envelopeType);
-                envelope.OriginUserId = svc.OriginUserId;
+                envelope.Origin = svc.Origin;
                 envelope.AggregateId = aggregate.Id;
                 envelope.AggregateTypeId = aggregate.TypeId;
                 envelope.AggregateVersion = initialAggregateVersion;
                 envelope.StoreVersion = 0; // it will be set by event store
-                envelope.Timestapm = DateTimeOffset.UtcNow;
+                envelope.Timestamp = DateTimeOffset.UtcNow;
                 envelope.Payload = e;
 
                 envelopes.Add(envelope);
@@ -450,7 +465,10 @@ namespace FeiEventStore.Domain
                         if(svc == null)
                         {
                             var e = new InvalidDomainExecutionServiceExcepiton();
-                            Logger.Fatal(e);
+                            if(Logger.IsFatalEnabled())
+                            {
+                                Logger.FatalException("{Exception}", e, e.GetType().Name);
+                            }
                             throw e;
                         }
                         //initialize service
@@ -464,28 +482,31 @@ namespace FeiEventStore.Domain
                     catch(AggregateConcurrencyViolationException ex)
                     {
                         reTry = true;
-                        if(Logger.IsInfoEnabled)
+                        if(Logger.IsInfoEnabled())
                         {
-                            Logger.Info(ex);
+                            Logger.InfoException("{Exception}", ex, ex.GetType().Name);
                         }
                     }
                     catch(ProcessConcurrencyViolationException ex)
                     {
                         reTry = true;
-                        if(Logger.IsInfoEnabled)
+                        if(Logger.IsInfoEnabled())
                         {
-                            Logger.Info(ex);
+                            Logger.InfoException("{Exception}", ex, ex.GetType().Name);
                         }
                     }
                     catch(DomainException ex)
                     {
                         svc.ReportFatalError(ex.Message);
-                        Logger.Fatal(ex);
+                        Logger.Fatal(() => ex.Message);
                     }
                     catch(Exception ex)
                     {
                         svc.ReportException(ex);
-                        Logger.Fatal(ex);
+                        if(Logger.IsFatalEnabled())
+                        {
+                            Logger.FatalException("{Exception}", ex, ex.GetType().Name);
+                        }
                     }
                     finally
                     {

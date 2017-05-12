@@ -139,7 +139,7 @@ namespace FeiEventStore.Persistence.Sql
         {
             var sql = CreateInsertStatement(this.TableEvents, pm
                 , new Tuple<string, object>("store_version", er.StoreVersion)
-                , new Tuple<string, object>("origin_user_id", er.OriginUserId)
+                , new Tuple<string, object>("origin", er.Origin)
                 , new Tuple<string, object>("aggregate_id", er.AggregateId)
                 , new Tuple<string, object>("aggregate_version", er.AggregateVersion)
                 , new Tuple<string, object>("aggregate_type_id", er.AggregateTypeId.ToString())
@@ -240,7 +240,7 @@ namespace FeiEventStore.Persistence.Sql
 
         protected virtual string BuildSqlSelectEventsCommon()
         {
-            return $"SELECT store_version,origin_user_id,aggregate_id,aggregate_version,aggregate_type_id,aggregate_type_unique_key,event_timestamp,event_payload_type_id,payload FROM {this.TableEvents}";
+            return $"SELECT store_version,origin,aggregate_id,aggregate_version,aggregate_type_id,aggregate_type_unique_key,event_timestamp,event_payload_type_id,payload FROM {this.TableEvents}";
         }
         public virtual List<EventRecord> ReadEvents(IDataReader reader)
         {
@@ -251,7 +251,7 @@ namespace FeiEventStore.Persistence.Sql
                 result.Add(e);
 
                 e.StoreVersion = (long)reader.GetInt64(0);
-                e.OriginUserId =  reader.IsDBNull(1) ? null : reader.GetString(1);
+                e.Origin =  reader.IsDBNull(1) ? null : reader.GetString(1);
                 e.AggregateId = reader.GetGuid(2);
                 e.AggregateVersion = (long)reader.GetInt64(3);
                 e.AggregateTypeId = reader.GetString(4);

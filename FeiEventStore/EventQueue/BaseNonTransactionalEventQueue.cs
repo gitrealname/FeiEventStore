@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Transactions;
 using FeiEventStore.Core;
 using FeiEventStore.Events;
-using NLog;
+using FeiEventStore.Logging.Logging;
 
 namespace FeiEventStore.EventQueue
 {
@@ -39,7 +39,10 @@ namespace FeiEventStore.EventQueue
                 }
                 catch(Exception e)
                 {
-                    Logger.Fatal(e);
+                    if(Logger.IsFatalEnabled())
+                    {
+                        Logger.FatalException("{Exception}", e, e.GetType().Name);
+                    }
                     Thread.Sleep(1000);
                 }
             }

@@ -1,18 +1,18 @@
 ﻿using System.Collections.Generic;
 using System.Data;
+using FeiEventStore.Logging.Logging;
 
 namespace FeiEventStore.Events
 {
     using FeiEventStore.Core;
     using System;
     using FeiEventStore.Persistence;
-    using NLog;
     using System.Linq;
 
     public class PermanentlyTypedObjectService : IPermanentlyTypedObjectService
     {
 
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
         private readonly IPermanentlyTypedRegistry _registry;
         private readonly IServiceLocator _factory;
@@ -30,7 +30,10 @@ namespace FeiEventStore.Events
             if(instances.Count > 1)
             {
                 var ex = new MultipleTypeInstancesException(closedGenericType, instances.Count);
-                Logger.Fatal(ex);
+                if(Logger.IsFatalEnabled())
+                {
+                    Logger.FatalException("{Exception}", ex, ex.GetType().Name);
+                }
                 throw ex;
             }
             //cast if instance found
@@ -38,7 +41,10 @@ namespace FeiEventStore.Events
             if(result == null)
             {
                 var ex = new RuntimeTypeInstancesNotFoundException(closedGenericType);
-                Logger.Fatal(ex);
+                if(Logger.IsFatalEnabled())
+                {
+                    Logger.FatalException("{Exception}", ex, ex.GetType().Name);
+                }
                 if(!throwNotFound)
                 {
                     return null;
@@ -55,7 +61,10 @@ namespace FeiEventStore.Events
             if(types.Count != 1)
             {
                 var ex = new ArgumentException(string.Format("Concrete Type '{0}' expected to implement generic type '{1}' once.", concreteType.FullName, genericType.FullName));
-                Logger.Fatal(ex);
+                if(Logger.IsFatalEnabled())
+                {
+                    Logger.FatalException("{Exception}", ex, ex.GetType().Name);
+                }
                 throw ex;
             }
             return GetSingleInstance<T>(types[0]);
@@ -66,7 +75,10 @@ namespace FeiEventStore.Events
             if(!genericType.IsGenericType)
             {
                 var ex = new ArgumentException(string.Format("'{0}' must be a generic type.", nameof(genericType)));
-                Logger.Fatal(ex);
+                if(Logger.IsFatalEnabled())
+                {
+                    Logger.FatalException("{Exception}", ex, ex.GetType().Name);
+                }
                 throw ex;
             }
             var type = genericType.MakeGenericType(typeArguments);
@@ -120,9 +132,9 @@ namespace FeiEventStore.Events
                 prevType = replacerType;
             }
 
-            if(Logger.IsDebugEnabled)
+            if(Logger.IsDebugEnabled())
             {
-                Logger.Debug("Upgraded object from type {0} to type {1}", originalType, finalType);
+                Logger.DebugFormat("Upgraded object from type {OriginalType} to type {FinalType}", originalType, finalType);
             }
 
             return replacer;

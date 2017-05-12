@@ -16,7 +16,7 @@ namespace FeiEventStore.IntegrationTests._Tests
         protected readonly IDomainCommandExecutor CommandExecutor;
         protected readonly IEventStore EventStore;
         protected readonly IAggregateStateRepository StateRepository;
-        protected readonly string OriginUserId = "testUser";
+        protected readonly string Origin = "testUser";
 
         protected BaseTest(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository, string name)
         {

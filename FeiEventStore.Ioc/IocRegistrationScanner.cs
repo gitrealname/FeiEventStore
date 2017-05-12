@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using NLog;
+using FeiEventStore.Logging.Logging;
 
 namespace FeiEventStore.Ioc
 {
@@ -103,7 +103,7 @@ namespace FeiEventStore.Ioc
     /// </summary>
     public class IocRegistrationScanner
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly IIocRegistrar _registrar;
         private readonly List<string> _assemblyPatterns;
         private readonly List<string> _assemblyPatternsBlackList;
@@ -205,6 +205,10 @@ namespace FeiEventStore.Ioc
             var visited = new HashSet<Assembly>();
             foreach(var a in assemblies)
             {
+                if(a.IsDynamic && a.FullName.StartsWith("Anonymously Hosted"))
+                {
+                    continue;
+                }
                 if(!visited.Add(a))
                 {
                     continue;
@@ -222,9 +226,9 @@ namespace FeiEventStore.Ioc
 
                     //process all Types
                     var types = a.GetTypes(); //a.GetExportedTypes();
-                    if(Logger.IsDebugEnabled)
+                    if(Logger.IsDebugEnabled())
                     {
-                        Logger.Debug("Processing Assembly '{0}' with '{1}' types...", relativeName, types.Length);
+                        Logger.DebugFormat("Processing Assembly '{AssemblyName}' with '{TypesCount}' types...", relativeName, types.Length);
                     }
                     foreach(var t in types)
                     {
@@ -280,19 +284,28 @@ namespace FeiEventStore.Ioc
                         || action.RegistrationType == IocRegistrationType.RegisterTypePerContainerLifetime 
                         || action.RegistrationType == IocRegistrationType.RegisterTypePerScopeLifetime)
                     {
-                        Logger.Debug("Registering type '{0}' with lifetime {1}.", type.FullName, action.RegistrationType.ToString());
+                        if(Logger.IsDebugEnabled())
+                        {
+                            Logger.DebugFormat("Registering type '{Type}' with lifetime {Lifetime}.", type.FullName, action.RegistrationType.ToString());
+                        }
                         ignoreSubTypes = 2;
                     } else
                     {
                         ignoreSubTypes = 1;
                         if(!_serviceMap.Add(serviceType))
                         {
-                            Logger.Debug("Skipped! Type Registration '{0}' as service of type '{1}' - service is already registered.", type.FullName, serviceType.FullName);
+                            if(Logger.IsDebugEnabled())
+                            {
+                                Logger.DebugFormat("Skipped! Type Registration '{Type}' as service of type '{ServiceType}' - service is already registered.", type.FullName, serviceType.FullName);
+                            }
                             return ignoreSubTypes;
                         }
                         else
                         {
-                            Logger.Debug("Registering type '{0}' as service of type '{1}' with lifetime {2}.", type.FullName, serviceType.FullName, action.RegistrationType.ToString());
+                            if(Logger.IsDebugEnabled())
+                            {
+                                Logger.DebugFormat("Registering type '{Type}' as service of type '{ServiceType}' with lifetime {Lifetime}.", type.FullName, serviceType.FullName, action.RegistrationType.ToString());
+                            }
                         }
                     }
                     _registrar.Register(serviceType, type, action);
@@ -305,7 +318,10 @@ namespace FeiEventStore.Ioc
                 }
                 else
                 {
-                    Logger.Debug("Swallowed type '{0}' of service type '{1}.", type.FullName, serviceType.FullName);
+                    if(Logger.IsDebugEnabled())
+                    {
+                        Logger.DebugFormat("Swallowed type '{Type}' of service type '{ServiceType}.", type.FullName, serviceType.FullName);
+                    }
                     ignoreSubTypes = 2;
                 }
                 break;

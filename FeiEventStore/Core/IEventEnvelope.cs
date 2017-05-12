@@ -4,7 +4,7 @@
 
     public interface IEventEnvelope : IMessage
     {
-        string OriginUserId { get; set; }
+        string Origin { get; set; }
 
         long StoreVersion { get; set; }
 
@@ -14,7 +14,7 @@
 
         TypeId AggregateTypeId { get; set; }
 
-        DateTimeOffset Timestapm { get; set; }
+        DateTimeOffset Timestamp { get; set; }
 
         object Payload { get; set; }
     }

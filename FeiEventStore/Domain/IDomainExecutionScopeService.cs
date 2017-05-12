@@ -36,7 +36,7 @@ namespace FeiEventStore.Domain
         /// <value>
         /// The origin.
         /// </value>
-        string OriginUserId { get; }
+        string Origin { get; }
 
         /// <summary>
         /// Gets the immutable state of the aggregate. 

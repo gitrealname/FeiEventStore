@@ -1,4 +1,5 @@
 ﻿using FeiEventStore.Core;
+using FeiEventStore.Logging.Logging;
 
 namespace FeiEventStore.Persistence
 {
@@ -6,12 +7,11 @@ namespace FeiEventStore.Persistence
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
-    using NLog;
 
     public class InMemoryPersistenceEngine : IPersistenceEngine
     {
 
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
         private Dictionary<Guid, List<Tuple<EventRecord, int>>> _eventsByAggregateId;
         private List<EventRecord> _events;
@@ -88,14 +88,20 @@ namespace FeiEventStore.Persistence
                 if(events.Count == 0)
                 {
                     var ex = new Exception("Commit without pending events.");
-                    Logger.Fatal(ex);
+                    if(Logger.IsFatalEnabled())
+                    {
+                        Logger.FatalException("{Exception}", ex, ex.GetType().Name);
+                    }
                     throw ex;
                 }
                 var expectedPersistedStoreVersion = events.First().StoreVersion - 1;
                 if(_storeVersion != expectedPersistedStoreVersion)
                 {
                     var ex = new EventStoreConcurrencyViolationException();
-                    Logger.Warn(ex);
+                    if(Logger.IsWarnEnabled())
+                    {
+                        Logger.WarnException("{Exception}", ex, ex.GetType().Name);
+                    }
                     throw ex;
                 }
 
@@ -120,7 +126,10 @@ namespace FeiEventStore.Persistence
                             if(!_primaryKey.Add(key))
                             {
                                 var ex = new AggregatePrimaryKeyViolationException(pk.AggregateId, pk.AggregateTypeId, pk.PrimaryKey);
-                                Logger.Fatal(ex);
+                                if(Logger.IsFatalEnabled())
+                                {
+                                    Logger.FatalException("{Exception}", ex, ex.GetType().Name);
+                                }
                                 throw ex;
                             }
                             _primaryKeyByAggregateId[pk.AggregateId] = key;
@@ -136,7 +145,10 @@ namespace FeiEventStore.Persistence
                     if(currentVersion >= e.AggregateVersion)
                     {
                         var ex = new AggregateConcurrencyViolationException(e.AggregateId, e.AggregateVersion);
-                        Logger.Warn(ex);
+                        if(Logger.IsWarnEnabled())
+                        {
+                            Logger.WarnException("{Exception}", ex, ex.GetType().Name);
+                        }
                         throw ex;
                     }
                 }
@@ -167,7 +179,10 @@ namespace FeiEventStore.Persistence
                                 if(currentProcess.ProcessVersion >= p.ProcessVersion)
                                 {
                                     var ex = new ProcessConcurrencyViolationException(p.ProcessId, p.ProcessTypeId);
-                                    Logger.Warn(ex);
+                                    if(Logger.IsWarnEnabled())
+                                    {
+                                        Logger.WarnException("{Exception}", ex, ex.GetType().Name);
+                                    }
                                     throw ex;
 
                                 }
@@ -187,9 +202,9 @@ namespace FeiEventStore.Persistence
                 {
                     slidingVersion = e.StoreVersion;
 
-                    if(Logger.IsDebugEnabled)
+                    if(Logger.IsDebugEnabled())
                     {
-                        Logger.Debug("Preparing event for persistence: Store Version: {0}, Aggregate Id: {2} Aggregate Version: {3}",
+                        Logger.DebugFormat("Preparing event for persistence: Store Version: {StoreVersion}, Aggregate Id: {AggregateId} Aggregate Version: {AggregateVersion}",
                             e.StoreVersion, e.AggregateId, e.AggregateVersion);
                     }
                     _events.Add(e);
@@ -207,9 +222,9 @@ namespace FeiEventStore.Persistence
                 {
                     foreach(var s in snapshots)
                     {
-                        if(Logger.IsDebugEnabled)
+                        if(Logger.IsDebugEnabled())
                         {
-                            Logger.Debug("Preparing snapshot for persistence: Aggregate Id: {0} Aggregate Version: {1}",
+                            Logger.DebugFormat("Preparing snapshot for persistence: Aggregate Id: {AggregateId} Aggregate Version: {AggregateVersion}",
                                 s.AggregateId, s.AggregateVersion);
                         }
                         _snapshotByAggregateId [ s.AggregateId ] = s;
@@ -224,9 +239,9 @@ namespace FeiEventStore.Persistence
                 {
                     foreach(var p in processes)
                     {
-                        if(Logger.IsDebugEnabled)
+                        if(Logger.IsDebugEnabled())
                         {
-                            Logger.Debug("Preparing process for persistence: Process Id: {0}",
+                            Logger.DebugFormat("Preparing process for persistence: Process Id: {ProcessId}",
                                 p.ProcessId);
                         }
 
@@ -243,11 +258,11 @@ namespace FeiEventStore.Persistence
                 //update StoreVersion
                 _storeVersion = slidingVersion;
 
-                if(Logger.IsInfoEnabled)
+                if(Logger.IsInfoEnabled())
                 {
                     //Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes: {2}, Aggregate constraints validated: {3}, Process constraints validated: {4}. Final store version: {5}",
                     //    stats.events, stats.napshots, stats.processes, stats.aggregateConstraints, stats.processConstraints, StoreVersion);
-                    Logger.Info("Commit statistics. Events: {0}, Snapshots: {1}, Processes: {2}. Final store version: {3}",
+                    Logger.InfoFormat("Commit statistics. Events: {EventsCount}, Snapshots: {SnapshotsCount}, Processes: {ProcessesCount}. Final store version: {StoreVersion}",
                         stats_events, stats_snapshots, stats_processes, StoreVersion);
                 }
 
@@ -260,9 +275,9 @@ namespace FeiEventStore.Persistence
             List<Tuple<EventRecord, int>> aggregateEvents;
             if(!_eventsByAggregateId.TryGetValue(aggregateId, out aggregateEvents))
             {
-                if(Logger.IsDebugEnabled)
+                if(Logger.IsDebugEnabled())
                 {
-                    Logger.Debug("Aggregate Id: {0} doesn't exists in the store. Assuming version 0.", aggregateId);
+                    Logger.DebugFormat("Aggregate Id: {AggregateId} doesn't exists in the store. Assuming version 0.", aggregateId);
                 }
                 return 0;
             }
@@ -308,7 +323,10 @@ namespace FeiEventStore.Persistence
             if(!_snapshotByAggregateId.TryGetValue(aggregateId, out snapshot))
             {
                 var ex = new SnapshotNotFoundException(aggregateId);
-                Logger.Warn(ex);
+                if(Logger.IsWarnEnabled())
+                {
+                    Logger.WarnException("{Exception}", ex, ex.GetType().Name);
+                }
                 if(!throwNotFound)
                 {
                     return null;
@@ -330,7 +348,10 @@ namespace FeiEventStore.Persistence
             if ( !_processByProcessId.TryGetValue ( processId, out process ) )
             {
                 var ex = new ProcessNotFoundException( processId );
-                Logger.Warn ( ex );
+                if(Logger.IsWarnEnabled())
+                {
+                    Logger.WarnException("{Exception}", ex, ex.GetType().Name);
+                }
                 throw ex;
             }
             var other = _processByProcessTypeIdAggregateId
@@ -348,7 +369,10 @@ namespace FeiEventStore.Persistence
             if(!_processByProcessId.TryGetValue(processId, out process))
             {
                 var ex = new ProcessNotFoundException(processId);
-                Logger.Warn(ex);
+                if(Logger.IsWarnEnabled())
+                {
+                    Logger.WarnException("{Exception}", ex, ex.GetType().Name);
+                }
                 throw ex;
             }
             return process.ProcessVersion;
@@ -360,7 +384,10 @@ namespace FeiEventStore.Persistence
             if(!_processByProcessTypeIdAggregateId.TryGetValue(new Tuple<TypeId, Guid>(processTypeId, aggregateId), out process))
             {
                 var ex = new ProcessNotFoundException(processTypeId, aggregateId);
-                Logger.Warn(ex);
+                if(Logger.IsWarnEnabled())
+                {
+                    Logger.WarnException("{Exception}", ex, ex.GetType().Name);
+                }
                 if(!throwNotFound)
                 {
                     return null;

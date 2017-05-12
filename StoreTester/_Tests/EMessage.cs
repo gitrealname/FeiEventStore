@@ -12,7 +12,8 @@ namespace FeiEventStore.IntegrationTests._Tests
     //[Only]
     public class EMessageCreation: BaseTest
     {
-        public EMessageCreation(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository) :base(commandExecutor, eventStore, stateRepository, "EMessage creation"){}
+        public EMessageCreation(IDomainCommandExecutor commandExecutor, IEventStore eventStore, IAggregateStateRepository stateRepository) 
+            : base(commandExecutor, eventStore, stateRepository, "EMessage creation"){}
         public override bool Run()
         {
             var origin = Const.UserId1;

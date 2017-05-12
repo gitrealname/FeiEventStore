@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 using System.Transactions;
 using FeiEventStore.Core;
 using FeiEventStore.Events;
-using NLog;
+using FeiEventStore.Logging.Logging;
 
 namespace FeiEventStore.EventQueue
 {
     public abstract class BaseTransactionalEventQueue : IEventQueue
     {
 
-        protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        protected static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
         protected readonly IEventQueueConfiguration _baseConfig;
         protected readonly IEventStore _eventStore;
@@ -44,8 +44,11 @@ namespace FeiEventStore.EventQueue
         {
             if((_blockingQueue.Count + eventBatch.Count) > _baseConfig.MaxQueueCapacity)
             {
-                Logger.Warn("Event Queue Processing or type id '{0}' is getting behind. New Events are dropped as outstanding queue size reached {1} events.",
-                    _typeId, _blockingQueue.Count);
+                if(Logger.IsWarnEnabled())
+                {
+                    Logger.WarnFormat("Event Queue Processing or type id '{QueueTypeId}' is getting behind. New Events are dropped as outstanding queue size reached {Count} events.",
+                        _typeId, _blockingQueue.Count);
+                }
             }
             else
             {
@@ -64,9 +67,9 @@ namespace FeiEventStore.EventQueue
         }
         protected void BackgroundWorker()
         {
-            if(Logger.IsDebugEnabled)
+            if(Logger.IsDebugEnabled())
             {
-                Logger.Debug("Starting Event Queue of type id {0}", _typeId);    
+                Logger.DebugFormat("Starting Event Queue of type id {QueueTypeId}", _typeId);    
             }
 
             RestoreQueueState();
@@ -150,7 +153,10 @@ namespace FeiEventStore.EventQueue
                 }
                 catch(Exception e)
                 {
-                    Logger.Fatal(e);
+                    if(Logger.IsFatalEnabled())
+                    {
+                        Logger.FatalException("{Exception}", e, e.GetType().Name);
+                    }
                     Thread.Sleep(1000);
                 }
                 reTry = false;

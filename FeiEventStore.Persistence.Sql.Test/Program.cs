@@ -388,7 +388,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     AggregateVersion = 1,
                     AggregateTypeId = "event.insert.1",
                     EventPayloadTypeId = "payload.type.1",
-                    Payload = @"{""val"":""payload.ver.1""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
+                    Payload = @"{""val"":""payload.ver.1""}", AggregateTypeUniqueKey = null, Origin = null, EventTimestamp = DateTimeOffset.UtcNow,
                 },
                 new EventRecord()
                 {
@@ -397,7 +397,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     AggregateVersion = 2,
                     AggregateTypeId = "event.insert.1",
                     EventPayloadTypeId = "payload.type.2",
-                    Payload = @"{""val"":""payload.ver.2""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
+                    Payload = @"{""val"":""payload.ver.2""}", AggregateTypeUniqueKey = null, Origin = null, EventTimestamp = DateTimeOffset.UtcNow,
                 },
                 new EventRecord()
                 {
@@ -406,7 +406,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     AggregateVersion = 1,
                     AggregateTypeId = "event.insert.1",
                     EventPayloadTypeId = "payload.type.1",
-                    Payload = @"{""val"":""payload.ver.1""}", AggregateTypeUniqueKey = null, OriginUserId = "user.1", EventTimestamp = DateTimeOffset.UtcNow,
+                    Payload = @"{""val"":""payload.ver.1""}", AggregateTypeUniqueKey = null, Origin = "user.1", EventTimestamp = DateTimeOffset.UtcNow,
                 },
             };
             var expectedVersion = engine.StoreVersion + 3;
@@ -427,7 +427,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     AggregateVersion = 1,
                     AggregateTypeId = "event.store.version.violation",
                     EventPayloadTypeId = "payload.type.10",
-                    Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
+                    Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, Origin = null, EventTimestamp = DateTimeOffset.UtcNow,
                 },
             };
             var expectedVersion = engine.StoreVersion + 1;
@@ -443,7 +443,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     AggregateVersion = 1,
                     AggregateTypeId = "event.insert.10",
                     EventPayloadTypeId = "payload.type.10",
-                    Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
+                    Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, Origin = null, EventTimestamp = DateTimeOffset.UtcNow,
                 },
             };
             var exception = false;
@@ -471,7 +471,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     AggregateVersion = 1,
                     AggregateTypeId = "event.aggr.version.violation",
                     EventPayloadTypeId = "payload.type.30",
-                    Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
+                    Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, Origin = null, EventTimestamp = DateTimeOffset.UtcNow,
                 },
             };
             var expectedVersion = engine.StoreVersion + 1;
@@ -487,7 +487,7 @@ namespace FeiEventStore.Persistence.Sql.Test
                     AggregateVersion = 1, //collision
                     AggregateTypeId = "event.insert.10",
                     EventPayloadTypeId = "payload.type.10",
-                    Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, OriginUserId = null, EventTimestamp = DateTimeOffset.UtcNow,
+                    Payload = @"{""val"":""payload.2""}", AggregateTypeUniqueKey = null, Origin = null, EventTimestamp = DateTimeOffset.UtcNow,
                 },
             };
             var exception = false;

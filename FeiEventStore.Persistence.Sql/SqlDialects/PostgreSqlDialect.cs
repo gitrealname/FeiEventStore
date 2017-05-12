@@ -30,7 +30,7 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
         {
             var events = $"CREATE TABLE IF NOT EXISTS {this.TableEvents} ("
                 + @"store_version BIGINT NOT NULL,"
-                + @"origin_user_id CHARACTER VARYING,"
+                + @"origin CHARACTER VARYING,"
                 + @"aggregate_id UUID NOT NULL,"
                 + @"aggregate_version BIGINT NOT NULL,"
                 + @"aggregate_type_id CHARACTER VARYING NOT NULL,"
@@ -45,19 +45,10 @@ namespace FeiEventStore.Persistence.Sql.SqlDialects
 
             var eventsIndex = $"CREATE INDEX IF NOT EXISTS {this.TableEvents}_event_timestamp_idx ON {this.TableEvents} USING BTREE  (event_timestamp);";
 
-            //seed event table with dummy record
-            var eventsInsert = this.BuildSqlEvent(new EventRecord()
-            {
-                StoreVersion = 0,
-                OriginUserId = null,
-                AggregateId = Guid.Empty,
-                AggregateVersion = 0,
-                AggregateTypeId = new TypeId("_"), 
-                AggregateTypeUniqueKey = null,
-                EventPayloadTypeId = new TypeId("_"),
-                EventTimestamp = DateTimeOffset.UtcNow,
-                Payload = null,
-            }, pm);
+            //seed event table with NULL-Record (needed to prevent initialization queries, also serves as store creation timestamp)
+            var eventsInsert = $"INSERT INTO {this.TableEvents} (store_version, origin, aggregate_id, aggregate_version, aggregate_type_id, aggregate_type_unique_key, event_payload_type_id, event_timestamp, payload)"
+                + $" VALUES (0, NULL, '00000000-0000-0000-0000-000000000000', 0, '_', NULL, '_', @{pm.CurrentIndex}, NULL) ON CONFLICT DO NOTHING;";
+            pm.AddValues(DateTimeOffset.UtcNow);
 
             var dispatch = $"CREATE TABLE IF NOT EXISTS {this.TableDispatch} ("
                 + @"id INT2 NOT NULL,"
