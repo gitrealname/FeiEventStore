@@ -39,10 +39,10 @@ namespace FeiEventStore.Persistence.Sql
         {
             _dialect = dialect;
             _jsonSerializerSettings = new JsonSerializerSettings() {
-                ContractResolver = new DefaultContractResolver(), // new CamelCasePropertyNamesContractResolver(),
+                ContractResolver = new JsonPrivateSetterDefaultContractResolver(),
                 DateFormatHandling = DateFormatHandling.IsoDateFormat,
                 TypeNameHandling = TypeNameHandling.None,
-                ConstructorHandling = ConstructorHandling.Default,  //ConstructorHandling.AllowNonPublicDefaultConstructor
+                ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 //DefaultValueHandling = DefaultValueHandling.Include
                 NullValueHandling = NullValueHandling.Ignore,

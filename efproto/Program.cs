@@ -38,6 +38,7 @@ namespace efproto
             GenerateRecords();
 
             QueryDb();
+
         }
 
         static void QueryDb()

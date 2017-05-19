@@ -9,7 +9,7 @@ namespace FeiEventStore.Events
     using FeiEventStore.Persistence;
     using System.Linq;
 
-    public class PermanentlyTypedObjectService : IPermanentlyTypedObjectService
+    public class PermanentlyTypedUpgradingUpgradingObjectFactory : IPermanentlyTypedUpgradingObjectFactory
     {
 
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
@@ -17,7 +17,7 @@ namespace FeiEventStore.Events
         private readonly IPermanentlyTypedRegistry _registry;
         private readonly IServiceLocator _factory;
 
-        public PermanentlyTypedObjectService(IPermanentlyTypedRegistry registry, IServiceLocator factory)
+        public PermanentlyTypedUpgradingUpgradingObjectFactory(IPermanentlyTypedRegistry registry, IServiceLocator factory)
         {
             _registry = registry;
             _factory = factory;

@@ -127,6 +127,8 @@ namespace FeiEventStore.Ioc
             _baseDirectory = _appDomain.BaseDirectory;
         }
 
+        public int RegisteredPatternsCount => _assemblyPatterns.Count;
+
         public static IocRegistrationScanner WithRegistrar(IIocRegistrar registrar)
         {
             var scanner = new IocRegistrationScanner(registrar);

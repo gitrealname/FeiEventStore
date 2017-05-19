@@ -150,7 +150,7 @@ namespace PrototypeValidator
             //});
             container.Register<IPermanentlyTypedRegistry, Registry>( new PerContainerLifetime());
             container.Register<IServiceLocator>((serviceFactory) => new LightInjectObjectFactory(serviceFactory), new PerContainerLifetime());
-            container.Register<IPermanentlyTypedObjectService, PermanentlyTypedObjectService>(new PerContainerLifetime());
+            container.Register<IPermanentlyTypedUpgradingObjectFactory, PermanentlyTypedUpgradingUpgradingObjectFactory>(new PerContainerLifetime());
 
             foreach(var type in typeof(Event1).Assembly.GetTypes())
             {
@@ -171,7 +171,7 @@ namespace PrototypeValidator
 
             var permanentTypedRegistry = container.GetAllInstances <IPermanentlyTypedRegistry>();
             var resolvers = container.GetAllInstances<IServiceLocator>();
-            var svc = container.GetAllInstances<IPermanentlyTypedObjectService>();
+            var svc = container.GetAllInstances<IPermanentlyTypedUpgradingObjectFactory>();
 
             var myFactory = container.GetInstance<IServiceLocator>();
             var event1Replacers2 = myFactory.GetAllInstances(event1ReplacerType).Cast<IMyType>();

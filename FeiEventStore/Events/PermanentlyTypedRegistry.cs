@@ -8,17 +8,17 @@ using FeiEventStore.Domain;
 
 namespace FeiEventStore.Events
 {
-    public class PermanentlyTypeRegistry : IPermanentlyTypedRegistry
+    public class PermanentlyTypedRegistry : IPermanentlyTypedRegistry
     {
         private readonly Dictionary<TypeId, Type> _typeIdToType;
 
 
-        public PermanentlyTypeRegistry()
+        public PermanentlyTypedRegistry()
         {
             _typeIdToType = new Dictionary<TypeId, Type>();
         }
 
-        internal void RegisterPermanentlyTyped(Type type)
+        public void RegisterPermanentlyTyped(Type type)
         {
             var typeId = type.GetPermanentTypeId();
             if(typeId == null)

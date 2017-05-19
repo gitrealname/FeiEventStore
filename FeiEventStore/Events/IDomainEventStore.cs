@@ -7,7 +7,7 @@ namespace FeiEventStore.Events
     using Core;
     using Persistence;
 
-    internal interface IDomainEventStore : IEventStore
+    public interface IDomainEventStore : IEventStore
     {
 
         /// <summary>

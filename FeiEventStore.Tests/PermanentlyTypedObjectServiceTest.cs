@@ -49,7 +49,7 @@ namespace FeiEventStore.Tests
         }
 
         public PermanentlyTypedRegistry Registry;
-        public PermanentlyTypedObjectService Service;
+        public PermanentlyTypedUpgradingUpgradingObjectFactory Factory;
 
         public TypeId FirstTypeId = "00000000-0000-0000-0000-000000000001";
         public TypeId SecondTypeId = "00000000-0000-0000-0000-000000000002";
@@ -63,7 +63,7 @@ namespace FeiEventStore.Tests
 
 
             Registry = new PermanentlyTypedRegistry();
-            Service = new PermanentlyTypedObjectService(Registry, factory);
+            Factory = new PermanentlyTypedUpgradingUpgradingObjectFactory(Registry, factory);
 
             Registry.Map.Add(FirstTypeId, typeof(FirstEvent));
             Registry.Map.Add(SecondTypeId, typeof(SecondEvent));
@@ -74,41 +74,41 @@ namespace FeiEventStore.Tests
         [Fact]
         public void can_lookup_type_by_permanent_type_id()
         {
-            var type = Service.LookupTypeByPermanentTypeId(FirstTypeId);
+            var type = Factory.LookupTypeByPermanentTypeId(FirstTypeId);
             Assert.Equal(typeof(FirstEvent), type);
         }
 
         [Fact]
         public void can_get_permanent_type_id_for_type()
         {
-            var typeId = Service.GetPermanentTypeIdForType(typeof(SecondEvent));
+            var typeId = Factory.GetPermanentTypeIdForType(typeof(SecondEvent));
             Assert.Equal(SecondTypeId, typeId);
         }
 
         [Fact]
         public void can_create_object()
         {
-            var o = Service.GetSingleInstanceForConcreteType<ITestEvent>(typeof(ThirdEvent), typeof(ITestEvent<>));
+            var o = Factory.GetSingleInstanceForConcreteType<ITestEvent>(typeof(ThirdEvent), typeof(ITestEvent<>));
             Assert.IsAssignableFrom<ITestEvent>(o);
         }
         [Fact]
         public void can_upgrade_object_through_full_replacer_chain()
         {
             var original = new FirstEvent();
-            var final = Service.UpgradeObject<ITestEvent>(original, typeof(ThirdEvent));
+            var final = Factory.UpgradeObject<ITestEvent>(original, typeof(ThirdEvent));
             Assert.Equal(typeof(ThirdEvent), final.GetType());
         }
         [Fact]
         public void can_upgrade_object_to_specified_level()
         {
             var original = new FirstEvent();
-            var final = Service.UpgradeObject<ITestEvent>(original, typeof(SecondEvent));
+            var final = Factory.UpgradeObject<ITestEvent>(original, typeof(SecondEvent));
             Assert.Equal(typeof(SecondEvent), final.GetType());
         }
         [Fact]
         public void can_build_upgrade_type_chain()
         {
-            var chain = Service.BuildUpgradeTypeChain(typeof(FirstEvent)).ToList();
+            var chain = Factory.BuildUpgradeTypeChain(typeof(FirstEvent)).ToList();
             Assert.Equal(chain.Count, 3);
             Assert.Equal(chain.FirstOrDefault(), typeof(FirstEvent));
             Assert.Equal(chain.LastOrDefault(), typeof(ThirdEvent));

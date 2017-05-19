@@ -10,7 +10,7 @@ namespace FeiEventStore.Events
     /// <summary>
     /// Service to provide permanently typed object helpers
     /// </summary>
-    public interface IPermanentlyTypedObjectService
+    public interface IPermanentlyTypedUpgradingObjectFactory
     {
         T GetSingleInstanceForConcreteType<T>(Type concreteType, Type genericType) where T : class;
 

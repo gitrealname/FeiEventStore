@@ -2,14 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FeiEventStore.Core;
-using FeiEventStore.Domain;
 using FeiEventStore.Persistence.Sql.SqlDialects;
 using FluentAssertions;
 
-namespace FeiEventStore.Persistence.Sql.Test
+namespace FeiEventStore.Persistence.Sql.Tester
 {
     class Program
     {

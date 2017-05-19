@@ -12,11 +12,11 @@ namespace FeiEventStore.Ioc
 {
     public class IocRegistrationMapper : IIocRegistrationMapper
     {
-        private readonly PermanentlyTypeRegistry _permanentlyTypedRegistry = new PermanentlyTypeRegistry();
+        private readonly PermanentlyTypedRegistry _permanentlyTypedRegistry = new PermanentlyTypedRegistry();
 
         private readonly Dictionary<Tuple<Type,Type>, IocRegistrationType> _explicitMap = new Dictionary<Tuple<Type, Type>, IocRegistrationType>
         {
-            { new Tuple<Type, Type>(typeof(IPermanentlyTypedObjectService), typeof(PermanentlyTypedObjectService)), IocRegistrationType.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IPermanentlyTypedUpgradingObjectFactory), typeof(PermanentlyTypedUpgradingUpgradingObjectFactory)), IocRegistrationType.RegisterServicePerContainerLifetime },
             { new Tuple<Type, Type>(typeof(IEventStore), typeof(EventStore)), IocRegistrationType.RegisterServicePerContainerLifetime },
             { new Tuple<Type, Type>(typeof(IDomainCommandExecutor), typeof(DomainCommandExecutor)), IocRegistrationType.RegisterServicePerContainerLifetime },
             { new Tuple<Type, Type>(typeof(ISnapshotStrategy), typeof(ByEventCountSnapshotStrategy)), IocRegistrationType.RegisterServicePerContainerLifetime },

@@ -18,14 +18,14 @@ namespace FeiEventStore.Events
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
         private readonly IPersistenceEngine _engine;
-        private readonly IPermanentlyTypedObjectService _service;
+        private readonly IPermanentlyTypedUpgradingObjectFactory _factory;
 
         private readonly object _dispatchLocker = new object();
 
-        public EventStore(IPersistenceEngine engine, IPermanentlyTypedObjectService service)
+        public EventStore(IPersistenceEngine engine, IPermanentlyTypedUpgradingObjectFactory factory)
         {
             _engine = engine;
-            _service = service;
+            _factory = factory;
         }
         public long DispatchedStoreVersion => _engine.DispatchedStoreVersion;
 
@@ -72,9 +72,9 @@ namespace FeiEventStore.Events
                     var sr = new SnapshotRecord();
                     sr.AggregateVersion = aggregate.Version;
                     sr.AggregateId = aggregate.Id;
-                    sr.AggregateTypeId = _service.GetPermanentTypeIdForType(aggregate.GetType());
+                    sr.AggregateTypeId = _factory.GetPermanentTypeIdForType(aggregate.GetType());
                     var state = aggregate.GetStateReference();
-                    sr.AggregateStateTypeId = _service.GetPermanentTypeIdForType(state.GetType());
+                    sr.AggregateStateTypeId = _factory.GetPermanentTypeIdForType(state.GetType());
                     var payload = _engine.SerializePayload(state);
                     sr.State = payload;
                     snapshotRecords.Add(sr);
@@ -121,13 +121,13 @@ namespace FeiEventStore.Events
                                 ProcessVersion = p.Version,
                                 ProcessId = p.Id,
                                 InvolvedAggregateId = aggregateId,
-                                ProcessTypeId = _service.GetPermanentTypeIdForType(p.GetType()),
+                                ProcessTypeId = _factory.GetPermanentTypeIdForType(p.GetType()),
                         };
                             if(head)
                             {
                                 head = false;
                                 var state = p.GetStateReference();
-                                pr.ProcessStateTypeId = _service.GetPermanentTypeIdForType(state.GetType());
+                                pr.ProcessStateTypeId = _factory.GetPermanentTypeIdForType(state.GetType());
                                 var payload = _engine.SerializePayload(state);
                                 pr.State = payload;
                                 processPersistedCount++;
@@ -272,7 +272,7 @@ namespace FeiEventStore.Events
             var snapshotRecord = _engine.GetSnapshot(aggregateId, false);
             if(snapshotRecord != null)
             {
-                var persistedAggregateType = _service.LookupTypeByPermanentTypeId(snapshotRecord.AggregateTypeId);
+                var persistedAggregateType = _factory.LookupTypeByPermanentTypeId(snapshotRecord.AggregateTypeId);
                 if(aggregateType != null && persistedAggregateType != aggregateType)
                 {
                     var ex = new Exception(string.Format("Aggregate id {0} persisted type '{1}' doesn't match requested type '{2}'.",
@@ -283,13 +283,13 @@ namespace FeiEventStore.Events
                     }
                     throw ex;
                 }
-                aggregate = _service.GetSingleInstanceForConcreteType<IAggregate>(persistedAggregateType, typeof(IAggregate<>));
-                var stateType = _service.LookupTypeByPermanentTypeId(snapshotRecord.AggregateStateTypeId);
+                aggregate = _factory.GetSingleInstanceForConcreteType<IAggregate>(persistedAggregateType, typeof(IAggregate<>));
+                var stateType = _factory.LookupTypeByPermanentTypeId(snapshotRecord.AggregateStateTypeId);
                 var state = (IState)_engine.DeserializePayload(snapshotRecord.State, stateType);
                 //determine what state type is expected by current implementation of the aggregate
                 var finalStateType = persistedAggregateType.GetGenericInterfaceArgumentTypes(typeof(IAggregate<>), 0).FirstOrDefault();
                 //upgrade state to desired level
-                state = _service.UpgradeObject(state, finalStateType);
+                state = _factory.UpgradeObject(state, finalStateType);
                 aggregate.RestoreFromState(state);
                 aggregate.Id = aggregateId;
                 aggregate.TypeId = snapshotRecord.AggregateTypeId;
@@ -314,12 +314,12 @@ namespace FeiEventStore.Events
             if(aggregateType == null && aggregate == null)
             {
                 var mostRecentAggregateTypeId = @events.Last().AggregateTypeId;
-                aggregateType = _service.LookupTypeByPermanentTypeId(mostRecentAggregateTypeId);
+                aggregateType = _factory.LookupTypeByPermanentTypeId(mostRecentAggregateTypeId);
             }
             if(aggregate == null)
             {
-                aggregate = _service.GetSingleInstanceForConcreteType<IAggregate>(aggregateType, typeof(IAggregate<>));
-                aggregate.TypeId = _service.GetPermanentTypeIdForType(aggregateType);
+                aggregate = _factory.GetSingleInstanceForConcreteType<IAggregate>(aggregateType, typeof(IAggregate<>));
+                aggregate.TypeId = _factory.GetPermanentTypeIdForType(aggregateType);
                 aggregate.Id = aggregateId;
                 aggregate.Version = 0;
                 aggregate.LatestPersistedVersion = 0;
@@ -337,7 +337,7 @@ namespace FeiEventStore.Events
         public IProcessManager LoadProcess(Type processType, Guid aggregateId, bool throwNotFound = true)
         {
             var result = LoadProcess((throwFlag) => {
-                var processTypeId = _service.GetPermanentTypeIdForType(processType);
+                var processTypeId = _factory.GetPermanentTypeIdForType(processType);
                 return _engine.GetProcessRecords(processTypeId, aggregateId, throwNotFound);
             }, throwNotFound);
             return result;
@@ -368,18 +368,18 @@ namespace FeiEventStore.Events
                         if(pr.State != null)
                         {
                             processId = pr.ProcessId;
-                            var stateType = _service.LookupTypeByPermanentTypeId(pr.ProcessStateTypeId.Value);
+                            var stateType = _factory.LookupTypeByPermanentTypeId(pr.ProcessStateTypeId.Value);
                             state = (IState)_engine.DeserializePayload(pr.State, stateType);
                             //determine what state type is expected by current implementation of the process
-                            var processType = _service.LookupTypeByPermanentTypeId(pr.ProcessTypeId);
+                            var processType = _factory.LookupTypeByPermanentTypeId(pr.ProcessTypeId);
                             var finalStateType = processType.GetGenericInterfaceArgumentTypes(typeof(IProcessManager<>)).FirstOrDefault();
                             //upgrade state to desired level
-                            state = _service.UpgradeObject(state, finalStateType);
+                            state = _factory.UpgradeObject(state, finalStateType);
                             processVersion = pr.ProcessVersion;
                         }
                     }
 
-                    process = _service.GetSingleInstanceForGenericType<IProcessManager>(typeof(IProcessManager<>), state.GetType());
+                    process = _factory.GetSingleInstanceForGenericType<IProcessManager>(typeof(IProcessManager<>), state.GetType());
 
                     process.Id = processId;
                     process.LatestPersistedVersion = processVersion;
@@ -420,13 +420,13 @@ namespace FeiEventStore.Events
             foreach(var er in eventRecords)
             {
                 //determine payload type and payload upgrade path
-                var payloadType = _service.LookupTypeByPermanentTypeId(er.EventPayloadTypeId);
+                var payloadType = _factory.LookupTypeByPermanentTypeId(er.EventPayloadTypeId);
                 var payload = (IState)_engine.DeserializePayload(er.Payload, payloadType);
                 //upgrade event
-                var finalType = _service.BuildUpgradeTypeChain(payloadType, false).Skip(1).Reverse().FirstOrDefault();
+                var finalType = _factory.BuildUpgradeTypeChain(payloadType, false).Skip(1).Reverse().FirstOrDefault();
                 if(finalType != null)
                 {
-                    payload = _service.UpgradeObject(payload, finalType);
+                    payload = _factory.UpgradeObject(payload, finalType);
                 }
                 //build envelope
                 var envelopeType = typeof(EventEnvelope<>).MakeGenericType(payload.GetType());
@@ -448,7 +448,7 @@ namespace FeiEventStore.Events
             er.Origin = @event.Origin;
             er.StoreVersion = 0; //will be set during commit()
             var payload = @event.Payload;
-            er.EventPayloadTypeId = _service.GetPermanentTypeIdForType(payload.GetType());
+            er.EventPayloadTypeId = _factory.GetPermanentTypeIdForType(payload.GetType());
             er.Payload = _engine.SerializePayload(payload);
             er.AggregateId = @event.AggregateId;
             er.AggregateVersion = @event.AggregateVersion;
