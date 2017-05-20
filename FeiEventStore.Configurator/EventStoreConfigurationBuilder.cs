@@ -61,10 +61,12 @@ namespace FeiEventStore.Configurator
             var upgradingObjectFactory = new PermanentlyTypedUpgradingUpgradingObjectFactory(permanentlyTypedRegistry, null /*TBI*/);
             var eventStore = new EventStore(_persistenceEngine, upgradingObjectFactory);
 
-            RegisterService<IEventStore>(eventStore);
-            RegisterService<IDomainEventStore>(eventStore);
-            RegisterService<IPermanentlyTypedUpgradingObjectFactory>(upgradingObjectFactory);
-            RegisterService<IPermanentlyTypedRegistry>(permanentlyTypedRegistry);
+            InternalRegisterService<IEventStore>(eventStore);
+            InternalRegisterService<IDomainEventStore>(eventStore);
+            InternalRegisterService<IPermanentlyTypedUpgradingObjectFactory>(upgradingObjectFactory);
+            InternalRegisterService<IPermanentlyTypedRegistry>(permanentlyTypedRegistry);
+
+            base.InternalCommonBuild(compositionRootBuilder);
         }
     }
 }

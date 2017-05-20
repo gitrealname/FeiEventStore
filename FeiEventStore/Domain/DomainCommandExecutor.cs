@@ -336,7 +336,7 @@ namespace FeiEventStore.Domain
             //perform command validation
             foreach(var commandValidator in _commandValidators)
             {
-                commandValidator.ValidateCommand(cmd);
+                commandValidator.ValidateCommand(cmd, svc);
             }
 
             if(svc.CommandHasFailed)

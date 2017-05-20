@@ -68,15 +68,15 @@ namespace FeiEventStore.Configurator
         {
             if(IsBuilt)
             {
-                throw new InvalidOperationException("Configuration Builder has already been built.");
+                throw new InvalidOperationException($"'{this.GetType().Name}' Configuration Builder has already been built.");
             }
         }
 
         protected void AssertNotBuilt()
         {
-            if(IsBuilt)
+            if(!IsBuilt)
             {
-                throw new InvalidOperationException("Configuration Builder has NOT been built.");
+                throw new InvalidOperationException($"'{this.GetType().Name}' Configuration Builder has NOT been built.");
             }
         }
 
@@ -86,7 +86,7 @@ namespace FeiEventStore.Configurator
             AssertBuilt();
         }
 
-        protected void RegisterService<T>(T service)
+        protected void InternalRegisterService<T>(T service)
         {
             AssertNullAndBuilt(service, nameof(service));
             _serviceRegistry[typeof(T)] = service;
@@ -109,7 +109,10 @@ namespace FeiEventStore.Configurator
         /// Is called from <see cref="Build()" /> before <see cref="InternalCommonBuild()" />
         /// </summary>
         /// <param name="compositionRootBuilder">The composition root builder.</param>
-        public abstract void InternalCommonBuild(IConfigurationBuilder compositionRootBuilder = null);
+        public virtual void InternalCommonBuild(IConfigurationBuilder compositionRootBuilder = null)
+        {
+            IsBuilt = true;
+        }
 
         /// <summary>
         /// Configure and Build subsystem. Throw an Exception if configuration is invalid or incomplete.
@@ -127,6 +130,8 @@ namespace FeiEventStore.Configurator
             this.InternalStandaloneBuild();
 
             this.InternalCommonBuild();
+
+            IsBuilt = true;
 
             return this as TBuilder;
         }

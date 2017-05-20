@@ -15,6 +15,6 @@ namespace FeiEventStore.Domain
     /// </summary>
     public interface ICommandValidator
     {
-        void ValidateCommand(ICommand cmd);
+        void ValidateCommand(ICommand cmd, IDomainExecutionScopeService executionContenxt);
     }
 }

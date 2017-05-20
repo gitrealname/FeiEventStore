@@ -14,6 +14,8 @@ namespace FeiEventStore.Configurator
         void InternalSetAssemblyScanner(AssemblyScanner assemblyScanner);
 
         void InternalSetObjectFactory(ObjectFactory registry);
+
+        void InternalSetExeternalObjectFactory(Func<Type, object> externalObjectFactory);
     }
     
     /// <summary>
@@ -21,7 +23,7 @@ namespace FeiEventStore.Configurator
     /// NOTES:
     ///  1. Methods marked as REQUIRED - may be optional when given Configuration Builder participate in composition of 
     ///     higher order Configuration Builder! For example: when Event Store configuration is used to build Domain Command Executor Configuration
-    ///  2. Methods that are named as Internal* are used by composing Configuration Builder and should NOT be used directly
+    ///  2. Methods that are named as Internal* are used by composing Configuration Builder and should NOT be used directly outside of the Builder.
     /// </summary>
     /// <typeparam name="TBuilder">The type of the builder.</typeparam>
     /// <seealso cref="ConfigurationBuilderBase{TBuilder}" />
@@ -58,6 +60,10 @@ namespace FeiEventStore.Configurator
             ObjectFactory = registry;
         }
 
+        public void InternalSetExeternalObjectFactory(Func<Type, object> externalObjectFactory)
+        {
+            ObjectFactory.ExternalObjectFactory = externalObjectFactory;
+        }
         /// <summary>
         /// REQURED. Specifies assembly pattern that contain Domain Types such as Events, Processes, Aggregates,  Process Managers etc.
         /// At least one call to Scan* family is required for build to succeed.
@@ -92,7 +98,7 @@ namespace FeiEventStore.Configurator
         }
 
         /// <summary>
-        /// REQURED. Specifies object factory method. Usual implementation is based on corresponding IOC object instantiation api 
+        /// REQURED unless used in composition. Specifies object factory method. Usual implementation is based on corresponding IOC object instantiation api 
         /// to support constructor injection for objects created by sub-system.
         /// At least one call to *ObjectCreator family is required for build to succeed. 
         /// </summary>
