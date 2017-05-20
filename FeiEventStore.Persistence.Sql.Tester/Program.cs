@@ -187,7 +187,7 @@ namespace FeiEventStore.Persistence.Sql.Tester
             {
                 engine.GetProcessRecords(procTypeId, g, true);
             }
-            catch(ProcessNotFoundException ex)
+            catch(ProcessNotFoundException)
             {
                 //ignore, expected
                 exception = true;

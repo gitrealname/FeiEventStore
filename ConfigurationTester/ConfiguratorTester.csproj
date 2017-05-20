@@ -50,6 +50,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FeiEventStore.Configurator\FeiEventStore.Configurator.csproj">
+      <Project>{e8ef59ed-2690-4cdb-a857-b40c702b4ae4}</Project>
+      <Name>FeiEventStore.Configurator</Name>
+    </ProjectReference>
     <ProjectReference Include="..\FeiEventStore\FeiEventStore.csproj">
       <Project>{c6486fad-4256-4f5c-8b39-b83b8cd2739c}</Project>
       <Name>FeiEventStore</Name>
