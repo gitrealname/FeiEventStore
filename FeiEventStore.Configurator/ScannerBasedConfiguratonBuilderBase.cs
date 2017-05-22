@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FeiEventStore.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -55,14 +56,14 @@ namespace FeiEventStore.Configurator
             return this as TBuilder;
         }
 
-        public void InternalSetObjectFactory(ObjectFactory registry)
+        public void InternalSetObjectFactory(ObjectFactory objectFactory)
         {
-            ObjectFactory = registry;
+            ObjectFactory = objectFactory;
         }
 
         public void InternalSetExeternalObjectFactory(Func<Type, object> externalObjectFactory)
         {
-            ObjectFactory.ExternalObjectFactory = externalObjectFactory;
+            ObjectFactory = new ObjectFactory(externalObjectFactory, ObjectFactory);
         }
         /// <summary>
         /// REQURED. Specifies assembly pattern that contain Domain Types such as Events, Processes, Aggregates,  Process Managers etc.
@@ -102,12 +103,12 @@ namespace FeiEventStore.Configurator
         /// to support constructor injection for objects created by sub-system.
         /// At least one call to *ObjectCreator family is required for build to succeed. 
         /// </summary>
-        /// <param name="objectFactoryFunc">The object creator.</param>
+        /// <param name="externalObjectFactory">The object creator.</param>
         /// <returns></returns>
-        public TBuilder WithObjectFactory(Func<Type, object> objectFactoryFunc)
+        public TBuilder WithObjectFactory(Func<Type, object> externalObjectFactory)
         {
-            AssertNullAndBuilt(objectFactoryFunc, nameof(objectFactoryFunc));
-            ObjectFactory.ExternalObjectFactory = objectFactoryFunc;
+            AssertNullAndBuilt(externalObjectFactory, nameof(externalObjectFactory));
+            InternalSetExeternalObjectFactory(externalObjectFactory);
             return this as TBuilder;
         }
 
@@ -118,7 +119,7 @@ namespace FeiEventStore.Configurator
         public TBuilder UseActivatorObjectFactory()
         {
             AssertBuilt();
-            ObjectFactory.ExternalObjectFactory = Activator.CreateInstance;
+            InternalSetExeternalObjectFactory(Activator.CreateInstance);
             return this as TBuilder;
         }
 

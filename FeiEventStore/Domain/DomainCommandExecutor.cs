@@ -15,14 +15,14 @@ namespace FeiEventStore.Domain
     {
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
-        private readonly IServiceLocator _factory;
+        private readonly IObjectFactory _factory;
         private readonly IScopedExecutionContextFactory _executorFactory;
         private readonly IDomainEventStore _eventStore;
         private readonly IList<IEventQueue> _eventDispatchQueues;
         private readonly ISnapshotStrategy _snapshotStrategy;
         private readonly IList<ICommandValidator> _commandValidators;
 
-        public DomainCommandExecutor(IServiceLocator factory, IScopedExecutionContextFactory executorFactory,
+        public DomainCommandExecutor(IObjectFactory factory, IScopedExecutionContextFactory executorFactory,
             IEventStore eventStore, 
             ISnapshotStrategy snapshotStrategy,
             IEnumerable<ICommandValidator> validationProviders,
@@ -176,8 +176,8 @@ namespace FeiEventStore.Domain
             var iHandleEventType = typeof(IHandleEvent<>).MakeGenericType(eventPayload.GetType());
             var iStartByEventType = typeof(IStartedByEvent<>).MakeGenericType(eventPayload.GetType());
 
-            var handlers = _factory.GetAllInstances(iHandleEventType).ToList();
-            var starters = _factory.GetAllInstances(iStartByEventType);
+            var handlers = _factory.CreateInstances(iHandleEventType).ToList();
+            var starters = _factory.CreateInstances(iStartByEventType);
             //filter starters that also are handlers
             var pureStarters = starters.Where(s => !iHandleEventType.IsInstanceOfType(s));
             var handlersCount = handlers.Count;
@@ -223,7 +223,7 @@ namespace FeiEventStore.Domain
                     process = (IProcessManager)handler;
                     process.Id = Guid.NewGuid();
                     process.InvolvedAggregateIds.Add(e.AggregateId);
-                    process.AsDynamic().StartByEvent(e.Payload, e.AggregateId, e.AggregateVersion, e.AggregateTypeId);
+                    process.AsDynamic().HandleStartEvent(e.Payload, e.AggregateId, e.AggregateVersion, e.AggregateTypeId);
                     if(Logger.IsInfoEnabled())
                     {
                         Logger.InfoFormat("Started new Process Manager id {ProcessId}; Runtime type: '{ProcessRuntimeType}', By event type: '{EventRuntimeType}', Source Aggregate id: {AggregateId}",
@@ -265,7 +265,7 @@ namespace FeiEventStore.Domain
 
             //get instance of the handler and aggregate
             var iHandleType = typeof(IHandleCommand<>).MakeGenericType(cmd.GetType());
-            var iHandlers = _factory.GetAllInstances(iHandleType);
+            var iHandlers = _factory.CreateInstances(iHandleType).ToList();
             //it must just one command handler for given command type
             if(iHandlers.Count > 1)
             {

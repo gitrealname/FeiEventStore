@@ -12,14 +12,14 @@ namespace FeiEventStore.Ioc.LightInject
     {
         private readonly Dictionary<Tuple<Type,Type>, IocRegistrationType> _explicitMap = new Dictionary<Tuple<Type, Type>, IocRegistrationType>
         {
-            { new Tuple<Type, Type>(typeof(IServiceLocator), typeof(LightInjectObjectFactory)), IocRegistrationType.RegisterServicePerContainerLifetime },
+            { new Tuple<Type, Type>(typeof(IObjectFactory), typeof(LightInjectObjectFactory)), IocRegistrationType.RegisterServicePerContainerLifetime },
             //IMPORTANT: it has to be per scope registration!
             { new Tuple<Type, Type>(typeof(IScopedExecutionContextFactory), typeof(LightInjectDomainCommandExecutionContextFactory)), IocRegistrationType.RegisterServicePerContainerLifetime },
         };
 
         private readonly Dictionary<Type, IocRegistrationType> _genericMap = new Dictionary<Type, IocRegistrationType>
         {
-            { typeof(IServiceLocator), IocRegistrationType.Swallow },
+            { typeof(IObjectFactory), IocRegistrationType.Swallow },
             { typeof(IScopedExecutionContextFactory), IocRegistrationType.Swallow },
         };
 

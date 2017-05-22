@@ -18,18 +18,18 @@ namespace FeiEventStore.IntegrationTests.EventQueues.Ado
     public interface IAdoTransactionalEventQueue { } //just a marker to simplify IOC registration
 
     [PermanentType("ado.event.queue")]
-    public class AdoTransactionalEventQueue : BaseTransactionalEventQueue, ITestingEventQueue, IAdoTransactionalEventQueue
+    public class AdoTransactionalEventQueue : TransactionalEventQueueBase, ITestingEventQueue, IAdoTransactionalEventQueue
     {
         private readonly IAdoEventQueueConfiguration _config;
         private readonly IAdoModelGenerator _modelGenerator;
         private readonly IAdoConnectionProvider _connProvider;
-        private readonly IServiceLocator _factory;
+        private readonly IObjectFactory _factory;
 
         private bool _configured = false;
 
         public AdoTransactionalEventQueue(IAdoEventQueueConfiguration config, 
             IEventStore eventStore, IVersionTrackingStore verstionStore, IEventQueueAwaiter queueAwaiter,
-            IAdoModelGenerator modelGenerator, IAdoConnectionProvider connProvider, IServiceLocator factory) 
+            IAdoModelGenerator modelGenerator, IAdoConnectionProvider connProvider, IObjectFactory factory) 
             : base(config, eventStore, verstionStore, queueAwaiter)
         {
             _config = config;
@@ -92,7 +92,7 @@ namespace FeiEventStore.IntegrationTests.EventQueues.Ado
             foreach( var e in events)
             {
                 var iHandleEventType = typeof(IAdoQueueEventHandler<>).MakeGenericType(e.Payload.GetType());
-                var tmp = _factory.GetAllInstances(iHandleEventType);
+                var tmp = _factory.CreateInstances(iHandleEventType);
                 var handlers = tmp
                     .ToList()
                     .Select(h => new Tuple<IEventEnvelope, object>((IEventEnvelope)e, h));

@@ -8,7 +8,7 @@ using FeiEventStore.Events;
 namespace FeiEventStore.IntegrationTests.EventQueues.Printer
 {
     [PermanentType("printer.event.queue")]
-    public class PrinterTransactionalEventQueue : BaseTransactionalEventQueue, ITestingEventQueue
+    public class PrinterTransactionalEventQueue : TransactionalEventQueueBase, ITestingEventQueue
     {
         private readonly IPrinterEventQueueConfiguration _config;
 

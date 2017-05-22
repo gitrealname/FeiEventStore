@@ -13,20 +13,27 @@ namespace FeiEventStore.Configurator
 {
     internal class EventStoreTypeProcessor : IAssemblyScannerTypeProcessor
     {
-        private readonly PermanentlyTypedRegistry _permanentlyTypedRegistry;
+        public PermanentlyTypedRegistry PermanentlyTypedRegistry { get; private set;  }
         private readonly Func<ObjectFactory> _typeRegistryAccessor;
         private readonly Dictionary<Type, Func<Type, Type, bool>> _genericsMap;
 
         public EventStoreTypeProcessor(Func<ObjectFactory> typeRegistryAccessor)
         {
-            _permanentlyTypedRegistry = new PermanentlyTypedRegistry();
+            PermanentlyTypedRegistry = new PermanentlyTypedRegistry();
             _typeRegistryAccessor = typeRegistryAccessor;
 
-            Func<Type, Type, bool> dr = (serviceType, implementationType) => { typeRegistryAccessor().RegisterType(serviceType, implementationType); return true; };
+            Func<Type, Type, bool> dr = (serviceType, implementationType) => {
+                if(_typeRegistryAccessor().GetServiceTypeTypes(serviceType).Count() > 1)
+                {
+                    throw new Exception(
+                       $"Service Type '{serviceType.FullName}' must have only one implementation.");
+                }
+                typeRegistryAccessor().RegisterType(serviceType, implementationType); return true;
+            };
 
             _genericsMap = new Dictionary<Type, Func<Type, Type, bool>> 
             {
-                { typeof(IPermanentlyTyped), (serviceType, implementationType) => { _permanentlyTypedRegistry.RegisterPermanentlyTyped(implementationType); return true; } },
+                { typeof(IPermanentlyTyped), (serviceType, implementationType) => { PermanentlyTypedRegistry.RegisterPermanentlyTyped(implementationType); return true; } },
                 { typeof(IReplace<>), dr },
                 { typeof(IAggregate<>), dr },
                 { typeof(IProcessManager<>), dr },
@@ -52,8 +59,6 @@ namespace FeiEventStore.Configurator
 
         public void OnAfterScanCompletion()
         {
-            //register PermanentlyTypeRegistry
-            _typeRegistryAccessor().RegisterInstance(typeof(IPermanentlyTypedRegistry), _permanentlyTypedRegistry);
         }
     }
 }

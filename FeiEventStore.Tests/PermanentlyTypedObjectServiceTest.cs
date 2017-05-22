@@ -56,10 +56,10 @@ namespace FeiEventStore.Tests
         public TypeId ThirdTypeId = "00000000-0000-0000-0000-000000000003";
         public PermanentlyTypedObjectServiceTest()
         {
-            var factory = Substitute.For<IServiceLocator>();
-            factory.GetAllInstances(Arg.Is(typeof(IReplace<FirstEvent>))).Returns(new List<object>() { new SecondEvent() });
-            factory.GetAllInstances(Arg.Is(typeof(IReplace<SecondEvent>))).Returns(new List<object>() { new ThirdEvent() });
-            factory.GetAllInstances(Arg.Is(typeof(ITestEvent<ThirdEvent>))).Returns(new List<object>() { new ThirdEvent() });
+            var factory = Substitute.For<IObjectFactory>();
+            factory.CreateInstances(Arg.Is(typeof(IReplace<FirstEvent>))).Returns(new List<object>() { new SecondEvent() });
+            factory.CreateInstances(Arg.Is(typeof(IReplace<SecondEvent>))).Returns(new List<object>() { new ThirdEvent() });
+            factory.CreateInstances(Arg.Is(typeof(ITestEvent<ThirdEvent>))).Returns(new List<object>() { new ThirdEvent() });
 
 
             Registry = new PermanentlyTypedRegistry();

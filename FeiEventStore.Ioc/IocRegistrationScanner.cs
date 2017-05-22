@@ -207,7 +207,7 @@ namespace FeiEventStore.Ioc
             var visited = new HashSet<Assembly>();
             foreach(var a in assemblies)
             {
-                if(a.IsDynamic && a.FullName.StartsWith("Anonymously Hosted"))
+                if(a.IsDynamic)
                 {
                     continue;
                 }
@@ -215,10 +215,10 @@ namespace FeiEventStore.Ioc
                 {
                     continue;
                 }
-                
+
                 //does it match any of the patters?
-                var relativeName = a.Location.Substring(baseDirectoryLength);
-                if(rxs.Any(rx => rx.IsMatch(relativeName)))
+                var relativeName = a.Location; //var relativeName = a.Location.Substring(baseDirectoryLength);
+                if (rxs.Any(rx => rx.IsMatch(relativeName)))
                 {
                     //check against black list
                     if(rxsBlackList.Any(rx => rx.IsMatch(relativeName)))

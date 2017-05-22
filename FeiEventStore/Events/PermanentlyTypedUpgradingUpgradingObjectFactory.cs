@@ -15,9 +15,9 @@ namespace FeiEventStore.Events
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
         private readonly IPermanentlyTypedRegistry _registry;
-        private readonly IServiceLocator _factory;
+        private readonly IObjectFactory _factory;
 
-        public PermanentlyTypedUpgradingUpgradingObjectFactory(IPermanentlyTypedRegistry registry, IServiceLocator factory)
+        public PermanentlyTypedUpgradingUpgradingObjectFactory(IPermanentlyTypedRegistry registry, IObjectFactory factory)
         {
             _registry = registry;
             _factory = factory;
@@ -26,7 +26,7 @@ namespace FeiEventStore.Events
 
         private T GetSingleInstance<T>(Type closedGenericType, bool throwNotFound = true) where T : class
         {
-            var instances = _factory.GetAllInstances(closedGenericType).ToList();
+            var instances = _factory.CreateInstances(closedGenericType).ToList();
             if(instances.Count > 1)
             {
                 var ex = new MultipleTypeInstancesException(closedGenericType, instances.Count);

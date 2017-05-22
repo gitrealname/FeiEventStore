@@ -18,7 +18,7 @@ namespace FeiEventStore.IntegrationTests.Domain.UserGroup
         ,IStartedByEvent<UserGroupCreated>
         ,IHandleEvent<Incremented>
     {
-        public void StartByEvent(UserGroupCreated e, Guid aggregateId, long aggregateVersion, TypeId aggregateTypeId)
+        public void HandleStartEvent(UserGroupCreated e, Guid aggregateId, long aggregateVersion, TypeId aggregateTypeId)
         {
             if(e.GroupCounterId != null)
             {

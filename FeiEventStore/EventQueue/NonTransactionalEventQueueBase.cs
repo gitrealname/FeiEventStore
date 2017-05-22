@@ -18,10 +18,10 @@ namespace FeiEventStore.EventQueue
     /// For example: System Counter Update Event Queue
     /// </summary>
     /// <seealso cref="FeiEventStore.EventQueue.IEventQueue" />
-    public abstract class BaseNonTransactionalEventQueue : BaseTransactionalEventQueue
+    public abstract class NonTransactionalEventQueueBase : TransactionalEventQueueBase
     {
 
-        protected BaseNonTransactionalEventQueue(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore, IEventQueueAwaiter queueAwaiter) 
+        protected NonTransactionalEventQueueBase(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore, IEventQueueAwaiter queueAwaiter) 
             : base(baseConfig, eventStore, verstionStore, queueAwaiter)
         {
         }

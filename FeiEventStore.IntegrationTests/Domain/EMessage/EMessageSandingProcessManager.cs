@@ -21,7 +21,7 @@ namespace FeiEventStore.IntegrationTests.Domain.EMessage
         {
             _execScopeService = execScopeService;
         }
-        public void StartByEvent(EMessageSent e, Guid aggregateId, long aggregateVersion, TypeId aggregateTypeId)
+        public void HandleStartEvent(EMessageSent e, Guid aggregateId, long aggregateVersion, TypeId aggregateTypeId)
         {
             var state = _execScopeService.GetImmutableAggregateState<EMessage>(aggregateId);
 

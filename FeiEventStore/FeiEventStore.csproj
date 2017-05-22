@@ -52,6 +52,7 @@
     <Compile Include="Core\IMessage.cs" />
     <Compile Include="Core\IAggregateState.cs" />
     <Compile Include="Core\IStateHolder.cs" />
+    <Compile Include="Core\ObjectFactory.cs" />
     <Compile Include="Core\TypeId.cs" />
     <Compile Include="Domain\DomainException.cs" />
     <Compile Include="Domain\BaseAggregateException.cs" />
@@ -59,14 +60,14 @@
     <Compile Include="Domain\BaseAggregate.cs" />
     <Compile Include="Core\EventEnvelope.cs" />
     <Compile Include="Core\IState.cs" />
-    <Compile Include="Core\IServiceLocator.cs" />
+    <Compile Include="Core\IObjectFactory.cs" />
     <Compile Include="Core\IReplace.cs" />
     <Compile Include="Core\PermanentTypeAttribute.cs" />
     <Compile Include="Core\IAggregate.cs" />
     <Compile Include="Core\ICommand.cs" />
     <Compile Include="Core\IEventEnvelope.cs" />
     <Compile Include="Core\IProcessManager.cs" />
-    <Compile Include="Core\BaseValueObject.cs" />
+    <Compile Include="Domain\BaseValueObject.cs" />
     <Compile Include="Core\TypeExtensions.cs" />
     <Compile Include="Domain\AggregateNotFoundException.cs" />
     <Compile Include="Domain\ByEventCountSnapshotStrategy.cs" />
@@ -86,8 +87,8 @@
     <Compile Include="Domain\IHandleEvent.cs" />
     <Compile Include="Domain\IHandleCommand.cs" />
     <Compile Include="Domain\DomainCommandResult.cs" />
-    <Compile Include="EventQueue\BaseNonTransactionalEventQueue.cs" />
-    <Compile Include="EventQueue\BaseTransactionalEventQueue.cs" />
+    <Compile Include="EventQueue\NonTransactionalEventQueueBase.cs" />
+    <Compile Include="EventQueue\TransactionalEventQueueBase.cs" />
     <Compile Include="EventQueue\IEventQueue.cs" />
     <Compile Include="EventQueue\IEventQueueConfiguration.cs" />
     <Compile Include="EventQueue\InMemoryVersionTrackingStore.cs" />

@@ -7,6 +7,7 @@ using FeiEventStore.Events;
 using FeiEventStore.Persistence;
 using FeiEventStore.EventQueue;
 using FeiEventStore.Domain;
+using FeiEventStore.Core;
 
 namespace FeiEventStore.Configurator
 {
@@ -145,11 +146,12 @@ namespace FeiEventStore.Configurator
             var domainEventStore = _eventStoreBuilder.GetService<IDomainEventStore>();
             var eventQueues = _eventQueueBuilders.Select<IConfigurationBuilder, IEventQueue>(e => e.GetService<IEventQueue>()).Union(_eventQueues).ToList();
             var commandValidators = _validatorBuilders.Select<IConfigurationBuilder, ICommandValidator>(v => v.GetService<ICommandValidator>()).Union(_commandValidators).ToList();
-            var commandExecutor = new DomainCommandExecutor(ObjectFactory as FeiEventStore.Core.IServiceLocator/*TBI*/, null/*TBI*/, domainEventStore, null/*TBI*/, commandValidators, eventQueues);
+            var commandExecutor = new DomainCommandExecutor(ObjectFactory as IObjectFactory, null/*TBI*/, domainEventStore, null/*TBI*/, commandValidators, eventQueues);
 
             InternalRegisterService<IDomainCommandExecutor>(commandExecutor);
             InternalRegisterService<IEnumerable<IEventQueue>>(eventQueues);
             InternalRegisterService<IEnumerable<ICommandValidator>>(commandValidators);
+            InternalRegisterService<IObjectFactory>(ObjectFactory);
 
             base.InternalCommonBuild(compositionRootBuilder);
         }

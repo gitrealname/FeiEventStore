@@ -4,28 +4,48 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FeiEventStore.Configurator
+namespace FeiEventStore.Core
 {
-    public class ObjectFactory
+    public class ObjectFactory : IObjectFactory
     {
+
+        public Func<Type, object> ExternalObjectFactory { get; private set; }
 
         /// <summary>
         /// The type map. Service type to concrete type map List
         /// </summary>
         private readonly Dictionary<Type, HashSet<Type>> _typeMap;
 
-        private readonly Dictionary<Type, object> _instanceMap;
-        private readonly Func<Type, object> _objectFactoryFunc;
-
-        public ObjectFactory(Func<Type, object> objectFactoryFunc)
+        public ObjectFactory(Func<Type, object> externalObjectFactory, ObjectFactory source)
         {
-            _objectFactoryFunc = objectFactoryFunc;
-            _typeMap = new Dictionary<Type, HashSet<Type>>();
-            _instanceMap = new Dictionary<Type, object>();
-
+            ExternalObjectFactory = externalObjectFactory;
+            if(source == null)
+            {
+                _typeMap = new Dictionary<Type, HashSet<Type>>();
+            } else
+            {
+                _typeMap = source._typeMap; 
+            }
         }
 
-        public Func<Type, object> ExternalObjectFactory;
+        public ObjectFactory(Func<Type, object> externalObjectFactory) : this(externalObjectFactory, null)
+        {
+        }
+
+        public IEnumerable<Type> GetServiceTypeTypes(Type serviceType)
+        {
+            HashSet<Type> set;
+            if (!_typeMap.TryGetValue(serviceType, out set))
+            {
+                return new List<Type>();
+            }
+            return set;
+        }
+
+        public IEnumerable<T> GetServiceTypeTypes<T>()
+        {
+            return GetServiceTypeTypes(typeof(T)).Cast<T>();
+        }
 
         public void RegisterType(Type serviceType, Type implementationType)
         {
@@ -34,15 +54,6 @@ namespace FeiEventStore.Configurator
             {
                 set = new HashSet<Type>();
                 _typeMap.Add(serviceType, set);
-            }
-        }
-
-        public void RegisterInstance(Type serviceType, object instance)
-        {
-            _instanceMap[serviceType] = instance;
-            if(serviceType != instance.GetType())
-            {
-                _instanceMap[instance.GetType()] = instance;
             }
         }
 
@@ -60,11 +71,6 @@ namespace FeiEventStore.Configurator
 
         public object CreateInstance(Type serviceType)
         {
-            object result;
-            if(_instanceMap.TryGetValue(serviceType, out result))
-            {
-                return result;
-            }
             HashSet<Type> typeSet;
             if(_typeMap.TryGetValue(serviceType, out typeSet))
             {
@@ -80,11 +86,6 @@ namespace FeiEventStore.Configurator
         }
         public IEnumerable<object> CreateInstances(Type serviceType)
         {
-            object result;
-            if(_instanceMap.TryGetValue(serviceType, out result))
-            {
-                return new List<object>() { result };
-            }
             HashSet<Type> typeSet;
             if(_typeMap.TryGetValue(serviceType, out typeSet))
             {

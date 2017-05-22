@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FeiEventStore.Core
+namespace FeiEventStore.Domain
 {
     
     public abstract class BaseValueObject<T>

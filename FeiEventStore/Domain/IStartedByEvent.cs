@@ -21,12 +21,12 @@ namespace FeiEventStore.Domain
     {
         /// <summary>
         /// Starts the with.
-        /// IMPORTANT: before renaming this method search code for .AsDynamic().StartByEvent!!!!
+        /// IMPORTANT: before renaming this method search code for .AsDynamic().HandleStartEvent!!!!
         /// </summary>
         /// <param name="event">The event.</param>
         /// <param name="aggregateId">The aggregate identifier.</param>
         /// <param name="aggregateVersion">The aggregate version.</param>
         /// <param name="aggregateTypeId">The aggregate type identifier.</param>
-        void StartByEvent(TEvent @event, Guid aggregateId, long aggregateVersion, TypeId aggregateTypeId);
+        void HandleStartEvent(TEvent @event, Guid aggregateId, long aggregateVersion, TypeId aggregateTypeId);
     }
 }

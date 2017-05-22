@@ -5,17 +5,19 @@ using System.Text;
 using System.Threading.Tasks;
 using FeiEventStore.Events;
 using FeiEventStore.Persistence;
+using FeiEventStore.Core;
 
 namespace FeiEventStore.Configurator
 {
     public class EventStoreConfigurationBuilder : ScannerBasedConfiguratonBuilderBase<EventStoreConfigurationBuilder>
     {
         private IPersistenceEngine _persistenceEngine;
+        private readonly EventStoreTypeProcessor _typeProcessor;
 
         public EventStoreConfigurationBuilder()
         {
-            var mapper = new EventStoreTypeProcessor(() => ObjectFactory);
-            AssemblyScanner.AddTypeProcessor(mapper);
+            _typeProcessor = new EventStoreTypeProcessor(() => ObjectFactory);
+            AssemblyScanner.AddTypeProcessor(_typeProcessor);
         }
 
         /// <summary>
@@ -57,14 +59,15 @@ namespace FeiEventStore.Configurator
 
         public override void InternalCommonBuild(IConfigurationBuilder compositionRootBuilder = null)
         {
-            var permanentlyTypedRegistry = ObjectFactory.CreateInstance<PermanentlyTypedRegistry>();
-            var upgradingObjectFactory = new PermanentlyTypedUpgradingUpgradingObjectFactory(permanentlyTypedRegistry, null /*TBI*/);
+            var permanentlyTypedRegistry = _typeProcessor.PermanentlyTypedRegistry;
+            var upgradingObjectFactory = new PermanentlyTypedUpgradingUpgradingObjectFactory(permanentlyTypedRegistry, ObjectFactory);
             var eventStore = new EventStore(_persistenceEngine, upgradingObjectFactory);
 
             InternalRegisterService<IEventStore>(eventStore);
             InternalRegisterService<IDomainEventStore>(eventStore);
             InternalRegisterService<IPermanentlyTypedUpgradingObjectFactory>(upgradingObjectFactory);
             InternalRegisterService<IPermanentlyTypedRegistry>(permanentlyTypedRegistry);
+            InternalRegisterService<IObjectFactory>(ObjectFactory);
 
             base.InternalCommonBuild(compositionRootBuilder);
         }

@@ -20,14 +20,26 @@ namespace FeiEventStore.Configurator
         {
             _objectFactoryAccessor = objectFactoryAccessor;
 
-            Func<Type, Type, bool> dr = (serviceType, implementationType) => { objectFactoryAccessor().RegisterType(serviceType, implementationType); return true; };
+            Func<Type, Type, bool> simple = (serviceType, implementationType) => { objectFactoryAccessor().RegisterType(serviceType, implementationType); return true; };
+            Func<Type, Type, bool> requireOnce = (serviceType, implementationType) => 
+            {
+                if (_objectFactoryAccessor().GetServiceTypeTypes(serviceType).Count() > 1)
+                {
+                    throw new Exception(
+                       $"Service Type '{serviceType.FullName}' must have only one implementation.");
+                }
+                objectFactoryAccessor().RegisterType(serviceType, implementationType);
+                return true;
+            };
+
 
             _genericsMap = new Dictionary<Type, Func<Type, Type, bool>> 
             {
-                { typeof(IHandleCommand<,>), dr },
-                { typeof(IHandleEvent<>), dr },
-                { typeof(ICreatedByCommand<>), dr },
-                { typeof(IStartedByEvent<>), dr },
+                { typeof(IHandleCommand<,>), requireOnce },
+                { typeof(IHandleCommand<>), requireOnce },
+                { typeof(IHandleEvent<>), simple },
+                { typeof(ICreatedByCommand<>), requireOnce },
+                { typeof(IStartedByEvent<>), simple },
             };
         }
 
@@ -49,18 +61,6 @@ namespace FeiEventStore.Configurator
                         $"Type '{implementationType.FullName}' must be derived from '{typeof(IProcessManager).FullName}', as '{typeof(IStartedByEvent).FullName}' and '{typeof(IHandleEvent).FullName}' can only be used in such a case");
                 }
             }
-
-            //IAggregateState must have serializable attribute (this is required so that we can produce a clone, Todo: use persistence engine specific serialization that doesn't require attribute in place!!!!
-            if(typeof(IAggregateState).IsAssignableFrom(implementationType))
-            {
-                var s = implementationType.GetCustomAttributes(typeof(SerializableAttribute), false).FirstOrDefault();
-                if(s == null)
-                {
-                    throw new Exception(
-                        $"Aggregate State type '{implementationType.FullName}' must be marked with [Serializable] attribute");
-                }
-            }
-
 
             Func<Type, Type, bool> handler;
             if(_genericsMap.TryGetValue(serviceType, out handler))

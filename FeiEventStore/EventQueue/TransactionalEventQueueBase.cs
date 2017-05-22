@@ -13,7 +13,7 @@ using FeiEventStore.Logging.Logging;
 
 namespace FeiEventStore.EventQueue
 {
-    public abstract class BaseTransactionalEventQueue : IEventQueue
+    public abstract class TransactionalEventQueueBase : IEventQueue
     {
 
         protected static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
@@ -27,7 +27,7 @@ namespace FeiEventStore.EventQueue
         protected Thread _thread;
         protected long _version; //last processed version
 
-        protected BaseTransactionalEventQueue(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore, IEventQueueAwaiter queueAwaiter)
+        protected TransactionalEventQueueBase(IEventQueueConfiguration baseConfig, IEventStore eventStore, IVersionTrackingStore verstionStore, IEventQueueAwaiter queueAwaiter)
         {
             _baseConfig = baseConfig;
             _eventStore = eventStore;
@@ -120,13 +120,9 @@ namespace FeiEventStore.EventQueue
             }
         }
 
-        protected virtual void OnAfterBlocking()
-        {
-        }
+        protected abstract void OnAfterBlocking();
 
-        protected  virtual void OnBeforeBlocking()
-        {
-        }
+        protected abstract void OnBeforeBlocking();
 
         protected virtual void RestoreQueueState()
         {
